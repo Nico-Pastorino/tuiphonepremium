@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server"
 
+export const revalidate = 3600 // caché de 1 h en ISR
+
 export async function GET() {
   try {
-    // En producción, aquí conectarías con una API real como dolarapi.com
-    // Por ahora simulamos los datos
-    const mockData = {
-      blue: 1250,
-      official: 950,
-      lastUpdate: new Date().toISOString(),
-    }
+    // Ejemplo de API pública – puedes cambiarla por otra fuente de confianza
+    const res = await fetch("https://dolarapi.com/v1/dolarblue", { next: { revalidate: 3600 } })
+    if (!res.ok) throw new Error(`Status ${res.status}`)
+    const apiData = await res.json() // { compra: number, venta: number, fechaActualizacion: string }
 
-    return NextResponse.json(mockData)
-  } catch (error) {
-    return NextResponse.json({ error: "Error fetching dollar rate" }, { status: 500 })
+    return NextResponse.json({
+      blue: apiData.venta,
+      lastUpdate: apiData.fechaActualizacion,
+    })
+  } catch (e) {
+    // Fallback en caso de error
+    return NextResponse.json(
+      {
+        blue: 0,
+        lastUpdate: new Date().toISOString(),
+        error: "No se pudo obtener la cotización en este momento.",
+      },
+      { status: 200 },
+    )
   }
 }
