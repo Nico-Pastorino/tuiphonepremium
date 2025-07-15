@@ -1,5 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { ProductProvider } from "@/contexts/ProductContext"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -16,7 +17,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <ProductProvider>{children}</ProductProvider>
+      </body>
     </html>
   )
 }

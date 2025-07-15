@@ -1,6 +1,4 @@
 "use client"
-
-import { useState, useEffect } from "react"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
@@ -21,95 +19,10 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import type { Product } from "@/types/product"
-
-// Datos de ejemplo mejorados
-const mockProducts: Product[] = [
-  {
-    id: "1",
-    name: "iPhone 15 Pro Max 256GB",
-    category: "iphone",
-    condition: "nuevo",
-    price: 1500000,
-    priceUSD: 1200,
-    images: ["/placeholder.svg?height=400&width=400"],
-    description:
-      "El iPhone más avanzado con chip A17 Pro, sistema de cámaras Pro de 48MP y pantalla Super Retina XDR de 6.7 pulgadas.",
-    specifications: {
-      Pantalla: '6.7" Super Retina XDR',
-      Chip: "A17 Pro",
-      Cámara: "48MP Principal",
-      Almacenamiento: "256GB",
-    },
-    stock: 5,
-    featured: true,
-    createdAt: "2024-01-01",
-  },
-  {
-    id: "2",
-    name: "iPhone 14 Pro 128GB",
-    category: "iphone",
-    condition: "seminuevo",
-    price: 950000,
-    priceUSD: 760,
-    images: ["/placeholder.svg?height=400&width=400"],
-    description: "iPhone 14 Pro en excelente estado, con Dynamic Island y sistema de cámaras Pro avanzado.",
-    specifications: {
-      Pantalla: '6.1" Super Retina XDR',
-      Chip: "A16 Bionic",
-      Cámara: "48MP Principal",
-      Almacenamiento: "128GB",
-    },
-    stock: 3,
-    featured: true,
-    createdAt: "2024-01-02",
-  },
-  {
-    id: "3",
-    name: 'MacBook Air M2 13"',
-    category: "mac",
-    condition: "nuevo",
-    price: 1200000,
-    priceUSD: 960,
-    images: ["/placeholder.svg?height=400&width=400"],
-    description: "MacBook Air con chip M2, diseño ultradelgado y hasta 18 horas de batería.",
-    specifications: {
-      Pantalla: '13.6" Liquid Retina',
-      Chip: "Apple M2",
-      Memoria: "8GB RAM",
-      Almacenamiento: "256GB SSD",
-    },
-    stock: 8,
-    featured: true,
-    createdAt: "2024-01-03",
-  },
-  {
-    id: "4",
-    name: 'iPad Pro 11" M2',
-    category: "ipad",
-    condition: "nuevo",
-    price: 800000,
-    priceUSD: 640,
-    images: ["/placeholder.svg?height=400&width=400"],
-    description: "iPad Pro con chip M2, pantalla Liquid Retina y compatibilidad con Apple Pencil.",
-    specifications: {
-      Pantalla: '11" Liquid Retina',
-      Chip: "Apple M2",
-      Cámara: "12MP Principal",
-      Almacenamiento: "128GB",
-    },
-    stock: 6,
-    featured: false,
-    createdAt: "2024-01-04",
-  },
-]
+import { useProducts } from "@/contexts/ProductContext"
 
 export default function HomePage() {
-  const [products, setProducts] = useState<Product[]>([])
-
-  useEffect(() => {
-    setProducts(mockProducts)
-  }, [])
+  const { products } = useProducts()
 
   const featuredProducts = products.filter((p) => p.featured)
 
@@ -121,7 +34,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       <MinimalNavbar />
 
-      {/* Hero Section - Optimizado */}
+      {/* Hero Section - Sin badge de nuevos productos */}
       <section className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0">
           <Image
@@ -138,10 +51,6 @@ export default function HomePage() {
           <div className="container mx-auto px-4">
             <div className="max-w-4xl">
               <div className="animate-fade-in-up">
-                <Badge className="bg-white/20 text-white border-white/30 mb-6 backdrop-blur-sm text-sm px-4 py-2 rounded-full">
-                  🚀 Nuevos productos disponibles
-                </Badge>
-
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight animate-fade-in-up animation-delay-200">
                   Los mejores
                   <br />
@@ -467,12 +376,7 @@ export default function HomePage() {
                 <div>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-12 h-12 relative">
-                      <Image
-                        src="/logo-iphone-premium.png"
-                        alt="TuIphonepremium Logo"
-                        fill
-                        className="object-contain"
-                      />
+                      <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
                     </div>
                     <div>
                       <h3 className="text-xl font-bold">TuIphonepremium</h3>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X, ArrowRight, ArrowLeft } from "lucide-react"
+import { ArrowRight, ArrowLeft, X } from "lucide-react"
 import { useState, useEffect } from "react"
 import Image from "next/image"
 
@@ -110,43 +110,60 @@ export function MinimalNavbar() {
     <>
       {/* Navbar */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isScrolled ? "bg-white/95 backdrop-blur-md shadow-lg" : "bg-transparent"
-        }`}
+        className={`fixed top-0 left-0 right-0 transition-all duration-500 ${
+          isScrolled ? "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg" : "bg-transparent"
+        } ${isMenuOpen ? "z-30" : "z-50"}`}
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
-            {/* Hamburger menu - Left */}
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={toggleMenu}
-              className={`transition-colors p-3 hover:bg-white/10 ${
-                isScrolled ? "text-gray-900 hover:bg-gray-100" : "text-white"
-              }`}
-            >
-              <Menu className="w-7 h-7" />
-            </Button>
+            {/* Empty space for balance - Left */}
+            <div className="w-16"></div>
 
             {/* Logo - Center */}
             <Link href="/" className="flex items-center gap-4 absolute left-1/2 transform -translate-x-1/2">
               <div className="w-12 h-12 relative">
-                <Image src="/logo-iphone-premium.png" alt="TuIphonepremium Logo" fill className="object-contain" />
+                <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
               </div>
-              <span
-                className={`text-2xl font-bold transition-colors ${isScrolled ? "text-gray-900" : "text-white"} hidden sm:block`}
-              >
-                TuIphonepremium
-              </span>
+              <span className={`text-2xl font-bold transition-colors text-white hidden sm:block`}>TuIphonepremium</span>
             </Link>
 
-            {/* Empty space for balance - Right */}
+            {/* Empty space for balance - Right (el botón hamburguesa ahora está flotante) */}
             <div className="w-16"></div>
           </div>
         </div>
       </nav>
 
-      {/* Slide-out menu */}
+      {/* Botón hamburguesa flotante - Siempre visible */}
+      <Button
+        variant="ghost"
+        size="lg"
+        onClick={toggleMenu}
+        className={`fixed top-5 right-4 z-[60] transition-all duration-300 p-3 rounded-xl ${
+          isMenuOpen
+            ? "bg-white text-gray-900 shadow-lg hover:bg-gray-50"
+            : "text-white hover:bg-white/10 backdrop-blur-sm"
+        }`}
+      >
+        <div className="w-7 h-7 flex flex-col justify-center items-center">
+          <span
+            className={`block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out ${
+              isMenuOpen ? "rotate-45 translate-y-1.5" : "-translate-y-1"
+            }`}
+          />
+          <span
+            className={`block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out ${
+              isMenuOpen ? "opacity-0" : "opacity-100"
+            }`}
+          />
+          <span
+            className={`block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out ${
+              isMenuOpen ? "-rotate-45 -translate-y-1.5" : "translate-y-1"
+            }`}
+          />
+        </div>
+      </Button>
+
+      {/* Slide-out menu desde la derecha */}
       <div className={`fixed inset-0 z-40 transition-all duration-300 ${isMenuOpen ? "visible" : "invisible"}`}>
         {/* Backdrop */}
         <div
@@ -156,24 +173,29 @@ export function MinimalNavbar() {
           onClick={closeMenu}
         />
 
-        {/* Menu panel */}
+        {/* Menu panel - Desde la derecha */}
         <div
-          className={`absolute left-0 top-0 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300 ${
-            isMenuOpen ? "translate-x-0" : "-translate-x-full"
+          className={`absolute right-0 top-0 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300 z-50 ${
+            isMenuOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
           {/* Main menu */}
           <div className={`h-full overflow-y-auto ${activeSubmenu ? "hidden" : "block"}`}>
-            {/* Header con logo y close button */}
+            {/* Header con nuevo logo y botón cerrar */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 relative">
-                  <Image src="/logo-iphone-premium.png" alt="TuIphonepremium Logo" fill className="object-contain" />
+                  <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
                 </div>
                 <span className="text-white font-bold text-lg">TuIphonepremium</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={closeMenu} className="text-white hover:bg-white/20">
-                <X className="w-6 h-6" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeMenu}
+                className="text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
+              >
+                <X className="w-5 h-5" />
               </Button>
             </div>
 
@@ -206,7 +228,7 @@ export function MinimalNavbar() {
           {/* Submenu */}
           {activeSubmenu && (
             <div className="h-full overflow-y-auto">
-              {/* Submenu header */}
+              {/* Submenu header - Con flecha de retroceso y botón cerrar */}
               <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
                 <div className="flex items-center gap-3">
                   <Button variant="ghost" size="sm" onClick={closeSubmenu} className="text-white hover:bg-white/20">
@@ -219,7 +241,12 @@ export function MinimalNavbar() {
                     {activeSubmenu === "ipads" && "IPADS"}
                   </h2>
                 </div>
-                <Button variant="ghost" size="sm" onClick={closeMenu} className="text-white hover:bg-white/20">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={closeMenu}
+                  className="text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
+                >
                   <X className="w-5 h-5" />
                 </Button>
               </div>
