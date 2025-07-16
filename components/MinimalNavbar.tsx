@@ -2,14 +2,13 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, ArrowLeft, X } from "lucide-react"
+import { X } from "lucide-react"
 import { useState, useEffect } from "react"
 import Image from "next/image"
 
 export function MinimalNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,7 +20,6 @@ export function MinimalNavbar() {
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
-    setActiveSubmenu(null)
     // Prevenir scroll del body cuando el menú está abierto
     if (!isMenuOpen) {
       document.body.style.overflow = "hidden"
@@ -30,17 +28,8 @@ export function MinimalNavbar() {
     }
   }
 
-  const openSubmenu = (submenu: string) => {
-    setActiveSubmenu(submenu)
-  }
-
-  const closeSubmenu = () => {
-    setActiveSubmenu(null)
-  }
-
   const closeMenu = () => {
     setIsMenuOpen(false)
-    setActiveSubmenu(null)
     document.body.style.overflow = "unset"
   }
 
@@ -51,60 +40,13 @@ export function MinimalNavbar() {
 
   const menuItems = [
     { name: "Inicio", href: "/", hasSubmenu: false },
-    {
-      name: "iPhones Usados Premium",
-      href: "/productos?condition=seminuevo",
-      hasSubmenu: true,
-      submenu: "iphones-usados",
-    },
-    {
-      name: "iPhones Nuevos",
-      href: "/productos?category=iphone&condition=nuevo",
-      hasSubmenu: true,
-      submenu: "iphones-nuevos",
-    },
-    { name: "Macbooks", href: "/productos?category=mac", hasSubmenu: true, submenu: "macbooks" },
-    { name: "iPads", href: "/productos?category=ipad", hasSubmenu: true, submenu: "ipads" },
+    { name: "iPhones Usados Premium", href: "/productos?condition=seminuevo", hasSubmenu: false },
+    { name: "iPhones Nuevos", href: "/productos?category=iphone&condition=nuevo", hasSubmenu: false },
+    { name: "Macbooks", href: "/productos?category=mac", hasSubmenu: false },
+    { name: "iPads", href: "/productos?category=ipad", hasSubmenu: false },
     { name: "AirPods", href: "/productos?category=airpods", hasSubmenu: false },
     { name: "Contacto", href: "/contacto", hasSubmenu: false },
   ]
-
-  const submenuItems = {
-    "iphones-usados": [
-      "iPhone 15",
-      "iPhone 14 Pro Max",
-      "iPhone 14 Pro",
-      "iPhone 14 Plus",
-      "iPhone 14",
-      "iPhone 13 Pro Max",
-      "iPhone 13 Pro",
-      "iPhone 13",
-      "iPhone 13 Mini",
-      "iPhone 12 Pro Max",
-      "iPhone 12 Pro",
-      "iPhone 12",
-    ],
-    "iphones-nuevos": [
-      "iPhone 15 Pro Max",
-      "iPhone 15 Pro",
-      "iPhone 15 Plus",
-      "iPhone 15",
-      "iPhone 14 Pro Max",
-      "iPhone 14 Pro",
-      "iPhone 14 Plus",
-      "iPhone 14",
-    ],
-    macbooks: [
-      "MacBook Air M3",
-      "MacBook Air M2",
-      'MacBook Pro 14"',
-      'MacBook Pro 16"',
-      'iMac 24"',
-      "Mac Studio",
-      "Mac Pro",
-    ],
-    ipads: ['iPad Pro 12.9"', 'iPad Pro 11"', "iPad Air", "iPad", "iPad Mini"],
-  }
 
   return (
     <>
@@ -127,41 +69,28 @@ export function MinimalNavbar() {
               <span className={`text-2xl font-bold transition-colors text-white hidden sm:block`}>TuIphonepremium</span>
             </Link>
 
-            {/* Empty space for balance - Right (el botón hamburguesa ahora está flotante) */}
-            <div className="w-16"></div>
+            {/* Botón hamburguesa integrado en el navbar */}
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={toggleMenu}
+                className={`transition-all duration-300 p-3 rounded-xl ${
+                  isScrolled || isMenuOpen
+                    ? "text-white hover:bg-white/20 backdrop-blur-sm"
+                    : "text-white hover:bg-white/10 backdrop-blur-sm"
+                }`}
+              >
+                <div className="w-7 h-7 flex flex-col justify-center items-center">
+                  <span className="block h-0.5 w-6 bg-current transition-all duration-300 ease-in-out -translate-y-1" />
+                  <span className="block h-0.5 w-6 bg-current transition-all duration-300 ease-in-out" />
+                  <span className="block h-0.5 w-6 bg-current transition-all duration-300 ease-in-out translate-y-1" />
+                </div>
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
-
-      {/* Botón hamburguesa flotante - Siempre visible */}
-      <Button
-        variant="ghost"
-        size="lg"
-        onClick={toggleMenu}
-        className={`fixed top-5 right-4 z-[60] transition-all duration-300 p-3 rounded-xl ${
-          isMenuOpen
-            ? "bg-white text-gray-900 shadow-lg hover:bg-gray-50"
-            : "text-white hover:bg-white/10 backdrop-blur-sm"
-        }`}
-      >
-        <div className="w-7 h-7 flex flex-col justify-center items-center">
-          <span
-            className={`block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out ${
-              isMenuOpen ? "rotate-45 translate-y-1.5" : "-translate-y-1"
-            }`}
-          />
-          <span
-            className={`block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out ${
-              isMenuOpen ? "opacity-0" : "opacity-100"
-            }`}
-          />
-          <span
-            className={`block h-0.5 w-6 bg-current transform transition-all duration-300 ease-in-out ${
-              isMenuOpen ? "-rotate-45 -translate-y-1.5" : "translate-y-1"
-            }`}
-          />
-        </div>
-      </Button>
 
       {/* Slide-out menu desde la derecha */}
       <div className={`fixed inset-0 z-40 transition-all duration-300 ${isMenuOpen ? "visible" : "invisible"}`}>
@@ -180,7 +109,7 @@ export function MinimalNavbar() {
           }`}
         >
           {/* Main menu */}
-          <div className={`h-full overflow-y-auto ${activeSubmenu ? "hidden" : "block"}`}>
+          <div className={`h-full overflow-y-auto`}>
             {/* Header con nuevo logo y botón cerrar */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
               <div className="flex items-center gap-3">
@@ -202,88 +131,17 @@ export function MinimalNavbar() {
             {/* Menu items */}
             <div className="py-2">
               {menuItems.map((item, index) => (
-                <div key={index}>
-                  {item.hasSubmenu ? (
-                    <button
-                      onClick={() => openSubmenu(item.submenu!)}
-                      className="w-full flex items-center justify-between px-6 py-4 text-left text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-50"
-                    >
-                      <span className="font-medium text-base">{item.name}</span>
-                      <ArrowRight className="w-5 h-5 text-gray-400" />
-                    </button>
-                  ) : (
-                    <Link
-                      href={item.href}
-                      onClick={handleLinkClick}
-                      className="block px-6 py-4 text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-50 font-medium text-base"
-                    >
-                      {item.name}
-                    </Link>
-                  )}
-                </div>
+                <Link
+                  key={index}
+                  href={item.href}
+                  onClick={handleLinkClick}
+                  className="block px-6 py-4 text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-50 font-medium text-base"
+                >
+                  {item.name}
+                </Link>
               ))}
             </div>
           </div>
-
-          {/* Submenu */}
-          {activeSubmenu && (
-            <div className="h-full overflow-y-auto">
-              {/* Submenu header - Con flecha de retroceso y botón cerrar */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
-                <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="sm" onClick={closeSubmenu} className="text-white hover:bg-white/20">
-                    <ArrowLeft className="w-5 h-5" />
-                  </Button>
-                  <h2 className="text-sm font-medium text-white uppercase tracking-wide">
-                    {activeSubmenu === "iphones-usados" && "IPHONES USADOS PREMIUM"}
-                    {activeSubmenu === "iphones-nuevos" && "IPHONES NUEVOS"}
-                    {activeSubmenu === "macbooks" && "MACBOOKS"}
-                    {activeSubmenu === "ipads" && "IPADS"}
-                  </h2>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={closeMenu}
-                  className="text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
-
-              {/* "Ver todo" option */}
-              <div className="py-2">
-                <Link
-                  href={`/productos?category=${activeSubmenu.replace("-usados", "").replace("-nuevos", "").replace("s", "")}`}
-                  onClick={handleLinkClick}
-                  className="block px-6 py-4 text-gray-900 hover:bg-gray-50 transition-colors font-medium text-base bg-gray-50/50"
-                >
-                  Ver todo en{" "}
-                  {activeSubmenu === "iphones-usados"
-                    ? "iPhones Usados Premium"
-                    : activeSubmenu === "iphones-nuevos"
-                      ? "iPhones Nuevos"
-                      : activeSubmenu === "macbooks"
-                        ? "Macbooks"
-                        : "iPads"}
-                </Link>
-              </div>
-
-              {/* Submenu items */}
-              <div className="py-2">
-                {submenuItems[activeSubmenu as keyof typeof submenuItems]?.map((item, index) => (
-                  <Link
-                    key={index}
-                    href={`/productos/${item.toLowerCase().replace(/\s+/g, "-")}`}
-                    onClick={handleLinkClick}
-                    className="block px-6 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    {item}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </>

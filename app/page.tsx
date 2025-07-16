@@ -1,9 +1,10 @@
 "use client"
-import { MinimalNavbar } from "@/components/MinimalNavbar"
+
+import { EnhancedNavbar } from "@/components/EnhancedNavbar"
+import { ProductCard } from "@/components/ProductCard"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import {
   Smartphone,
   Tablet,
@@ -16,6 +17,9 @@ import {
   ArrowDown,
   MessageCircle,
   Award,
+  Star,
+  Users,
+  Clock,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -23,8 +27,7 @@ import { useProducts } from "@/contexts/ProductContext"
 
 export default function HomePage() {
   const { products } = useProducts()
-
-  const featuredProducts = products.filter((p) => p.featured)
+  const featuredProducts = products.filter((p) => p.featured).slice(0, 8)
 
   const scrollToProducts = () => {
     document.getElementById("productos")?.scrollIntoView({ behavior: "smooth" })
@@ -32,9 +35,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <MinimalNavbar />
+      <EnhancedNavbar />
 
-      {/* Hero Section - Sin badge de nuevos productos */}
+      {/* Hero Section */}
       <section className="relative h-screen w-full overflow-hidden">
         <div className="absolute inset-0">
           <Image
@@ -44,65 +47,83 @@ export default function HomePage() {
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
         </div>
 
         <div className="relative z-10 h-full flex items-center">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl">
-              <div className="animate-fade-in-up">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight animate-fade-in-up animation-delay-200">
-                  Los mejores
-                  <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-                    productos Apple
-                  </span>
-                  <br />
-                  de Argentina
-                </h1>
+              <AnimatedSection animation="fadeUp">
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium mb-6">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    Más de 10,000 clientes satisfechos
+                  </div>
 
-                <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl leading-relaxed animate-fade-in-up animation-delay-400">
-                  Descubre nuestra selección premium de iPhone, iPad, Mac y más. Productos nuevos y seminuevos con
-                  garantía extendida.
-                </p>
+                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+                    Los mejores
+                    <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+                      productos Apple
+                    </span>
+                    <br />
+                    de Argentina
+                  </h1>
 
-                <div className="flex flex-col sm:flex-row gap-4 mb-12 animate-fade-in-up animation-delay-600">
-                  <Button
-                    size="lg"
-                    className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-xl"
-                    onClick={scrollToProducts}
-                  >
-                    Ver productos
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-xl"
-                    asChild
-                  >
-                    <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="mr-2 w-5 h-5" />
-                      Consultar por WhatsApp
-                    </a>
-                  </Button>
+                  <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-2xl leading-relaxed">
+                    Descubre nuestra selección premium de iPhone, iPad, Mac y más.
+                    <span className="text-blue-300 font-semibold"> Productos nuevos y seminuevos</span> con garantía
+                    extendida.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row gap-4 mb-12">
+                    <Button
+                      size="lg"
+                      className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-xl text-lg"
+                      onClick={scrollToProducts}
+                    >
+                      Explorar productos
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-2 border-white text-white hover:bg-white hover:text-gray-900 font-semibold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-xl text-lg bg-transparent backdrop-blur-sm"
+                      asChild
+                    >
+                      <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="mr-2 w-5 h-5" />
+                        Consultar por WhatsApp
+                      </a>
+                    </Button>
+                  </div>
+
+                  {/* Enhanced Stats */}
+                  <div className="grid grid-cols-3 gap-8 text-white">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <Users className="w-6 h-6 mr-2 text-blue-400" />
+                        <div className="text-3xl md:text-4xl font-bold">10K+</div>
+                      </div>
+                      <div className="text-white/80 text-sm md:text-base">Clientes felices</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <Clock className="w-6 h-6 mr-2 text-green-400" />
+                        <div className="text-3xl md:text-4xl font-bold">5</div>
+                      </div>
+                      <div className="text-white/80 text-sm md:text-base">Años en el mercado</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <Truck className="w-6 h-6 mr-2 text-purple-400" />
+                        <div className="text-3xl md:text-4xl font-bold">24h</div>
+                      </div>
+                      <div className="text-white/80 text-sm md:text-base">Envío express</div>
+                    </div>
+                  </div>
                 </div>
-
-                {/* Stats - Mejoradas */}
-                <div className="grid grid-cols-3 gap-8 text-white animate-fade-in-up animation-delay-800">
-                  <div className="text-center">
-                    <div className="text-2xl md:text-3xl font-bold mb-1">10K+</div>
-                    <div className="text-white/80 text-sm md:text-base">Clientes felices</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl md:text-3xl font-bold mb-1">5 años</div>
-                    <div className="text-white/80 text-sm md:text-base">En el mercado</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl md:text-3xl font-bold mb-1">24h</div>
-                    <div className="text-white/80 text-sm md:text-base">Envío express</div>
-                  </div>
-                </div>
-              </div>
+              </AnimatedSection>
             </div>
           </div>
         </div>
@@ -112,23 +133,23 @@ export default function HomePage() {
             onClick={scrollToProducts}
             className="text-white hover:text-blue-400 transition-colors animate-bounce"
           >
-            <ArrowDown className="w-6 h-6" />
+            <ArrowDown className="w-8 h-8" />
           </button>
         </div>
       </section>
 
-      {/* Categories Section - Mejorada */}
+      {/* Categories Section */}
       <AnimatedSection animation="fadeUp">
-        <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50/30" id="productos">
+        <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50/30" id="productos">
           <div className="container mx-auto px-4">
-            <AnimatedSection animation="fadeUp" className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Explora por categoría</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Encuentra exactamente lo que buscas en nuestra amplia selección
+            <AnimatedSection animation="fadeUp" className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Explora por categoría</h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Encuentra exactamente lo que buscas en nuestra amplia selección de productos Apple premium
               </p>
             </AnimatedSection>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {[
                 {
                   icon: Smartphone,
@@ -136,6 +157,7 @@ export default function HomePage() {
                   count: "25+ modelos",
                   href: "/productos?category=iphone",
                   color: "from-blue-500 to-purple-600",
+                  description: "Los últimos modelos",
                 },
                 {
                   icon: Tablet,
@@ -143,6 +165,7 @@ export default function HomePage() {
                   count: "15+ modelos",
                   href: "/productos?category=ipad",
                   color: "from-purple-500 to-pink-600",
+                  description: "Para trabajo y creatividad",
                 },
                 {
                   icon: Laptop,
@@ -150,6 +173,7 @@ export default function HomePage() {
                   count: "12+ modelos",
                   href: "/productos?category=mac",
                   color: "from-gray-600 to-gray-800",
+                  description: "Potencia profesional",
                 },
                 {
                   icon: Watch,
@@ -157,6 +181,7 @@ export default function HomePage() {
                   count: "8+ modelos",
                   href: "/productos?category=watch",
                   color: "from-red-500 to-orange-600",
+                  description: "Tu salud en tu muñeca",
                 },
                 {
                   icon: Headphones,
@@ -164,21 +189,25 @@ export default function HomePage() {
                   count: "6+ modelos",
                   href: "/productos?category=airpods",
                   color: "from-green-500 to-teal-600",
+                  description: "Audio excepcional",
                 },
               ].map((category, index) => (
                 <AnimatedSection key={category.name} animation="scale" delay={index * 100}>
                   <Link href={category.href}>
-                    <Card className="group hover:shadow-xl transition-all duration-500 cursor-pointer border-0 shadow-md overflow-hidden transform hover:scale-105 rounded-2xl">
-                      <CardContent className="p-4 md:p-6 text-center">
-                        <div
-                          className={`w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg`}
-                        >
-                          <category.icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                    <Card className="group hover:shadow-2xl transition-all duration-500 cursor-pointer border-0 shadow-lg overflow-hidden transform hover:scale-105 rounded-3xl h-full">
+                      <CardContent className="p-6 text-center h-full flex flex-col justify-between">
+                        <div>
+                          <div
+                            className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg`}
+                          >
+                            <category.icon className="w-8 h-8 text-white" />
+                          </div>
+                          <h3 className="font-bold text-xl text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
+                            {category.name}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">{category.description}</p>
                         </div>
-                        <h3 className="font-bold text-base md:text-lg text-gray-900 group-hover:text-blue-600 transition-colors mb-1 md:mb-2">
-                          {category.name}
-                        </h3>
-                        <p className="text-xs md:text-sm text-gray-600">{category.count}</p>
+                        <p className="text-xs text-gray-500 font-medium">{category.count}</p>
                       </CardContent>
                     </Card>
                   </Link>
@@ -189,98 +218,30 @@ export default function HomePage() {
         </section>
       </AnimatedSection>
 
-      {/* Featured Products - Mejorada */}
+      {/* Featured Products */}
       <AnimatedSection animation="fadeUp">
-        <section className="py-16 bg-white">
+        <section className="py-20 bg-white">
           <div className="container mx-auto px-4">
-            <AnimatedSection animation="fadeUp" className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Productos destacados</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Los más vendidos y mejor valorados por nuestros clientes
+            <AnimatedSection animation="fadeUp" className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Productos destacados</h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Los más vendidos y mejor valorados por nuestros clientes. Calidad garantizada y precios competitivos.
               </p>
             </AnimatedSection>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {featuredProducts.map((product, index) => (
-                <AnimatedSection key={product.id} animation="fadeUp" delay={index * 150}>
-                  <Card className="group relative overflow-hidden bg-white border-0 shadow-sm hover:shadow-xl transition-all duration-500 rounded-2xl">
-                    <CardContent className="p-0">
-                      {/* Image container */}
-                      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl">
-                        <Image
-                          src={product.images[0] || "/placeholder.svg?height=300&width=300&query=iPhone"}
-                          alt={product.name}
-                          fill
-                          className="object-cover transition-all duration-700 group-hover:scale-105"
-                        />
-
-                        {/* Badges */}
-                        <div className="absolute top-3 left-3 flex flex-col gap-2">
-                          {product.condition === "seminuevo" && (
-                            <Badge className="bg-emerald-500/90 text-white font-medium px-2 py-1 text-xs rounded-full">
-                              Seminuevo
-                            </Badge>
-                          )}
-                          {product.featured && (
-                            <Badge className="bg-amber-500/90 text-white font-medium px-2 py-1 text-xs rounded-full">
-                              Destacado
-                            </Badge>
-                          )}
-                        </div>
-
-                        {/* Stock */}
-                        <div className="absolute bottom-3 left-3">
-                          <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-700 border border-green-500/30 backdrop-blur-sm">
-                            {product.stock} disponibles
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="p-4">
-                        <Badge
-                          variant="outline"
-                          className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 mb-2"
-                        >
-                          {product.category.toUpperCase()}
-                        </Badge>
-
-                        <h3 className="font-bold text-lg mb-2 text-gray-900 leading-tight line-clamp-2">
-                          {product.name}
-                        </h3>
-
-                        {/* Price */}
-                        <div className="mb-4">
-                          <span className="text-2xl font-bold text-gray-900">
-                            ${product.price.toLocaleString("es-AR")}
-                          </span>
-                          <div className="text-sm text-emerald-600 font-medium mt-1">
-                            💳 Hasta 12 cuotas disponibles
-                          </div>
-                        </div>
-
-                        {/* Action */}
-                        <Button
-                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2 rounded-xl transition-all duration-300"
-                          asChild
-                        >
-                          <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                            Consultar
-                          </a>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                <AnimatedSection key={product.id} animation="fadeUp" delay={index * 100}>
+                  <ProductCard product={product} variant="featured" />
                 </AnimatedSection>
               ))}
             </div>
 
-            <AnimatedSection animation="fadeUp" delay={400} className="text-center mt-12">
+            <AnimatedSection animation="fadeUp" delay={400} className="text-center mt-16">
               <Button
                 asChild
-                variant="outline"
-                className="border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 bg-transparent"
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-lg"
               >
                 <Link href="/productos">
                   Ver todos los productos
@@ -292,48 +253,61 @@ export default function HomePage() {
         </section>
       </AnimatedSection>
 
-      {/* Benefits Section - Mejorada */}
+      {/* Benefits Section */}
       <AnimatedSection animation="fadeUp">
-        <section className="py-16 bg-gradient-to-br from-blue-50 to-purple-50">
+        <section className="py-20 bg-gradient-to-br from-blue-50 to-purple-50">
           <div className="container mx-auto px-4">
-            <AnimatedSection animation="fadeUp" className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">¿Por qué elegir TuIphonepremium?</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Beneficios que nos hacen la mejor opción para tus productos Apple
+            <AnimatedSection animation="fadeUp" className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">¿Por qué elegir TuIphonepremium?</h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                Beneficios exclusivos que nos hacen la mejor opción para tus productos Apple
               </p>
             </AnimatedSection>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 {
                   icon: Shield,
                   title: "Garantía extendida",
-                  description: "12 meses de garantía y soporte técnico especializado",
+                  description: "12 meses de garantía completa y soporte técnico especializado las 24 horas",
                   color: "from-green-500 to-emerald-600",
+                  features: ["Soporte 24/7", "Reparación gratuita", "Reemplazo inmediato"],
                 },
                 {
                   icon: Truck,
                   title: "Envío express",
-                  description: "Envío gratuito en CABA y GBA en menos de 24hs",
+                  description: "Envío gratuito en CABA y GBA en menos de 24 horas. Interior del país en 48hs",
                   color: "from-blue-500 to-cyan-600",
+                  features: ["Envío gratis", "Tracking en tiempo real", "Seguro incluido"],
                 },
                 {
                   icon: Award,
                   title: "Calidad premium",
-                  description: "Productos verificados y certificados con garantía",
+                  description: "Productos verificados, certificados y probados con garantía de autenticidad",
                   color: "from-purple-500 to-pink-600",
+                  features: ["100% originales", "Certificación Apple", "Prueba de calidad"],
                 },
               ].map((benefit, index) => (
                 <AnimatedSection key={index} animation="fadeUp" delay={index * 200}>
-                  <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-105 rounded-2xl">
-                    <CardContent className="p-6">
-                      <div
-                        className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${benefit.color} flex items-center justify-center shadow-lg`}
-                      >
-                        <benefit.icon className="w-8 h-8 text-white" />
+                  <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 rounded-3xl h-full">
+                    <CardContent className="p-8 h-full flex flex-col justify-between">
+                      <div>
+                        <div
+                          className={`w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br ${benefit.color} flex items-center justify-center shadow-lg`}
+                        >
+                          <benefit.icon className="w-10 h-10 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold mb-4 text-gray-900">{benefit.title}</h3>
+                        <p className="text-gray-600 leading-relaxed mb-6">{benefit.description}</p>
                       </div>
-                      <h3 className="text-xl font-bold mb-3 text-gray-900">{benefit.title}</h3>
-                      <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
+                      <div className="space-y-2">
+                        {benefit.features.map((feature, idx) => (
+                          <div key={idx} className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            {feature}
+                          </div>
+                        ))}
+                      </div>
                     </CardContent>
                   </Card>
                 </AnimatedSection>
@@ -343,19 +317,19 @@ export default function HomePage() {
         </section>
       </AnimatedSection>
 
-      {/* WhatsApp CTA Section */}
+      {/* CTA Section */}
       <AnimatedSection animation="scale">
-        <section className="py-16 bg-gradient-to-r from-green-500 to-emerald-600">
+        <section className="py-20 bg-gradient-to-r from-green-500 to-emerald-600">
           <div className="container mx-auto px-4 text-center">
-            <div className="max-w-2xl mx-auto text-white">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">¿Listo para comprar?</h2>
-              <p className="text-lg md:text-xl text-green-100 mb-8">
-                Contactanos por WhatsApp y te ayudamos a encontrar el producto perfecto
+            <div className="max-w-3xl mx-auto text-white">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">¿Listo para comprar?</h2>
+              <p className="text-xl md:text-2xl text-green-100 mb-8 leading-relaxed">
+                Contactanos por WhatsApp y te ayudamos a encontrar el producto perfecto para vos
               </p>
               <Button
                 asChild
                 size="lg"
-                className="bg-white text-green-600 hover:bg-green-50 font-semibold px-8 py-4 rounded-xl text-lg transform hover:scale-110 transition-all duration-300 shadow-xl"
+                className="bg-white text-green-600 hover:bg-green-50 font-semibold px-10 py-5 rounded-2xl text-xl transform hover:scale-110 transition-all duration-300 shadow-2xl"
               >
                 <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="w-6 h-6 mr-3" />
@@ -367,54 +341,75 @@ export default function HomePage() {
         </section>
       </AnimatedSection>
 
-      {/* Footer - Con gradiente */}
+      {/* Footer */}
       <AnimatedSection animation="fadeUp">
-        <footer className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-16">
+        <footer className="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-20">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
               <AnimatedSection animation="fadeLeft">
-                <div>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 relative">
+                <div className="md:col-span-2">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 relative">
                       <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold">TuIphonepremium</h3>
-                      <p className="text-blue-100 text-sm">Productos Apple Premium</p>
+                      <h3 className="text-2xl font-bold">TuIphonepremium</h3>
+                      <p className="text-blue-100">Productos Apple Premium</p>
                     </div>
                   </div>
-                  <p className="text-blue-100 mb-4 leading-relaxed">
-                    Tu tienda premium de productos Apple en Argentina. Calidad garantizada y el mejor servicio.
+                  <p className="text-blue-100 mb-6 leading-relaxed text-lg">
+                    Tu tienda premium de productos Apple en Argentina. Calidad garantizada, precios competitivos y el
+                    mejor servicio al cliente.
                   </p>
                 </div>
               </AnimatedSection>
 
               <AnimatedSection animation="fadeUp" delay={200}>
                 <div>
-                  <h4 className="font-bold mb-4 text-lg">Productos</h4>
-                  <ul className="space-y-3 text-blue-100">
+                  <h4 className="font-bold mb-6 text-xl">Productos</h4>
+                  <ul className="space-y-4 text-blue-100">
                     <li>
-                      <Link href="/productos?category=iphone" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=iphone"
+                        className="hover:text-white transition-colors flex items-center gap-2"
+                      >
+                        <Smartphone className="w-4 h-4" />
                         iPhone
                       </Link>
                     </li>
                     <li>
-                      <Link href="/productos?category=ipad" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=ipad"
+                        className="hover:text-white transition-colors flex items-center gap-2"
+                      >
+                        <Tablet className="w-4 h-4" />
                         iPad
                       </Link>
                     </li>
                     <li>
-                      <Link href="/productos?category=mac" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=mac"
+                        className="hover:text-white transition-colors flex items-center gap-2"
+                      >
+                        <Laptop className="w-4 h-4" />
                         Mac
                       </Link>
                     </li>
                     <li>
-                      <Link href="/productos?category=watch" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=watch"
+                        className="hover:text-white transition-colors flex items-center gap-2"
+                      >
+                        <Watch className="w-4 h-4" />
                         Apple Watch
                       </Link>
                     </li>
                     <li>
-                      <Link href="/productos?category=airpods" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=airpods"
+                        className="hover:text-white transition-colors flex items-center gap-2"
+                      >
+                        <Headphones className="w-4 h-4" />
                         AirPods
                       </Link>
                     </li>
@@ -424,29 +419,66 @@ export default function HomePage() {
 
               <AnimatedSection animation="fadeRight" delay={400}>
                 <div>
-                  <h4 className="font-bold mb-4 text-lg">Contacto</h4>
-                  <div className="space-y-3 text-blue-100">
-                    <p>📱 WhatsApp: +54 9 11 1234-5678</p>
-                    <p>📧 Email: info@tuiphonepremium.com.ar</p>
-                    <p>📍 Buenos Aires, Argentina</p>
-                    <p>🕒 Lun a Vie: 9:00 - 18:00</p>
+                  <h4 className="font-bold mb-6 text-xl">Contacto</h4>
+                  <div className="space-y-4 text-blue-100">
+                    <div className="flex items-center gap-3">
+                      <MessageCircle className="w-5 h-5" />
+                      <div>
+                        <p className="font-medium">WhatsApp</p>
+                        <p className="text-sm">+54 9 11 1234-5678</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 flex items-center justify-center">📧</div>
+                      <div>
+                        <p className="font-medium">Email</p>
+                        <p className="text-sm">info@tuiphonepremium.com.ar</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 flex items-center justify-center">📍</div>
+                      <div>
+                        <p className="font-medium">Ubicación</p>
+                        <p className="text-sm">Buenos Aires, Argentina</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-5 h-5" />
+                      <div>
+                        <p className="font-medium">Horarios</p>
+                        <p className="text-sm">Lun a Vie: 9:00 - 18:00</p>
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    asChild
-                    className="mt-4 bg-white/20 hover:bg-white/30 text-white font-semibold px-6 py-2 rounded-xl transition-all duration-300 transform hover:scale-105 border border-white/30"
-                  >
-                    <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      WhatsApp
-                    </a>
-                  </Button>
+                  <div className="flex gap-2 mt-6">
+                    <Button
+                      asChild
+                      className="bg-white/20 hover:bg-white/30 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 border border-white/30"
+                    >
+                      <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        WhatsApp
+                      </a>
+                    </Button>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="bg-transparent border-white/30 text-white hover:bg-white/10 px-4 py-3 rounded-xl transition-all duration-300"
+                    >
+                      <Link href="/admin">
+                        <Shield className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </AnimatedSection>
             </div>
 
             <AnimatedSection animation="fadeUp" delay={600}>
               <div className="border-t border-white/20 pt-8 text-center text-blue-100">
-                <p>&copy; 2024 TuIphonepremium. Todos los derechos reservados.</p>
+                <p>
+                  &copy; 2024 TuIphonepremium. Todos los derechos reservados. Diseñado con ❤️ para los amantes de Apple.
+                </p>
               </div>
             </AnimatedSection>
           </div>

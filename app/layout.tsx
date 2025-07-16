@@ -1,6 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { ProductProvider } from "@/contexts/ProductContext"
+import { AdminProvider } from "@/contexts/AdminContext"
+import { ToastContainer } from "@/components/ui/toast"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -18,7 +20,12 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <ProductProvider>{children}</ProductProvider>
+        <AdminProvider>
+          <ProductProvider>
+            {children}
+            <ToastContainer />
+          </ProductProvider>
+        </AdminProvider>
       </body>
     </html>
   )
