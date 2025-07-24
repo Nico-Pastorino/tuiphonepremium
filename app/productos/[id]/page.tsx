@@ -29,7 +29,7 @@ import type { Product } from "@/types/product"
 export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { getProduct, products } = useProducts()
+  const { getProductById, products } = useProducts()
   const { dollarRate } = useDollarRate()
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -37,20 +37,20 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (params.id) {
-      const foundProduct = getProduct(params.id as string)
+      const foundProduct = getProductById(params.id as string)
       setProduct(foundProduct || null)
     }
-  }, [params.id, getProduct])
+  }, [params.id, getProductById])
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <MinimalNavbar />
         <div className="pt-20 pb-8">
           <div className="container mx-auto px-4">
             <div className="text-center py-16">
               <h1 className="text-2xl font-bold text-gray-900 mb-4">Producto no encontrado</h1>
-              <Button asChild>
+              <Button asChild variant="outline">
                 <Link href="/productos">Volver a productos</Link>
               </Button>
             </div>
@@ -76,7 +76,7 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <MinimalNavbar />
 
       <div className="pt-20 pb-8">
@@ -102,7 +102,7 @@ export default function ProductDetailPage() {
 
           {/* Back Button */}
           <AnimatedSection animation="fadeUp" delay={100}>
-            <Button variant="ghost" onClick={() => router.back()} className="mb-6">
+            <Button variant="ghost" onClick={() => router.back()} className="mb-6 text-gray-600">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
             </Button>
@@ -113,7 +113,7 @@ export default function ProductDetailPage() {
             <AnimatedSection animation="fadeLeft">
               <div className="space-y-4">
                 {/* Main Image */}
-                <div className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-lg">
+                <div className="relative aspect-square bg-gray-50 rounded-2xl overflow-hidden">
                   <Image
                     src={product.images[selectedImageIndex] || "/placeholder.svg?height=600&width=600"}
                     alt={product.name}
@@ -127,7 +127,7 @@ export default function ProductDetailPage() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 rounded-full w-10 h-10 p-0"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 rounded-full w-10 h-10 p-0 bg-white/80 hover:bg-white"
                         onClick={prevImage}
                       >
                         <ChevronLeft className="w-5 h-5" />
@@ -135,7 +135,7 @@ export default function ProductDetailPage() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 rounded-full w-10 h-10 p-0"
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 rounded-full w-10 h-10 p-0 bg-white/80 hover:bg-white"
                         onClick={nextImage}
                       >
                         <ChevronRight className="w-5 h-5" />
@@ -146,15 +146,13 @@ export default function ProductDetailPage() {
                   {/* Badges */}
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
                     {product.condition === "seminuevo" && (
-                      <Badge className="bg-emerald-500/90 text-white font-medium px-3 py-1 rounded-full">
-                        Seminuevo
-                      </Badge>
+                      <Badge className="bg-blue-500 text-white font-medium px-3 py-1 rounded-full">Seminuevo</Badge>
                     )}
                     {product.featured && (
-                      <Badge className="bg-amber-500/90 text-white font-medium px-3 py-1 rounded-full">Destacado</Badge>
+                      <Badge className="bg-gray-900 text-white font-medium px-3 py-1 rounded-full">Destacado</Badge>
                     )}
                     {discountPercentage > 0 && (
-                      <Badge className="bg-red-500/90 text-white font-bold px-3 py-1 rounded-full">
+                      <Badge className="bg-red-500 text-white font-bold px-3 py-1 rounded-full">
                         -{discountPercentage}%
                       </Badge>
                     )}
@@ -225,8 +223,8 @@ export default function ProductDetailPage() {
                     </div>
                   )}
 
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                    <p className="text-emerald-700 font-medium">💳 Hasta 12 cuotas sin interés disponibles</p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-blue-700 font-medium">💳 Hasta 12 cuotas sin interés disponibles</p>
                   </div>
                 </div>
 
@@ -241,7 +239,7 @@ export default function ProductDetailPage() {
                 {/* Actions */}
                 <div className="flex gap-4">
                   <Button
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 rounded-2xl text-lg"
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 rounded-xl text-lg"
                     disabled={product.stock === 0}
                     asChild
                   >
@@ -254,20 +252,20 @@ export default function ProductDetailPage() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="px-4 py-4 rounded-2xl border-2 bg-transparent"
+                    className="px-4 py-4 rounded-xl border-2 bg-transparent"
                     onClick={() => setIsLiked(!isLiked)}
                   >
                     <Heart className={`w-5 h-5 ${isLiked ? "fill-red-500 text-red-500" : ""}`} />
                   </Button>
 
-                  <Button variant="outline" size="lg" className="px-4 py-4 rounded-2xl border-2 bg-transparent">
+                  <Button variant="outline" size="lg" className="px-4 py-4 rounded-xl border-2 bg-transparent">
                     <Share2 className="w-5 h-5" />
                   </Button>
                 </div>
 
                 {/* Benefits */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                       <Shield className="w-5 h-5 text-green-600" />
                     </div>
@@ -277,7 +275,7 @@ export default function ProductDetailPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                       <Truck className="w-5 h-5 text-blue-600" />
                     </div>
@@ -287,7 +285,7 @@ export default function ProductDetailPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                       <CreditCard className="w-5 h-5 text-purple-600" />
                     </div>
@@ -303,7 +301,7 @@ export default function ProductDetailPage() {
 
           {/* Product Details */}
           <AnimatedSection animation="fadeUp">
-            <Card className="mb-16">
+            <Card className="mb-16 border-0 shadow-sm">
               <CardContent className="p-8">
                 <Tabs defaultValue="description" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
@@ -351,7 +349,7 @@ export default function ProductDetailPage() {
                 {relatedProducts.map((relatedProduct, index) => (
                   <AnimatedSection key={relatedProduct.id} animation="fadeUp" delay={index * 100}>
                     <Link href={`/productos/${relatedProduct.id}`}>
-                      <Card className="group hover:shadow-xl transition-all duration-300 cursor-pointer">
+                      <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-0 shadow-sm">
                         <div className="relative aspect-square overflow-hidden rounded-t-lg">
                           <Image
                             src={relatedProduct.images[0] || "/placeholder.svg?height=300&width=300"}

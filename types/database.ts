@@ -16,6 +16,7 @@ export interface ProductRow {
   description: string | null
   price: number
   original_price: number | null
+  price_usd: number | null
   category: string
   condition: string
   images: string[] | null
@@ -32,6 +33,7 @@ export interface ProductInsert {
   description?: string | null
   price: number
   original_price?: number | null
+  price_usd?: number | null
   category: string
   condition: string
   images?: string[] | null
@@ -48,6 +50,7 @@ export interface ProductUpdate {
   description?: string | null
   price?: number
   original_price?: number | null
+  price_usd?: number | null
   category?: string
   condition?: string
   images?: string[] | null

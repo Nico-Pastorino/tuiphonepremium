@@ -5,18 +5,23 @@ import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { useState, useEffect } from "react"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 
 export function MinimalNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const pathname = usePathname()
+  const isHomePage = pathname === "/"
 
   useEffect(() => {
+    if (!isHomePage) return // Solo escuchar scroll en la página de inicio
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
     }
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  }, [isHomePage])
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -53,7 +58,11 @@ export function MinimalNavbar() {
       {/* Navbar */}
       <nav
         className={`fixed top-0 left-0 right-0 transition-all duration-500 ${
-          isScrolled ? "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg" : "bg-transparent"
+          isHomePage
+            ? isScrolled
+              ? "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg"
+              : "bg-transparent"
+            : "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg"
         } ${isMenuOpen ? "z-30" : "z-50"}`}
       >
         <div className="container mx-auto px-4">
@@ -66,7 +75,13 @@ export function MinimalNavbar() {
               <div className="w-12 h-12 relative">
                 <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
               </div>
-              <span className={`text-2xl font-bold transition-colors text-white hidden sm:block`}>TuIphonepremium</span>
+              <span
+                className={`text-2xl font-bold transition-colors ${
+                  isHomePage ? "text-white" : "text-white"
+                } hidden sm:block`}
+              >
+                TuIphonepremium
+              </span>
             </Link>
 
             {/* Botón hamburguesa integrado en el navbar */}
@@ -76,9 +91,11 @@ export function MinimalNavbar() {
                 size="lg"
                 onClick={toggleMenu}
                 className={`transition-all duration-300 p-3 rounded-xl ${
-                  isScrolled || isMenuOpen
-                    ? "text-white hover:bg-white/20 backdrop-blur-sm"
-                    : "text-white hover:bg-white/10 backdrop-blur-sm"
+                  isHomePage
+                    ? isScrolled || isMenuOpen
+                      ? "text-white hover:bg-white/20 backdrop-blur-sm"
+                      : "text-white hover:bg-white/10 backdrop-blur-sm"
+                    : "text-white hover:bg-white/20 backdrop-blur-sm"
                 }`}
               >
                 <div className="w-7 h-7 flex flex-col justify-center items-center">

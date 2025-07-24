@@ -32,6 +32,7 @@ function transformSupabaseProduct(row: ProductRow): Product {
     description: row.description || "",
     price: row.price,
     originalPrice: row.original_price || undefined,
+    priceUSD: row.price_usd || undefined,
     category: row.category,
     condition: row.condition as "nuevo" | "seminuevo" | "usado",
     images: row.images || [],
@@ -49,8 +50,9 @@ const fallbackProducts: Product[] = [
     id: "1",
     name: "iPhone 15 Pro Max",
     description: "El iPhone más avanzado con chip A17 Pro y cámara de 48MP",
-    price: 1299.99,
-    originalPrice: 1399.99,
+    price: 1500000,
+    originalPrice: 1600000,
+    priceUSD: 1299,
     category: "iphone",
     condition: "nuevo",
     images: ["/placeholder.svg?height=400&width=400"],
@@ -66,8 +68,9 @@ const fallbackProducts: Product[] = [
     id: "2",
     name: "MacBook Air M2",
     description: "Ultraportátil con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
-    price: 1199.99,
-    originalPrice: 1299.99,
+    price: 1200000,
+    originalPrice: 1350000,
+    priceUSD: 1199,
     category: "mac",
     condition: "seminuevo",
     images: ["/placeholder.svg?height=400&width=400"],
@@ -84,8 +87,9 @@ const fallbackProducts: Product[] = [
     id: "3",
     name: 'iPad Pro 12.9"',
     description: "iPad Pro con chip M2 y pantalla Liquid Retina XDR",
-    price: 1099.99,
-    originalPrice: 1199.99,
+    price: 800000,
+    originalPrice: 900000,
+    priceUSD: 799,
     category: "ipad",
     condition: "nuevo",
     images: ["/placeholder.svg?height=400&width=400"],
@@ -106,10 +110,9 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
 
-  // Función para mostrar notificaciones (implementación simple)
+  // Función para mostrar notificaciones
   const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
-    // Aquí podrías integrar con una librería de toast como react-hot-toast
   }, [])
 
   // Función para cargar productos
@@ -136,6 +139,20 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
+      // Intentar cargar desde la API primero, luego desde Supabase directamente
+      try {
+        const response = await fetch("/api/admin/products")
+        if (response.ok) {
+          const result = await response.json()
+          const transformedProducts = result.data?.map(transformSupabaseProduct) || []
+          setProducts(transformedProducts)
+          return
+        }
+      } catch (apiError) {
+        console.warn("API not available, trying direct Supabase connection")
+      }
+
+      // Fallback a conexión directa con Supabase
       const { data, error: supabaseError } = await supabase
         .from("products")
         .select("*")
@@ -150,7 +167,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error("Error loading products:", err)
       setError(err instanceof Error ? err.message : "Error desconocido")
-      // Usar productos de fallback en caso de error
       setProducts(fallbackProducts)
       setSupabaseConnected(false)
       showToast("Usando datos de ejemplo. Verifica la configuración de Supabase.", "warning")
@@ -164,106 +180,88 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     loadProducts()
   }, [loadProducts])
 
-  // Suscribirse a cambios en tiempo real (solo si Supabase está conectado)
-  useEffect(() => {
-    if (!supabaseConnected || !isSupabaseConfigured()) return
-
-    const subscription = supabase
-      .channel("products_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, (payload) => {
-        console.log("Real-time update:", payload)
-        loadProducts() // Recargar productos cuando hay cambios
-      })
-      .subscribe()
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabaseConnected, loadProducts])
-
+  // Función para agregar producto usando la API
   const addProduct = async (productData: ProductFormData): Promise<boolean> => {
-    if (!supabaseConnected) {
-      showToast("Supabase no está conectado. No se puede agregar el producto.", "error")
-      return false
-    }
-
     try {
-      const { data, error } = await supabase
-        .from("products")
-        .insert({
-          name: productData.name,
-          description: productData.description,
-          price: productData.price,
-          original_price: productData.originalPrice,
-          category: productData.category,
-          condition: productData.condition,
-          images: productData.images,
-          specifications: productData.specifications,
-          stock: productData.stock,
-          featured: productData.featured,
-        })
-        .select()
-        .single()
+      console.log("Adding product:", productData)
 
-      if (error) throw error
+      const response = await fetch("/api/admin/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(productData),
+      })
 
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Error al agregar producto")
+      }
+
+      console.log("Product added successfully:", result.data)
       showToast("Producto agregado exitosamente", "success")
+      await loadProducts()
       return true
     } catch (err) {
       console.error("Error adding product:", err)
-      showToast("Error al agregar producto", "error")
+      showToast(`Error al agregar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
       return false
     }
   }
 
+  // Función para actualizar producto usando la API
   const updateProduct = async (id: string, productData: Partial<ProductFormData>): Promise<boolean> => {
-    if (!supabaseConnected) {
-      showToast("Supabase no está conectado. No se puede actualizar el producto.", "error")
-      return false
-    }
-
     try {
-      const updateData: any = {}
-      if (productData.name !== undefined) updateData.name = productData.name
-      if (productData.description !== undefined) updateData.description = productData.description
-      if (productData.price !== undefined) updateData.price = productData.price
-      if (productData.originalPrice !== undefined) updateData.original_price = productData.originalPrice
-      if (productData.category !== undefined) updateData.category = productData.category
-      if (productData.condition !== undefined) updateData.condition = productData.condition
-      if (productData.images !== undefined) updateData.images = productData.images
-      if (productData.specifications !== undefined) updateData.specifications = productData.specifications
-      if (productData.stock !== undefined) updateData.stock = productData.stock
-      if (productData.featured !== undefined) updateData.featured = productData.featured
+      console.log("Updating product:", { id, productData })
 
-      const { error } = await supabase.from("products").update(updateData).eq("id", id)
+      const response = await fetch(`/api/admin/products/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(productData),
+      })
 
-      if (error) throw error
+      const result = await response.json()
 
+      if (!response.ok) {
+        throw new Error(result.error || "Error al actualizar producto")
+      }
+
+      console.log("Product updated successfully:", result.data)
       showToast("Producto actualizado exitosamente", "success")
+      await loadProducts()
       return true
     } catch (err) {
       console.error("Error updating product:", err)
-      showToast("Error al actualizar producto", "error")
+      showToast(`Error al actualizar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
       return false
     }
   }
 
+  // Función para eliminar producto usando la API
   const deleteProduct = async (id: string): Promise<boolean> => {
-    if (!supabaseConnected) {
-      showToast("Supabase no está conectado. No se puede eliminar el producto.", "error")
-      return false
-    }
-
     try {
-      const { error } = await supabase.from("products").delete().eq("id", id)
+      console.log("Deleting product:", id)
 
-      if (error) throw error
+      const response = await fetch(`/api/admin/products/${id}`, {
+        method: "DELETE",
+      })
 
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Error al eliminar producto")
+      }
+
+      console.log("Product deleted successfully:", result.data)
       showToast("Producto eliminado exitosamente", "success")
+      await loadProducts()
       return true
     } catch (err) {
       console.error("Error deleting product:", err)
-      showToast("Error al eliminar producto", "error")
+      showToast(`Error al eliminar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
       return false
     }
   }

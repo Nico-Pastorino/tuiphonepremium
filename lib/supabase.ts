@@ -75,5 +75,16 @@ export function getSupabaseConfig() {
     hasAnonKey: !!supabaseAnonKey,
     hasServiceKey: !!supabaseServiceKey,
     isConfigured: isSupabaseConfigured(),
+    adminClientAvailable: !!supabaseAdmin,
   }
+}
+
+// Función helper para obtener el cliente correcto para operaciones admin
+export function getAdminClient() {
+  if (supabaseAdmin) {
+    console.log("Using Supabase admin client")
+    return supabaseAdmin
+  }
+  console.log("Admin client not available, using regular client")
+  return supabase
 }

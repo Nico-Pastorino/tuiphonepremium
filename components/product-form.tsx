@@ -26,6 +26,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     description: initialData?.description || "",
     price: initialData?.price || 0,
     originalPrice: initialData?.originalPrice || undefined,
+    priceUSD: initialData?.priceUSD || undefined,
     category: initialData?.category || "",
     condition: initialData?.condition || "nuevo",
     images: initialData?.images || [],
@@ -49,6 +50,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
           description: "",
           price: 0,
           originalPrice: undefined,
+          priceUSD: undefined,
           category: "",
           condition: "nuevo",
           images: [],
@@ -157,7 +159,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
           {/* Precios y condición */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Precio actual *</Label>
+              <Label htmlFor="price">Precio en pesos *</Label>
               <Input
                 id="price"
                 type="number"
@@ -165,13 +167,31 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                 min="0"
                 value={formData.price}
                 onChange={(e) => setFormData((prev) => ({ ...prev, price: Number.parseFloat(e.target.value) || 0 }))}
-                placeholder="999.99"
+                placeholder="999999"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="originalPrice">Precio original</Label>
+              <Label htmlFor="priceUSD">Precio en USD</Label>
+              <Input
+                id="priceUSD"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.priceUSD || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    priceUSD: e.target.value ? Number.parseFloat(e.target.value) : undefined,
+                  }))
+                }
+                placeholder="999.99"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="originalPrice">Precio original (opcional)</Label>
               <Input
                 id="originalPrice"
                 type="number"
@@ -184,27 +204,8 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                     originalPrice: e.target.value ? Number.parseFloat(e.target.value) : undefined,
                   }))
                 }
-                placeholder="1199.99"
+                placeholder="1199999"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="condition">Condición *</Label>
-              <Select
-                value={formData.condition}
-                onValueChange={(value: "nuevo" | "seminuevo" | "usado") =>
-                  setFormData((prev) => ({ ...prev, condition: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nuevo">Nuevo</SelectItem>
-                  <SelectItem value="seminuevo">Seminuevo</SelectItem>
-                  <SelectItem value="usado">Usado</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
