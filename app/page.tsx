@@ -2,6 +2,7 @@
 
 import { EnhancedNavbar } from "@/components/EnhancedNavbar"
 import { ProductCard } from "@/components/ProductCard"
+import { ProductsLoading } from "@/components/ProductsLoading"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,17 +18,19 @@ import {
   ArrowDown,
   MessageCircle,
   Award,
-  Star,
   Users,
   Clock,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useProducts } from "@/contexts/ProductContext"
 
 export default function HomePage() {
-  const { products } = useProducts()
-  const featuredProducts = products.filter((p) => p.featured).slice(0, 8)
+  const { products, loading, error, supabaseConnected, getFeaturedProducts, refreshProducts } = useProducts()
+  const featuredProducts = getFeaturedProducts().slice(0, 8)
 
   const scrollToProducts = () => {
     document.getElementById("productos")?.scrollIntoView({ behavior: "smooth" })
@@ -39,15 +42,30 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="relative h-screen w-full overflow-hidden">
+        {/* Background Image Container */}
         <div className="absolute inset-0">
-          <Image
-            src="/placeholder.svg?height=1080&width=1920"
-            alt="TuIphonepremium Store"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
+          <div className="relative w-full h-full">
+            <Image
+              src="/hero-apple-products.jpg"
+              alt="Colección Premium de Productos Apple - iPhone, iPad, Mac, Apple Watch, AirPods"
+              fill
+              className="object-cover object-center scale-105"
+              style={{
+                imageRendering: "crisp-edges",
+                WebkitImageRendering: "crisp-edges",
+                MozImageRendering: "crisp-edges",
+                msImageRendering: "crisp-edges",
+                objectFit: "cover",
+                objectPosition: "center center",
+              }}
+              priority
+              quality={100}
+              sizes="100vw"
+            />
+          </div>
+          {/* Gradient Overlay - Más sutil para mostrar mejor la imagen */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/10 via-transparent to-blue-900/10"></div>
         </div>
 
         <div className="relative z-10 h-full flex items-center">
@@ -55,12 +73,7 @@ export default function HomePage() {
             <div className="max-w-4xl">
               <AnimatedSection animation="fadeUp">
                 <div className="mb-6">
-                  <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium mb-6">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    Más de 10,000 clientes satisfechos
-                  </div>
-
-                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight drop-shadow-2xl">
                     Los mejores
                     <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
@@ -70,7 +83,7 @@ export default function HomePage() {
                     de Argentina
                   </h1>
 
-                  <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-2xl leading-relaxed">
+                  <p className="text-xl md:text-2xl text-white/95 mb-8 max-w-2xl leading-relaxed drop-shadow-lg">
                     Descubre nuestra selección premium de iPhone, iPad, Mac y más.
                     <span className="text-blue-300 font-semibold"> Productos nuevos y seminuevos</span> con garantía
                     extendida.
@@ -79,7 +92,7 @@ export default function HomePage() {
                   <div className="flex flex-col sm:flex-row gap-4 mb-12">
                     <Button
                       size="lg"
-                      className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-xl text-lg"
+                      className="bg-white text-gray-900 hover:bg-gray-100 font-semibold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl text-lg backdrop-blur-sm"
                       onClick={scrollToProducts}
                     >
                       Explorar productos
@@ -88,7 +101,7 @@ export default function HomePage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="border-2 border-white text-white hover:bg-white hover:text-gray-900 font-semibold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-xl text-lg bg-transparent backdrop-blur-sm"
+                      className="border-2 border-white/80 text-white hover:bg-white hover:text-gray-900 font-semibold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-2xl text-lg bg-white/10 backdrop-blur-md"
                       asChild
                     >
                       <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
@@ -100,26 +113,26 @@ export default function HomePage() {
 
                   {/* Enhanced Stats */}
                   <div className="grid grid-cols-3 gap-8 text-white">
-                    <div className="text-center">
+                    <div className="text-center backdrop-blur-sm bg-white/10 rounded-2xl p-4">
                       <div className="flex items-center justify-center mb-2">
                         <Users className="w-6 h-6 mr-2 text-blue-400" />
                         <div className="text-3xl md:text-4xl font-bold">10K+</div>
                       </div>
-                      <div className="text-white/80 text-sm md:text-base">Clientes felices</div>
+                      <div className="text-white/90 text-sm md:text-base font-medium">Clientes felices</div>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center backdrop-blur-sm bg-white/10 rounded-2xl p-4">
                       <div className="flex items-center justify-center mb-2">
                         <Clock className="w-6 h-6 mr-2 text-green-400" />
                         <div className="text-3xl md:text-4xl font-bold">5</div>
                       </div>
-                      <div className="text-white/80 text-sm md:text-base">Años en el mercado</div>
+                      <div className="text-white/90 text-sm md:text-base font-medium">Años en el mercado</div>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center backdrop-blur-sm bg-white/10 rounded-2xl p-4">
                       <div className="flex items-center justify-center mb-2">
                         <Truck className="w-6 h-6 mr-2 text-purple-400" />
                         <div className="text-3xl md:text-4xl font-bold">24h</div>
                       </div>
-                      <div className="text-white/80 text-sm md:text-base">Envío express</div>
+                      <div className="text-white/90 text-sm md:text-base font-medium">Envío express</div>
                     </div>
                   </div>
                 </div>
@@ -131,12 +144,43 @@ export default function HomePage() {
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
           <button
             onClick={scrollToProducts}
-            className="text-white hover:text-blue-400 transition-colors animate-bounce"
+            className="text-white hover:text-blue-400 transition-colors animate-bounce backdrop-blur-sm bg-white/10 rounded-full p-3"
           >
             <ArrowDown className="w-8 h-8" />
           </button>
         </div>
       </section>
+
+      {/* Estado de conexión */}
+      <div className="container mx-auto px-4 py-4">
+        <Card
+          className={`mb-6 ${supabaseConnected ? "border-green-200 bg-green-50" : "border-yellow-200 bg-yellow-50"}`}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {supabaseConnected ? (
+                  <>
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="text-green-800 font-medium">Conectado a Supabase - Datos en tiempo real</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    <span className="text-yellow-800 font-medium">
+                      Usando datos de ejemplo - Configura Supabase para datos reales
+                    </span>
+                  </>
+                )}
+              </div>
+              <Button variant="outline" size="sm" onClick={refreshProducts} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                Actualizar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Categories Section */}
       <AnimatedSection animation="fadeUp">
@@ -154,7 +198,7 @@ export default function HomePage() {
                 {
                   icon: Smartphone,
                   name: "iPhone",
-                  count: "25+ modelos",
+                  count: `${products.filter((p) => p.category === "iphone").length}+ modelos`,
                   href: "/productos?category=iphone",
                   color: "from-blue-500 to-purple-600",
                   description: "Los últimos modelos",
@@ -162,7 +206,7 @@ export default function HomePage() {
                 {
                   icon: Tablet,
                   name: "iPad",
-                  count: "15+ modelos",
+                  count: `${products.filter((p) => p.category === "ipad").length}+ modelos`,
                   href: "/productos?category=ipad",
                   color: "from-purple-500 to-pink-600",
                   description: "Para trabajo y creatividad",
@@ -170,7 +214,7 @@ export default function HomePage() {
                 {
                   icon: Laptop,
                   name: "Mac",
-                  count: "12+ modelos",
+                  count: `${products.filter((p) => p.category === "mac").length}+ modelos`,
                   href: "/productos?category=mac",
                   color: "from-gray-600 to-gray-800",
                   description: "Potencia profesional",
@@ -178,7 +222,7 @@ export default function HomePage() {
                 {
                   icon: Watch,
                   name: "Apple Watch",
-                  count: "8+ modelos",
+                  count: `${products.filter((p) => p.category === "watch").length}+ modelos`,
                   href: "/productos?category=watch",
                   color: "from-red-500 to-orange-600",
                   description: "Tu salud en tu muñeca",
@@ -186,7 +230,7 @@ export default function HomePage() {
                 {
                   icon: Headphones,
                   name: "AirPods",
-                  count: "6+ modelos",
+                  count: `${products.filter((p) => p.category === "airpods").length}+ modelos`,
                   href: "/productos?category=airpods",
                   color: "from-green-500 to-teal-600",
                   description: "Audio excepcional",
@@ -229,26 +273,56 @@ export default function HomePage() {
               </p>
             </AnimatedSection>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {featuredProducts.map((product, index) => (
-                <AnimatedSection key={product.id} animation="fadeUp" delay={index * 100}>
-                  <ProductCard product={product} variant="featured" />
-                </AnimatedSection>
-              ))}
-            </div>
+            {loading ? (
+              <ProductsLoading />
+            ) : error && !supabaseConnected ? (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-12 h-12 text-yellow-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Usando datos de ejemplo</h3>
+                <p className="text-gray-600 mb-6">
+                  Para ver datos reales, configura las variables de entorno de Supabase
+                </p>
+                <Button onClick={refreshProducts} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reintentar conexión
+                </Button>
+              </div>
+            ) : featuredProducts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {featuredProducts.map((product, index) => (
+                  <AnimatedSection key={product.id} animation="fadeUp" delay={index * 100}>
+                    <ProductCard product={product} variant="featured" />
+                  </AnimatedSection>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <Smartphone className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No hay productos destacados</h3>
+                <p className="text-gray-600 mb-6">
+                  Los productos aparecerán aquí una vez que sean agregados por el administrador
+                </p>
+              </div>
+            )}
 
-            <AnimatedSection animation="fadeUp" delay={400} className="text-center mt-16">
-              <Button
-                asChild
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-lg"
-              >
-                <Link href="/productos">
-                  Ver todos los productos
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Link>
-              </Button>
-            </AnimatedSection>
+            {featuredProducts.length > 0 && (
+              <AnimatedSection animation="fadeUp" delay={400} className="text-center mt-16">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-lg"
+                >
+                  <Link href="/productos">
+                    Ver todos los productos
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Link>
+                </Button>
+              </AnimatedSection>
+            )}
           </div>
         </section>
       </AnimatedSection>

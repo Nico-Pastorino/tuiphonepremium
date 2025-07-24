@@ -1,160 +1,317 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, X } from "lucide-react"
-import type { Product } from "@/types/product"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { X, Plus } from "lucide-react"
+import type { ProductFormData } from "@/types/product"
 
-export interface ProductFormData extends Omit<Product, "id" | "createdAt" | "priceUSD" | "specifications"> {}
+interface ProductFormProps {
+  onSubmit: (product: ProductFormData) => Promise<boolean>
+  initialData?: Partial<ProductFormData>
+  isLoading?: boolean
+}
 
-export function ProductForm({
-  product,
-  onSubmit,
-  onCancel,
-}: {
-  product?: Product
-  onSubmit: (data: ProductFormData) => void
-  onCancel?: () => void
-}) {
-  const [data, setData] = useState<ProductFormData>({
-    name: product?.name ?? "",
-    category: product?.category ?? "",
-    condition: product?.condition ?? "nuevo",
-    price: product?.price ?? 0,
-    stock: product?.stock ?? 0,
-    description: product?.description ?? "",
-    images: product?.images ?? [],
-    featured: product?.featured ?? false,
+export function ProductForm({ onSubmit, initialData, isLoading = false }: ProductFormProps) {
+  const [formData, setFormData] = useState<ProductFormData>({
+    name: initialData?.name || "",
+    description: initialData?.description || "",
+    price: initialData?.price || 0,
+    originalPrice: initialData?.originalPrice || undefined,
+    category: initialData?.category || "",
+    condition: initialData?.condition || "nuevo",
+    images: initialData?.images || [],
+    specifications: initialData?.specifications || {},
+    stock: initialData?.stock || 0,
+    featured: initialData?.featured || false,
   })
-  const [newImg, setNewImg] = useState("")
+
+  const [newImage, setNewImage] = useState("")
+  const [newSpecKey, setNewSpecKey] = useState("")
+  const [newSpecValue, setNewSpecValue] = useState("")
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const success = await onSubmit(formData)
+    if (success) {
+      // Reset form if it's a new product (no initialData)
+      if (!initialData) {
+        setFormData({
+          name: "",
+          description: "",
+          price: 0,
+          originalPrice: undefined,
+          category: "",
+          condition: "nuevo",
+          images: [],
+          specifications: {},
+          stock: 0,
+          featured: false,
+        })
+      }
+    }
+  }
+
+  const addImage = () => {
+    if (newImage.trim()) {
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, newImage.trim()],
+      }))
+      setNewImage("")
+    }
+  }
+
+  const removeImage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }))
+  }
+
+  const addSpecification = () => {
+    if (newSpecKey.trim() && newSpecValue.trim()) {
+      setFormData((prev) => ({
+        ...prev,
+        specifications: {
+          ...prev.specifications,
+          [newSpecKey.trim()]: newSpecValue.trim(),
+        },
+      }))
+      setNewSpecKey("")
+      setNewSpecValue("")
+    }
+  }
+
+  const removeSpecification = (key: string) => {
+    setFormData((prev) => {
+      const newSpecs = { ...prev.specifications }
+      delete newSpecs[key]
+      return {
+        ...prev,
+        specifications: newSpecs,
+      }
+    })
+  }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        onSubmit(data)
-      }}
-      className="space-y-6"
-    >
-      {/* name & category */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="name">Nombre</Label>
-          <Input id="name" value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} required />
-        </div>
-        <div>
-          <Label htmlFor="category">Categoría</Label>
-          <Input
-            id="category"
-            value={data.category}
-            onChange={(e) => setData({ ...data, category: e.target.value })}
-            required
-          />
-        </div>
-      </div>
-
-      {/* price & stock */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="price">Precio (ARS)</Label>
-          <Input
-            id="price"
-            type="number"
-            value={data.price}
-            onChange={(e) => setData({ ...data, price: Number(e.target.value) })}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="stock">Stock</Label>
-          <Input
-            id="stock"
-            type="number"
-            value={data.stock}
-            onChange={(e) => setData({ ...data, stock: Number(e.target.value) })}
-            required
-          />
-        </div>
-      </div>
-
-      {/* description */}
-      <div>
-        <Label htmlFor="description">Descripción</Label>
-        <Textarea
-          id="description"
-          rows={3}
-          value={data.description}
-          onChange={(e) => setData({ ...data, description: e.target.value })}
-        />
-      </div>
-
-      {/* images */}
-      <div className="space-y-2">
-        <Label>Imágenes</Label>
-        <div className="flex gap-2">
-          <Input placeholder="URL" value={newImg} onChange={(e) => setNewImg(e.target.value)} />
-          <Button
-            type="button"
-            onClick={() => {
-              if (newImg) {
-                setData({ ...data, images: [...data.images, newImg] })
-                setNewImg("")
-              }
-            }}
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            Añadir
-          </Button>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {data.images.map((src, idx) => (
-            <div key={idx} className="relative group">
-              <Image
-                src={src || "/placeholder.svg"}
-                alt={`img-${idx}`}
-                width={120}
-                height={120}
-                className="object-cover rounded"
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle>{initialData ? "Editar Producto" : "Agregar Nuevo Producto"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Información básica */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nombre del producto *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="iPhone 15 Pro Max"
+                required
               />
-              <Button
-                type="button"
-                size="icon"
-                variant="destructive"
-                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100"
-                onClick={() =>
-                  setData({
-                    ...data,
-                    images: data.images.filter((_, i) => i !== idx),
-                  })
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoría *</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="iphone">iPhone</SelectItem>
+                  <SelectItem value="ipad">iPad</SelectItem>
+                  <SelectItem value="mac">Mac</SelectItem>
+                  <SelectItem value="watch">Apple Watch</SelectItem>
+                  <SelectItem value="airpods">AirPods</SelectItem>
+                  <SelectItem value="accesorios">Accesorios</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="Descripción detallada del producto..."
+              rows={3}
+            />
+          </div>
+
+          {/* Precios y condición */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="price">Precio actual *</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.price}
+                onChange={(e) => setFormData((prev) => ({ ...prev, price: Number.parseFloat(e.target.value) || 0 }))}
+                placeholder="999.99"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="originalPrice">Precio original</Label>
+              <Input
+                id="originalPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.originalPrice || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    originalPrice: e.target.value ? Number.parseFloat(e.target.value) : undefined,
+                  }))
+                }
+                placeholder="1199.99"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="condition">Condición *</Label>
+              <Select
+                value={formData.condition}
+                onValueChange={(value: "nuevo" | "seminuevo" | "usado") =>
+                  setFormData((prev) => ({ ...prev, condition: value }))
                 }
               >
-                <X className="w-4 h-4" />
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nuevo">Nuevo</SelectItem>
+                  <SelectItem value="seminuevo">Seminuevo</SelectItem>
+                  <SelectItem value="usado">Usado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Stock y destacado */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="stock">Stock disponible</Label>
+              <Input
+                id="stock"
+                type="number"
+                min="0"
+                value={formData.stock}
+                onChange={(e) => setFormData((prev) => ({ ...prev, stock: Number.parseInt(e.target.value) || 0 }))}
+                placeholder="10"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2 pt-6">
+              <Switch
+                id="featured"
+                checked={formData.featured}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, featured: checked }))}
+              />
+              <Label htmlFor="featured">Producto destacado</Label>
+            </div>
+          </div>
+
+          {/* Imágenes */}
+          <div className="space-y-4">
+            <Label>Imágenes del producto</Label>
+            <div className="flex gap-2">
+              <Input
+                value={newImage}
+                onChange={(e) => setNewImage(e.target.value)}
+                placeholder="URL de la imagen"
+                className="flex-1"
+              />
+              <Button type="button" onClick={addImage} variant="outline">
+                <Plus className="w-4 h-4" />
               </Button>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="flex flex-wrap gap-2">
+              {formData.images.map((image, index) => (
+                <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                  <span className="truncate max-w-[200px]">{image}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeImage(index)}
+                    className="h-auto p-0 hover:bg-transparent"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
+          </div>
 
-      {/* featured */}
-      <div className="flex items-center space-x-2">
-        <Switch id="featured" checked={data.featured} onCheckedChange={(v) => setData({ ...data, featured: v })} />
-        <Label htmlFor="featured">Destacado</Label>
-      </div>
+          {/* Especificaciones */}
+          <div className="space-y-4">
+            <Label>Especificaciones técnicas</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <Input
+                value={newSpecKey}
+                onChange={(e) => setNewSpecKey(e.target.value)}
+                placeholder="Nombre de la especificación"
+              />
+              <div className="flex gap-2">
+                <Input
+                  value={newSpecValue}
+                  onChange={(e) => setNewSpecValue(e.target.value)}
+                  placeholder="Valor"
+                  className="flex-1"
+                />
+                <Button type="button" onClick={addSpecification} variant="outline">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {Object.entries(formData.specifications).map(([key, value]) => (
+                <div key={key} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span className="text-sm">
+                    <strong>{key}:</strong> {value}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeSpecification(key)}
+                    className="h-auto p-1"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      {/* actions */}
-      <div className="flex justify-end gap-2 pt-4">
-        {onCancel && (
-          <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancelar
-          </Button>
-        )}
-        <Button type="submit">{product ? "Actualizar" : "Crear"}</Button>
-      </div>
-    </form>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Guardando..." : initialData ? "Actualizar" : "Agregar Producto"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
