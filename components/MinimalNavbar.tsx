@@ -14,7 +14,7 @@ export function MinimalNavbar() {
   const isHomePage = pathname === "/"
 
   useEffect(() => {
-    if (!isHomePage) return // Solo escuchar scroll en la página de inicio
+    if (!isHomePage) return
 
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
@@ -25,7 +25,6 @@ export function MinimalNavbar() {
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
-    // Prevenir scroll del body cuando el menú está abierto
     if (!isMenuOpen) {
       document.body.style.overflow = "hidden"
     } else {
@@ -38,7 +37,6 @@ export function MinimalNavbar() {
     document.body.style.overflow = "unset"
   }
 
-  // Cerrar menú al hacer clic en un enlace
   const handleLinkClick = () => {
     closeMenu()
   }
@@ -55,7 +53,7 @@ export function MinimalNavbar() {
 
   return (
     <>
-      {/* Navbar */}
+      {/* Navbar - Completamente responsive */}
       <nav
         className={`fixed top-0 left-0 right-0 transition-all duration-500 ${
           isHomePage
@@ -65,18 +63,18 @@ export function MinimalNavbar() {
             : "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg"
         } ${isMenuOpen ? "z-30" : "z-50"}`}
       >
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-20">
-            {/* Empty space for balance - Left */}
-            <div className="w-16"></div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            {/* Spacer para balance en móvil */}
+            <div className="w-12 sm:w-16"></div>
 
-            {/* Logo - Center */}
-            <Link href="/" className="flex items-center gap-4 absolute left-1/2 transform -translate-x-1/2">
-              <div className="w-12 h-12 relative">
+            {/* Logo - Centrado y responsive */}
+            <Link href="/" className="flex items-center gap-2 sm:gap-4 absolute left-1/2 transform -translate-x-1/2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 relative flex-shrink-0">
                 <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
               </div>
               <span
-                className={`text-2xl font-bold transition-colors ${
+                className={`text-lg sm:text-xl md:text-2xl font-bold transition-colors ${
                   isHomePage ? "text-white" : "text-white"
                 } hidden sm:block`}
               >
@@ -84,24 +82,25 @@ export function MinimalNavbar() {
               </span>
             </Link>
 
-            {/* Botón hamburguesa integrado en el navbar */}
-            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+            {/* Botón hamburguesa - Responsive */}
+            <div className="absolute right-4 sm:right-6 lg:right-8 top-1/2 transform -translate-y-1/2">
               <Button
                 variant="ghost"
                 size="lg"
                 onClick={toggleMenu}
-                className={`transition-all duration-300 p-3 rounded-xl ${
+                className={`transition-all duration-300 p-2 sm:p-3 rounded-xl ${
                   isHomePage
                     ? isScrolled || isMenuOpen
                       ? "text-white hover:bg-white/20 backdrop-blur-sm"
                       : "text-white hover:bg-white/10 backdrop-blur-sm"
                     : "text-white hover:bg-white/20 backdrop-blur-sm"
                 }`}
+                aria-label="Abrir menú"
               >
-                <div className="w-7 h-7 flex flex-col justify-center items-center">
-                  <span className="block h-0.5 w-6 bg-current transition-all duration-300 ease-in-out -translate-y-1" />
-                  <span className="block h-0.5 w-6 bg-current transition-all duration-300 ease-in-out" />
-                  <span className="block h-0.5 w-6 bg-current transition-all duration-300 ease-in-out translate-y-1" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 flex flex-col justify-center items-center">
+                  <span className="block h-0.5 w-5 sm:w-6 bg-current transition-all duration-300 ease-in-out -translate-y-1" />
+                  <span className="block h-0.5 w-5 sm:w-6 bg-current transition-all duration-300 ease-in-out" />
+                  <span className="block h-0.5 w-5 sm:w-6 bg-current transition-all duration-300 ease-in-out translate-y-1" />
                 </div>
               </Button>
             </div>
@@ -109,7 +108,7 @@ export function MinimalNavbar() {
         </div>
       </nav>
 
-      {/* Slide-out menu desde la derecha */}
+      {/* Slide-out menu - Responsive */}
       <div className={`fixed inset-0 z-40 transition-all duration-300 ${isMenuOpen ? "visible" : "invisible"}`}>
         {/* Backdrop */}
         <div
@@ -119,44 +118,56 @@ export function MinimalNavbar() {
           onClick={closeMenu}
         />
 
-        {/* Menu panel - Desde la derecha */}
+        {/* Menu panel - Responsive width */}
         <div
-          className={`absolute right-0 top-0 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300 z-50 ${
+          className={`absolute right-0 top-0 h-full w-full sm:w-80 md:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-50 ${
             isMenuOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          {/* Main menu */}
-          <div className={`h-full overflow-y-auto`}>
-            {/* Header con nuevo logo y botón cerrar */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 relative">
+          <div className="h-full overflow-y-auto">
+            {/* Header responsive */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 relative flex-shrink-0">
                   <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
                 </div>
-                <span className="text-white font-bold text-lg">TuIphonepremium</span>
+                <span className="text-white font-bold text-base sm:text-lg">TuIphonepremium</span>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={closeMenu}
                 className="text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
+                aria-label="Cerrar menú"
               >
                 <X className="w-5 h-5" />
               </Button>
             </div>
 
-            {/* Menu items */}
+            {/* Menu items - Touch-friendly */}
             <div className="py-2">
               {menuItems.map((item, index) => (
                 <Link
                   key={index}
                   href={item.href}
                   onClick={handleLinkClick}
-                  className="block px-6 py-4 text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-50 font-medium text-base"
+                  className="block px-4 sm:px-6 py-4 sm:py-5 text-gray-900 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-50 font-medium text-sm sm:text-base touch-manipulation"
                 >
                   {item.name}
                 </Link>
               ))}
+            </div>
+
+            {/* Footer del menú - Solo en móvil */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gray-50 border-t border-gray-200 sm:hidden">
+              <div className="text-center">
+                <p className="text-xs text-gray-600 mb-2">¿Necesitas ayuda?</p>
+                <Button asChild size="sm" className="w-full bg-green-500 hover:bg-green-600 text-white">
+                  <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+                    WhatsApp
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
