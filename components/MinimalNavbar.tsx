@@ -53,7 +53,7 @@ export function MinimalNavbar() {
 
   return (
     <>
-      {/* Navbar - Completamente responsive */}
+      {/* Navbar - Logo y texto más grandes en móvil */}
       <nav
         className={`fixed top-0 left-0 right-0 transition-all duration-500 ${
           isHomePage
@@ -64,31 +64,31 @@ export function MinimalNavbar() {
         } ${isMenuOpen ? "z-30" : "z-50"}`}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
+          <div className="flex items-center justify-between h-18 sm:h-20">
             {/* Spacer para balance en móvil */}
             <div className="w-12 sm:w-16"></div>
 
-            {/* Logo - Centrado y responsive */}
-            <Link href="/" className="flex items-center gap-2 sm:gap-4 absolute left-1/2 transform -translate-x-1/2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 relative flex-shrink-0">
+            {/* Logo - Más grande en móvil y centrado */}
+            <Link href="/" className="flex items-center gap-3 sm:gap-4 absolute left-1/2 transform -translate-x-1/2">
+              <div className="w-10 h-10 sm:w-10 sm:h-10 md:w-12 md:h-12 relative flex-shrink-0">
                 <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
               </div>
               <span
-                className={`text-lg sm:text-xl md:text-2xl font-bold transition-colors ${
+                className={`text-xl sm:text-xl md:text-2xl font-bold transition-colors ${
                   isHomePage ? "text-white" : "text-white"
-                } hidden sm:block`}
+                } block`}
               >
                 TuIphonepremium
               </span>
             </Link>
 
-            {/* Botón hamburguesa - Responsive */}
+            {/* Botón hamburguesa - Más grande en móvil */}
             <div className="absolute right-4 sm:right-6 lg:right-8 top-1/2 transform -translate-y-1/2">
               <Button
                 variant="ghost"
                 size="lg"
                 onClick={toggleMenu}
-                className={`transition-all duration-300 p-2 sm:p-3 rounded-xl ${
+                className={`transition-all duration-300 p-3 sm:p-3 rounded-xl ${
                   isHomePage
                     ? isScrolled || isMenuOpen
                       ? "text-white hover:bg-white/20 backdrop-blur-sm"
@@ -97,10 +97,10 @@ export function MinimalNavbar() {
                 }`}
                 aria-label="Abrir menú"
               >
-                <div className="w-6 h-6 sm:w-7 sm:h-7 flex flex-col justify-center items-center">
-                  <span className="block h-0.5 w-5 sm:w-6 bg-current transition-all duration-300 ease-in-out -translate-y-1" />
-                  <span className="block h-0.5 w-5 sm:w-6 bg-current transition-all duration-300 ease-in-out" />
-                  <span className="block h-0.5 w-5 sm:w-6 bg-current transition-all duration-300 ease-in-out translate-y-1" />
+                <div className="w-7 h-7 sm:w-7 sm:h-7 flex flex-col justify-center items-center">
+                  <span className="block h-0.5 w-6 sm:w-6 bg-current transition-all duration-300 ease-in-out -translate-y-1" />
+                  <span className="block h-0.5 w-6 sm:w-6 bg-current transition-all duration-300 ease-in-out" />
+                  <span className="block h-0.5 w-6 sm:w-6 bg-current transition-all duration-300 ease-in-out translate-y-1" />
                 </div>
               </Button>
             </div>
@@ -125,13 +125,13 @@ export function MinimalNavbar() {
           }`}
         >
           <div className="h-full overflow-y-auto">
-            {/* Header responsive */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 relative flex-shrink-0">
+            {/* Header responsive - Logo más grande */}
+            <div className="flex items-center justify-between p-5 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
+              <div className="flex items-center gap-3 sm:gap-3">
+                <div className="w-10 h-10 sm:w-10 sm:h-10 relative flex-shrink-0">
                   <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
                 </div>
-                <span className="text-white font-bold text-base sm:text-lg">TuIphonepremium</span>
+                <span className="text-white font-bold text-lg sm:text-lg">TuIphonepremium</span>
               </div>
               <Button
                 variant="ghost"
@@ -140,29 +140,33 @@ export function MinimalNavbar() {
                 className="text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
                 aria-label="Cerrar menú"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </Button>
             </div>
 
-            {/* Menu items - Touch-friendly */}
+            {/* Menu items - Touch-friendly con texto más grande */}
             <div className="py-2">
               {menuItems.map((item, index) => (
                 <Link
                   key={index}
                   href={item.href}
                   onClick={handleLinkClick}
-                  className="block px-4 sm:px-6 py-4 sm:py-5 text-gray-900 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-50 font-medium text-sm sm:text-base touch-manipulation"
+                  className="block px-5 sm:px-6 py-5 sm:py-5 text-gray-900 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-50 font-semibold text-base sm:text-base touch-manipulation"
                 >
                   {item.name}
                 </Link>
               ))}
             </div>
 
-            {/* Footer del menú - Solo en móvil */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gray-50 border-t border-gray-200 sm:hidden">
+            {/* Footer del menú - Solo en móvil con texto más grande */}
+            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 bg-gray-50 border-t border-gray-200 sm:hidden">
               <div className="text-center">
-                <p className="text-xs text-gray-600 mb-2">¿Necesitas ayuda?</p>
-                <Button asChild size="sm" className="w-full bg-green-500 hover:bg-green-600 text-white">
+                <p className="text-sm text-gray-600 mb-3 font-medium">¿Necesitas ayuda?</p>
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3"
+                >
                   <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
                     WhatsApp
                   </a>

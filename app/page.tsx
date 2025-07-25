@@ -37,69 +37,51 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       <MinimalNavbar />
 
-      {/* Hero Section - Imagen optimizada para todos los tamaños */}
+      {/* Hero Section - Imagen con menos intensidad para resaltar el texto */}
       <section className="relative w-full overflow-hidden">
         {/* Contenedor de imagen con altura adaptativa */}
-        <div className="relative w-full h-screen min-h-[600px] max-h-[900px] sm:min-h-[700px] md:min-h-[800px]">
+        <div className="relative w-full h-screen min-h-[700px] max-h-[900px] sm:min-h-[750px] md:min-h-[800px]">
           <div className="absolute inset-0">
             <Image
-              src="/hero-premium.jpg"
-              alt="Colección Premium de Productos Apple - iPhone, iPad, Mac, Apple Watch, AirPods"
+              src="/portada-tuiphonepremium.png"
+              alt="Colección Premium de Productos Apple - MacBook, iPad, iPhone, Apple Watch, HomePod, Apple TV"
               fill
-              className="object-cover"
+              className="object-cover hero-image opacity-40 sm:opacity-50 md:opacity-60"
               style={{
-                objectPosition: "center 40%", // Móvil: enfoque en el centro-superior
+                objectPosition: "center center", // Centrado para mostrar todos los productos
               }}
               priority
-              quality={90}
+              quality={95}
               sizes="100vw"
             />
-            {/* Imagen específica para diferentes breakpoints usando CSS */}
-            <style jsx>{`
-              @media (min-width: 640px) {
-                .hero-image {
-                  object-position: center 35% !important;
-                }
-              }
-              @media (min-width: 768px) {
-                .hero-image {
-                  object-position: center 30% !important;
-                }
-              }
-              @media (min-width: 1024px) {
-                .hero-image {
-                  object-position: center center !important;
-                }
-              }
-            `}</style>
           </div>
 
-          {/* Overlay mejorado para mejor contraste en todos los dispositivos */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10 sm:bg-gradient-to-t sm:from-black/60 sm:via-black/20 sm:to-transparent md:bg-gradient-to-r md:from-black/60 md:via-black/30 md:to-transparent"></div>
+          {/* Overlay más intenso para mejor contraste del texto */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-black/40 sm:bg-gradient-to-t sm:from-black/70 sm:via-black/50 sm:to-black/30 md:bg-gradient-to-r md:from-black/80 md:via-black/60 md:to-black/40"></div>
         </div>
 
-        {/* Contenido superpuesto - Posicionamiento mejorado */}
+        {/* Contenido superpuesto - Texto más grande en móvil */}
         <div className="absolute inset-0 flex items-center justify-center sm:justify-start">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-            <div className="w-full max-w-4xl mx-auto sm:mx-0 text-center sm:text-left">
+            <div className="w-full max-w-5xl mx-auto sm:mx-0 text-center sm:text-left">
               <AnimatedSection animation="fadeUp">
-                <div className="space-y-4 sm:space-y-6 md:space-y-8">
-                  {/* Título responsive con mejor spacing */}
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-[1.1] sm:leading-tight">
+                <div className="space-y-6 sm:space-y-6 md:space-y-8">
+                  {/* Título con texto mucho más grande en móvil */}
+                  <h1 className="text-4xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-[1.1] sm:leading-tight drop-shadow-2xl">
                     Los mejores
                     <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 drop-shadow-none">
                       productos Apple
                     </span>
                     <br />
                     de Argentina
                   </h1>
 
-                  {/* Subtítulo con mejor legibilidad */}
+                  {/* Subtítulo con mejor legibilidad y tamaño más grande */}
                   <div className="max-w-2xl mx-auto sm:mx-0">
-                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/95 leading-relaxed">
+                    <p className="text-lg sm:text-lg md:text-xl lg:text-2xl text-white leading-relaxed font-medium drop-shadow-lg">
                       Descubre nuestra selección premium de iPhone, iPad, Mac y más.
-                      <span className="text-blue-300 font-medium block sm:inline mt-1 sm:mt-0">
+                      <span className="text-blue-300 font-semibold block sm:inline mt-1 sm:mt-0">
                         {" "}
                         Productos nuevos y seminuevos
                       </span>{" "}
@@ -107,42 +89,48 @@ export default function HomePage() {
                     </p>
                   </div>
 
-                  {/* Botones con mejor spacing */}
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center sm:justify-start pt-2 sm:pt-4">
+                  {/* Botones más grandes y mejor espaciados */}
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-4 justify-center sm:justify-start pt-4 sm:pt-6">
                     <Button
                       size="lg"
-                      className="w-full sm:w-auto bg-white text-gray-900 hover:bg-gray-50 font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-xl transition-all duration-300 shadow-lg text-base sm:text-lg min-h-[48px] touch-manipulation"
+                      className="w-full sm:w-auto bg-white text-gray-900 hover:bg-gray-50 font-bold px-8 sm:px-8 py-4 sm:py-4 rounded-xl transition-all duration-300 shadow-2xl text-lg sm:text-lg min-h-[56px] touch-manipulation"
                       onClick={scrollToProducts}
                     >
                       Explorar productos
-                      <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                      <ArrowRight className="ml-2 w-5 h-5 sm:w-5 sm:h-5" />
                     </Button>
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto border-2 border-white text-white hover:bg-white hover:text-gray-900 font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-xl transition-all duration-300 text-base sm:text-lg bg-white/10 backdrop-blur-sm min-h-[48px] touch-manipulation"
+                      className="w-full sm:w-auto border-2 border-white text-white hover:bg-white hover:text-gray-900 font-bold px-8 sm:px-8 py-4 sm:py-4 rounded-xl transition-all duration-300 text-lg sm:text-lg bg-white/20 backdrop-blur-sm min-h-[56px] touch-manipulation shadow-2xl"
                       asChild
                     >
                       <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
+                        <MessageCircle className="mr-2 w-5 h-5 sm:w-5 sm:h-5" />
                         Consultar por WhatsApp
                       </a>
                     </Button>
                   </div>
 
-                  {/* Stats con mejor spacing */}
-                  <div className="grid grid-cols-3 gap-4 sm:gap-6 text-white pt-6 sm:pt-8 max-w-md mx-auto sm:mx-0">
+                  {/* Stats con texto más grande y mejor contraste */}
+                  <div className="grid grid-cols-3 gap-6 sm:gap-6 text-white pt-8 sm:pt-8 max-w-md mx-auto sm:mx-0">
                     <div className="text-center sm:text-left">
-                      <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">10K+</div>
-                      <div className="text-white/80 text-xs sm:text-sm md:text-base">Clientes</div>
+                      <div className="text-3xl sm:text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg">10K+</div>
+                      <div className="text-white/95 text-sm sm:text-sm md:text-base font-medium drop-shadow-md">
+                        Clientes
+                      </div>
                     </div>
                     <div className="text-center sm:text-left">
-                      <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">5</div>
-                      <div className="text-white/80 text-xs sm:text-sm md:text-base">Años</div>
+                      <div className="text-3xl sm:text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg">5</div>
+                      <div className="text-white/95 text-sm sm:text-sm md:text-base font-medium drop-shadow-md">
+                        Años
+                      </div>
                     </div>
                     <div className="text-center sm:text-left">
-                      <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">24h</div>
-                      <div className="text-white/80 text-xs sm:text-sm md:text-base">Envío</div>
+                      <div className="text-3xl sm:text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg">24h</div>
+                      <div className="text-white/95 text-sm sm:text-sm md:text-base font-medium drop-shadow-md">
+                        Envío
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -155,7 +143,7 @@ export default function HomePage() {
         <div className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-10 hidden md:block">
           <button
             onClick={scrollToProducts}
-            className="text-white/80 hover:text-white transition-colors animate-bounce p-2 rounded-full hover:bg-white/10"
+            className="text-white/90 hover:text-white transition-colors animate-bounce p-2 rounded-full hover:bg-white/10 drop-shadow-lg"
             aria-label="Scroll to products"
           >
             <ArrowDown className="w-6 h-6 sm:w-8 sm:h-8" />
