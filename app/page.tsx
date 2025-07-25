@@ -20,6 +20,7 @@ import {
   Award,
   RefreshCw,
   AlertCircle,
+  Cable,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -151,7 +152,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Categories Section - Responsive grid */}
+      {/* Categories Section - Responsive grid con Accesorios */}
       <AnimatedSection animation="fadeUp">
         <section className="py-12 sm:py-16 md:py-20 bg-gray-50" id="productos">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -164,8 +165,8 @@ export default function HomePage() {
               </p>
             </AnimatedSection>
 
-            {/* Grid responsive mejorado */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
+            {/* Grid responsive mejorado con 6 categorías */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6">
               {[
                 {
                   icon: Smartphone,
@@ -201,6 +202,13 @@ export default function HomePage() {
                   count: `${products.filter((p) => p.category === "airpods").length}+ modelos`,
                   href: "/productos?category=airpods",
                   description: "Audio excepcional",
+                },
+                {
+                  icon: Cable,
+                  name: "Accesorios",
+                  count: `${products.filter((p) => p.category === "accesorios").length}+ productos`,
+                  href: "/productos?category=accesorios",
+                  description: "Complementos perfectos",
                 },
               ].map((category, index) => (
                 <AnimatedSection key={category.name} animation="scale" delay={index * 100}>
@@ -435,6 +443,11 @@ export default function HomePage() {
                     <li>
                       <Link href="/productos?category=airpods" className="hover:text-white transition-colors">
                         AirPods
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/productos?category=accesorios" className="hover:text-white transition-colors">
+                        Accesorios
                       </Link>
                     </li>
                   </ul>

@@ -48,6 +48,7 @@ export function MinimalNavbar() {
     { name: "Macbooks", href: "/productos?category=mac", hasSubmenu: false },
     { name: "iPads", href: "/productos?category=ipad", hasSubmenu: false },
     { name: "AirPods", href: "/productos?category=airpods", hasSubmenu: false },
+    { name: "Accesorios", href: "/productos?category=accesorios", hasSubmenu: false },
     { name: "Contacto", href: "/contacto", hasSubmenu: false },
   ]
 

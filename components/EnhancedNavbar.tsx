@@ -16,7 +16,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
-import { Search, Menu, Smartphone, Tablet, Laptop, Watch, Headphones } from "lucide-react"
+import { Search, Menu, Smartphone, Tablet, Laptop, Watch, Headphones, Cable } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const categories = [
@@ -49,6 +49,12 @@ const categories = [
     href: "/productos?category=airpods",
     description: "Audio inalámbrico premium",
     icon: Headphones,
+  },
+  {
+    title: "Accesorios",
+    href: "/productos?category=accesorios",
+    description: "Complementos perfectos",
+    icon: Cable,
   },
 ]
 

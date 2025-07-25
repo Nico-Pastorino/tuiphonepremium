@@ -209,6 +209,24 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
             </div>
           </div>
 
+          {/* Condición */}
+          <div className="space-y-2">
+            <Label htmlFor="condition">Condición *</Label>
+            <Select
+              value={formData.condition}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, condition: value as any }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar condición" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="nuevo">Nuevo</SelectItem>
+                <SelectItem value="seminuevo">Seminuevo</SelectItem>
+                <SelectItem value="usado">Usado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Stock y destacado */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">

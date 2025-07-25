@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Smartphone, Tablet, Laptop, Watch, Headphones, Filter } from "lucide-react"
+import { Smartphone, Tablet, Laptop, Watch, Headphones, Filter, Cable } from "lucide-react"
 import { useState } from "react"
 
 interface ProductFiltersProps {
@@ -20,6 +20,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
     { id: "mac", name: "Mac", icon: Laptop, color: "from-gray-600 to-gray-800" },
     { id: "watch", name: "Apple Watch", icon: Watch, color: "from-red-500 to-orange-600" },
     { id: "airpods", name: "AirPods", icon: Headphones, color: "from-green-500 to-teal-600" },
+    { id: "accesorios", name: "Accesorios", icon: Cable, color: "from-yellow-500 to-orange-600" },
   ]
 
   const conditions = [
@@ -40,7 +41,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
         {/* Categories */}
         <div className="mb-8">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Categorías</h4>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {categories.map((category) => (
               <Button
                 key={category.id}
