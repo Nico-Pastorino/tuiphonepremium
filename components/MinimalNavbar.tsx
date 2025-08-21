@@ -56,7 +56,7 @@ export function MinimalNavbar() {
     <>
       {/* Navbar - Logo y texto más grandes en móvil */}
       <nav
-        className={`fixed top-0 left-0 right-0 transition-all duration-500 ${
+        className={`fixed top-4 left-4 right-4 sm:left-6 sm:right-6 lg:left-8 lg:right-8 rounded-full overflow-hidden transition-all duration-500 ${
           isHomePage
             ? isScrolled
               ? "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg"
