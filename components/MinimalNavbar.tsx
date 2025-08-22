@@ -42,9 +42,13 @@ export function MinimalNavbar() {
     <>
       {/* Navbar flotante responsive */}
       <nav
-        className={`fixed top-4 left-4 right-4 sm:left-6 sm:right-6 lg:left-8 lg:right-8
-            bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg rounded-full overflow-hidden
-            ${isMenuOpen ? "z-30" : "z-50"}`}
+        className={`fixed top-4 left-4 right-4 sm:left-6 sm:right-6 lg:left-8 lg:right-8 rounded-full overflow-hidden transition-all duration-500 ${
+          isHomePage
+            ? isScrolled
+              ? "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg"
+              : "bg-transparent"
+            : "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg"
+        } ${isMenuOpen ? "z-30" : "z-50"}`}
       >
         <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16 sm:h-20">
           {/* Logo alineado a la izquierda */}
