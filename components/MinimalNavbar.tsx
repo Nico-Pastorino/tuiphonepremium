@@ -3,25 +3,11 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
 
 export function MinimalNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
-  const pathname = usePathname()
-  const isHomePage = pathname === "/"
-
-  useEffect(() => {
-    if (!isHomePage) return
-
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [isHomePage])
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -56,13 +42,7 @@ export function MinimalNavbar() {
     <>
       {/* Navbar - Logo y texto más grandes en móvil */}
       <nav
-        className={`fixed top-0 left-0 right-0 transition-all duration-500 ${
-          isHomePage
-            ? isScrolled
-              ? "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg"
-              : "bg-transparent"
-            : "bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg"
-        } ${isMenuOpen ? "z-30" : "z-50"}`}
+        className={`fixed top-4 left-4 right-4 sm:left-6 sm:right-6 lg:left-8 lg:right-8 bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg rounded-full overflow-hidden transition-all duration-500 ${isMenuOpen ? "z-30" : "z-50"}`}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-18 sm:h-20">
@@ -74,11 +54,7 @@ export function MinimalNavbar() {
               <div className="w-10 h-10 sm:w-10 sm:h-10 md:w-12 md:h-12 relative flex-shrink-0">
                 <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
               </div>
-              <span
-                className={`text-xl sm:text-xl md:text-2xl font-bold transition-colors ${
-                  isHomePage ? "text-white" : "text-white"
-                } block`}
-              >
+              <span className="text-xl sm:text-xl md:text-2xl font-bold text-white transition-colors block">
                 TuIphonepremium
               </span>
             </Link>
@@ -89,13 +65,7 @@ export function MinimalNavbar() {
                 variant="ghost"
                 size="lg"
                 onClick={toggleMenu}
-                className={`transition-all duration-300 p-3 sm:p-3 rounded-xl ${
-                  isHomePage
-                    ? isScrolled || isMenuOpen
-                      ? "text-white hover:bg-white/20 backdrop-blur-sm"
-                      : "text-white hover:bg-white/10 backdrop-blur-sm"
-                    : "text-white hover:bg-white/20 backdrop-blur-sm"
-                }`}
+                className="transition-all duration-300 p-3 sm:p-3 rounded-xl text-white hover:bg-white/20 backdrop-blur-sm"
                 aria-label="Abrir menú"
               >
                 <div className="w-7 h-7 sm:w-7 sm:h-7 flex flex-col justify-center items-center">
