@@ -42,7 +42,9 @@ export function MinimalNavbar() {
     <>
       {/* Navbar flotante responsive */}
       <nav
-        className={`fixed top-4 left-4 right-4 sm:left-6 sm:right-6 lg:left-8 lg:right-8 bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg rounded-full overflow-hidden ${isMenuOpen ? "z-30" : "z-50"}`}
+        className={`fixed top-4 left-4 right-4 sm:left-6 sm:right-6 lg:left-8 lg:right-8
+            bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg rounded-full overflow-hidden
+            ${isMenuOpen ? "z-30" : "z-50"}`}
       >
         <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16 sm:h-20">
           {/* Logo alineado a la izquierda */}
@@ -84,13 +86,13 @@ export function MinimalNavbar() {
 
         {/* Menu panel - Responsive width */}
         <div
-          className={`absolute right-0 top-0 h-full w-full sm:w-80 md:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-50 ${
-            isMenuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
+          className={`absolute right-0 top-0 h-full w-full sm:w-80 md:w-96 bg-white shadow-2xl transform
+            transition-transform duration-300 z-50 ${isMenuOpen ? "translate-x-0" : "translate-x-full"}`}
         >
           <div className="h-full overflow-y-auto">
             {/* Header responsive - Logo más grande */}
-            <div className="flex items-center justify-between p-5 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
+              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-gray-100
+                bg-gradient-to-r from-blue-500 to-purple-600">
               <div className="flex items-center gap-3 sm:gap-3">
                 <div className="w-10 h-10 sm:w-10 sm:h-10 relative flex-shrink-0">
                   <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
@@ -115,7 +117,8 @@ export function MinimalNavbar() {
                   key={index}
                   href={item.href}
                   onClick={handleLinkClick}
-                  className="block px-5 sm:px-6 py-5 sm:py-5 text-gray-900 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-50 font-semibold text-base sm:text-base touch-manipulation"
+                  className={`block px-5 sm:px-6 py-5 sm:py-5 text-gray-900 hover:bg-gray-50 active:bg-gray-100
+                    transition-colors border-b border-gray-50 font-semibold text-base sm:text-base touch-manipulation`}
                 >
                   {item.name}
                 </Link>
