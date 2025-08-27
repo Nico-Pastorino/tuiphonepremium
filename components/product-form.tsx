@@ -8,56 +8,34 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { X, Plus, Trash2 } from "lucide-react"
-import type { Product } from "@/types/product"
+import { Plus, X, DollarSign, Tag, Package, ImageIcon } from "lucide-react"
+import type { ProductFormData } from "@/types/product"
 
 interface ProductFormProps {
-  initialData?: Product
-  onSubmit: (data: Omit<Product, "id">) => Promise<boolean>
+  onSubmit: (product: ProductFormData) => Promise<boolean>
+  initialData?: Partial<ProductFormData>
+  isEditing?: boolean
 }
 
-interface FormData {
-  name: string
-  description: string
-  price: number
-  priceUsd: number
-  originalPrice: number
-  category: string
-  condition: "nuevo" | "usado" | "reacondicionado"
-  images: string[]
-  specifications: Record<string, string>
-  featured: boolean
+const categorySpecs = {
+  iphone: ["Almacenamiento", "Color", "Pantalla", "Cámara", "Batería"],
+  ipad: ["Almacenamiento", "Color", "Pantalla", "Procesador", "Conectividad"],
+  mac: ["Procesador", "RAM", "Almacenamiento", "Pantalla", "Puertos"],
+  watch: ["Tamaño", "Color", "Conectividad", "Batería", "Sensores"],
+  airpods: ["Conectividad", "Batería", "Características", "Estuche"],
+  accesorios: ["Compatibilidad", "Material", "Características", "Dimensiones"],
 }
 
-const categories = [
-  { value: "iphone", label: "iPhone" },
-  { value: "ipad", label: "iPad" },
-  { value: "mac", label: "Mac" },
-  { value: "watch", label: "Apple Watch" },
-  { value: "airpods", label: "AirPods" },
-  { value: "accesorios", label: "Accesorios" },
-]
-
-const commonSpecs = {
-  iphone: ["Almacenamiento", "Color", "Estado de batería", "Modelo", "Año"],
-  ipad: ["Almacenamiento", "Color", "Conectividad", "Modelo", "Año"],
-  mac: ["Procesador", "RAM", "Almacenamiento", "Pantalla", "Año"],
-  watch: ["Tamaño", "Color", "Conectividad", "Modelo", "Año"],
-  airpods: ["Modelo", "Color", "Estado de batería", "Accesorios incluidos"],
-  accesorios: ["Compatibilidad", "Color", "Material", "Marca", "Estado"],
-}
-
-export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
-  const [formData, setFormData] = useState<FormData>({
+export function ProductForm({ onSubmit, initialData, isEditing = false }: ProductFormProps) {
+  const [formData, setFormData] = useState<ProductFormData>({
     name: initialData?.name || "",
     description: initialData?.description || "",
     price: initialData?.price || 0,
-    priceUsd: initialData?.priceUsd || 0,
-    originalPrice: initialData?.originalPrice || 0,
+    originalPrice: initialData?.originalPrice || undefined,
+    priceUSD: initialData?.priceUSD || undefined,
     category: initialData?.category || "",
     condition: initialData?.condition || "nuevo",
     images: initialData?.images || [],
@@ -65,7 +43,7 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
     featured: initialData?.featured || false,
   })
 
-  const [newImageUrl, setNewImageUrl] = useState("")
+  const [newImage, setNewImage] = useState("")
   const [newSpecKey, setNewSpecKey] = useState("")
   const [newSpecValue, setNewSpecValue] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -78,14 +56,14 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
     try {
       const success = await onSubmit(formData)
       if (success) {
-        // Reset form if it's a new product
-        if (!initialData) {
+        // Reset form if not editing
+        if (!isEditing) {
           setFormData({
             name: "",
             description: "",
             price: 0,
-            priceUsd: 0,
-            originalPrice: 0,
+            originalPrice: undefined,
+            priceUSD: undefined,
             category: "",
             condition: "nuevo",
             images: [],
@@ -100,12 +78,12 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
   }
 
   const addImage = () => {
-    if (newImageUrl.trim()) {
+    if (newImage.trim()) {
       setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, newImageUrl.trim()],
+        images: [...prev.images, newImage.trim()],
       }))
-      setNewImageUrl("")
+      setNewImage("")
     }
   }
 
@@ -131,29 +109,31 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
   }
 
   const removeSpecification = (key: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      specifications: Object.fromEntries(Object.entries(prev.specifications).filter(([k]) => k !== key)),
-    }))
+    setFormData((prev) => {
+      const newSpecs = { ...prev.specifications }
+      delete newSpecs[key]
+      return { ...prev, specifications: newSpecs }
+    })
   }
 
   const addCommonSpec = (spec: string) => {
     setNewSpecKey(spec)
   }
 
-  const isFormValid = formData.name.trim() && formData.price > 0 && formData.category && formData.images.length > 0
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Información Básica */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Información Básica</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            Información Básica
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre del Producto *</Label>
+              <Label htmlFor="name">Nombre del producto *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -167,16 +147,18 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+                required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una categoría" />
+                  <SelectValue placeholder="Seleccionar categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="iphone">iPhone</SelectItem>
+                  <SelectItem value="ipad">iPad</SelectItem>
+                  <SelectItem value="mac">Mac</SelectItem>
+                  <SelectItem value="watch">Apple Watch</SelectItem>
+                  <SelectItem value="airpods">AirPods</SelectItem>
+                  <SelectItem value="accesorios">Accesorios</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -188,35 +170,36 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
               id="description"
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Describe las características principales del producto..."
+              placeholder="Descripción detallada del producto..."
               rows={3}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="condition">Estado</Label>
+              <Label htmlFor="condition">Estado *</Label>
               <Select
                 value={formData.condition}
-                onValueChange={(value: "nuevo" | "usado" | "reacondicionado") =>
-                  setFormData((prev) => ({ ...prev, condition: value }))
-                }
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, condition: value as any }))}
+                required
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="nuevo">Nuevo</SelectItem>
+                  <SelectItem value="seminuevo">Seminuevo</SelectItem>
                   <SelectItem value="usado">Usado</SelectItem>
-                  <SelectItem value="reacondicionado">Reacondicionado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-center space-x-2 pt-8">
-              <Switch
+              <input
+                type="checkbox"
                 id="featured"
                 checked={formData.featured}
-                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, featured: checked }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, featured: e.target.checked }))}
+                className="rounded"
               />
               <Label htmlFor="featured">Producto destacado</Label>
             </div>
@@ -227,43 +210,52 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
       {/* Precios */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Precios</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5" />
+            Precios
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Precio en Pesos *</Label>
+              <Label htmlFor="price">Precio actual (ARS) *</Label>
               <Input
                 id="price"
                 type="number"
                 value={formData.price}
                 onChange={(e) => setFormData((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                placeholder="0"
-                min="0"
+                placeholder="1500000"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="priceUsd">Precio en USD</Label>
-              <Input
-                id="priceUsd"
-                type="number"
-                value={formData.priceUsd}
-                onChange={(e) => setFormData((prev) => ({ ...prev, priceUsd: Number(e.target.value) }))}
-                placeholder="0"
-                min="0"
-                step="0.01"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="originalPrice">Precio Original</Label>
+              <Label htmlFor="originalPrice">Precio original (ARS)</Label>
               <Input
                 id="originalPrice"
                 type="number"
-                value={formData.originalPrice}
-                onChange={(e) => setFormData((prev) => ({ ...prev, originalPrice: Number(e.target.value) }))}
-                placeholder="0"
-                min="0"
+                value={formData.originalPrice || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    originalPrice: e.target.value ? Number(e.target.value) : undefined,
+                  }))
+                }
+                placeholder="1600000"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="priceUSD">Precio USD</Label>
+              <Input
+                id="priceUSD"
+                type="number"
+                value={formData.priceUSD || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    priceUSD: e.target.value ? Number(e.target.value) : undefined,
+                  }))
+                }
+                placeholder="1299"
               />
             </div>
           </div>
@@ -273,42 +265,37 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
       {/* Imágenes */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Imágenes *</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="w-5 h-5" />
+            Imágenes
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Input
-              value={newImageUrl}
-              onChange={(e) => setNewImageUrl(e.target.value)}
+              value={newImage}
+              onChange={(e) => setNewImage(e.target.value)}
               placeholder="URL de la imagen"
               className="flex-1"
             />
-            <Button type="button" onClick={addImage} disabled={!newImageUrl.trim()}>
+            <Button type="button" onClick={addImage} disabled={!newImage.trim()}>
               <Plus className="w-4 h-4" />
             </Button>
           </div>
 
           {formData.images.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {formData.images.map((url, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={url || "/placeholder.svg"}
-                    alt={`Imagen ${index + 1}`}
-                    className="w-full h-24 object-cover rounded-lg border"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removeImage(index)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                  {index === 0 && <Badge className="absolute bottom-1 left-1 text-xs">Principal</Badge>}
-                </div>
-              ))}
+            <div className="space-y-2">
+              <Label>Imágenes agregadas:</Label>
+              <div className="space-y-2">
+                {formData.images.map((image, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                    <span className="flex-1 text-sm truncate">{image}</span>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeImage(index)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </CardContent>
@@ -317,72 +304,74 @@ export function ProductForm({ initialData, onSubmit }: ProductFormProps) {
       {/* Especificaciones */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Especificaciones</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Tag className="w-5 h-5" />
+            Especificaciones
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Especificaciones comunes */}
-          {formData.category && commonSpecs[formData.category as keyof typeof commonSpecs] && (
-            <div>
-              <Label className="text-sm text-gray-600 mb-2 block">Especificaciones comunes:</Label>
+          {formData.category && categorySpecs[formData.category as keyof typeof categorySpecs] && (
+            <div className="space-y-2">
+              <Label>Especificaciones comunes para {formData.category}:</Label>
               <div className="flex flex-wrap gap-2">
-                {commonSpecs[formData.category as keyof typeof commonSpecs].map((spec) => (
-                  <Button
+                {categorySpecs[formData.category as keyof typeof categorySpecs].map((spec) => (
+                  <Badge
                     key={spec}
-                    type="button"
                     variant="outline"
-                    size="sm"
+                    className="cursor-pointer hover:bg-blue-50"
                     onClick={() => addCommonSpec(spec)}
-                    disabled={spec in formData.specifications}
                   >
-                    <Plus className="w-3 h-3 mr-1" />
                     {spec}
-                  </Button>
+                  </Badge>
                 ))}
               </div>
-              <Separator className="my-4" />
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <Input value={newSpecKey} onChange={(e) => setNewSpecKey(e.target.value)} placeholder="Especificación" />
-            <Input value={newSpecValue} onChange={(e) => setNewSpecValue(e.target.value)} placeholder="Valor" />
-            <Button type="button" onClick={addSpecification} disabled={!newSpecKey.trim() || !newSpecValue.trim()}>
-              <Plus className="w-4 h-4 mr-1" />
-              Agregar
-            </Button>
+          <Separator />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <Input
+              value={newSpecKey}
+              onChange={(e) => setNewSpecKey(e.target.value)}
+              placeholder="Nombre de la especificación"
+            />
+            <div className="flex gap-2">
+              <Input
+                value={newSpecValue}
+                onChange={(e) => setNewSpecValue(e.target.value)}
+                placeholder="Valor"
+                className="flex-1"
+              />
+              <Button type="button" onClick={addSpecification} disabled={!newSpecKey.trim() || !newSpecValue.trim()}>
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
 
-          {Object.entries(formData.specifications).length > 0 && (
+          {Object.keys(formData.specifications).length > 0 && (
             <div className="space-y-2">
-              {Object.entries(formData.specifications).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <span className="font-medium">{key}:</span> {value}
+              <Label>Especificaciones agregadas:</Label>
+              <div className="space-y-2">
+                {Object.entries(formData.specifications).map(([key, value]) => (
+                  <div key={key} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                    <span className="font-medium text-sm">{key}:</span>
+                    <span className="flex-1 text-sm">{value}</span>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeSpecification(key)}>
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeSpecification(key)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Botones de acción */}
-      <div className="flex justify-end gap-4 pt-6 border-t">
-        <Button
-          type="submit"
-          disabled={!isFormValid || isSubmitting}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-        >
-          {isSubmitting ? "Guardando..." : initialData ? "Actualizar Producto" : "Crear Producto"}
+      {/* Botón de envío */}
+      <div className="flex justify-end">
+        <Button type="submit" disabled={isSubmitting || !formData.name || !formData.category} className="min-w-[120px]">
+          {isSubmitting ? "Guardando..." : isEditing ? "Actualizar" : "Crear Producto"}
         </Button>
       </div>
     </form>
