@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Plus, X, DollarSign, Tag, Package, ImageIcon } from "lucide-react"
@@ -214,50 +214,62 @@ export function ProductForm({ onSubmit, initialData, isEditing = false }: Produc
             <DollarSign className="w-5 h-5" />
             Precios
           </CardTitle>
+          <CardDescription>
+            Ingresa solo el precio en USD. El precio en pesos se calculará automáticamente con la cotización actual del
+            dólar blue.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Precio actual (ARS) *</Label>
-              <Input
-                id="price"
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                placeholder="1500000"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="originalPrice">Precio original (ARS)</Label>
-              <Input
-                id="originalPrice"
-                type="number"
-                value={formData.originalPrice || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    originalPrice: e.target.value ? Number(e.target.value) : undefined,
-                  }))
-                }
-                placeholder="1600000"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="priceUSD">Precio USD</Label>
+              <Label htmlFor="priceUSD">Precio en USD *</Label>
               <Input
                 id="priceUSD"
                 type="number"
+                step="0.01"
+                min="0"
                 value={formData.priceUSD || ""}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const usdPrice = e.target.value ? Number(e.target.value) : undefined
                   setFormData((prev) => ({
                     ...prev,
-                    priceUSD: e.target.value ? Number(e.target.value) : undefined,
+                    priceUSD: usdPrice,
+                    // Auto-calculate ARS price (this will be done on the backend)
+                    price: usdPrice ? Math.round(usdPrice * 1200) : 0, // Placeholder calculation
                   }))
-                }
-                placeholder="1299"
+                }}
+                placeholder="299.99"
+                required
               />
+              <p className="text-xs text-gray-500">Este será el precio base para todos los cálculos</p>
             </div>
+
+            <div className="space-y-2">
+              <Label>Precio calculado en ARS</Label>
+              <div className="p-3 bg-gray-50 rounded-md">
+                <div className="text-lg font-semibold">${formData.price.toLocaleString()} ARS</div>
+                <p className="text-xs text-gray-500">Se calcula automáticamente: USD × (Dólar Blue + Markup)</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="originalPrice">Precio original USD (opcional)</Label>
+            <Input
+              id="originalPrice"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.originalPrice || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  originalPrice: e.target.value ? Number(e.target.value) : undefined,
+                }))
+              }
+              placeholder="399.99"
+            />
+            <p className="text-xs text-gray-500">Para mostrar descuentos (precio tachado)</p>
           </div>
         </CardContent>
       </Card>

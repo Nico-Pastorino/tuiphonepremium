@@ -1,499 +1,408 @@
 "use client"
 
 import { useState } from "react"
-import { MinimalNavbar } from "@/components/MinimalNavbar"
-import { AdminLogin } from "@/components/AdminLogin"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { useProducts } from "@/contexts/ProductContext"
-import { useAdmin } from "@/contexts/AdminContext"
-import { useDollarRate } from "@/hooks/use-dollar-rate"
-import Image from "next/image"
-import type { Product } from "@/types/product"
+  Package,
+  CreditCard,
+  DollarSign,
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  RefreshCw,
+  TrendingUp,
+  Calculator,
+} from "lucide-react"
 import { ProductForm } from "@/components/product-form"
-import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
-import { InstallmentPlanCard } from "@/components/installment-plan-card"
-import { Trash2, Edit, Plus, RefreshCw, DollarSign, Settings, Package, CreditCard } from "lucide-react"
+import { useProducts } from "@/contexts/ProductContext"
+import { useDollarRate } from "@/hooks/use-dollar-rate"
 
 export default function AdminPage() {
-  const { isAuthenticated } = useAdmin()
+  const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts()
+  const { dollarRate, loading: dollarLoading, refresh } = useDollarRate()
+  const [activeTab, setActiveTab] = useState("productos")
+  const [editingProduct, setEditingProduct] = useState<any>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
 
-  if (!isAuthenticated) {
-    return <AdminLogin />
+  // Configuración de cuotas
+  const [installmentConfig, setInstallmentConfig] = useState({
+    naranja: {
+      3: 0,
+      6: 15,
+      9: 25,
+      12: 35,
+    },
+    tarjetas: {
+      3: 0,
+      6: 20,
+      9: 30,
+      12: 40,
+    },
+  })
+
+  // Configuración del dólar
+  const [dollarConfig, setDollarConfig] = useState({
+    markup: 50, // Markup sobre el dólar blue
+    autoUpdate: true,
+  })
+
+  const handleAddProduct = async (productData: any) => {
+    const success = await addProduct(productData)
+    if (success) {
+      setShowAddForm(false)
+    }
+    return success
   }
 
-  return <AdminDashboard />
-}
-
-function AdminDashboard() {
-  const { products, addProduct, updateProduct, deleteProduct, loading: productsLoading } = useProducts()
-  const {
-    installmentPlans,
-    addInstallmentPlan,
-    updateInstallmentPlan,
-    deleteInstallmentPlan,
-    dollarConfig,
-    updateDollarConfig,
-    getEffectiveDollarRate,
-    getInstallmentPlansByCategory,
-    logout,
-  } = useAdmin()
-  const { dollarRate, refresh: refreshDollarRate, loading, error } = useDollarRate()
-
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false)
-  const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false)
-  const [installmentCategory, setInstallmentCategory] = useState<"visa-mastercard" | "naranja">("visa-mastercard")
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [editingInstallment, setEditingInstallment] = useState<any>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
-
-  // Estadísticas
-  const totalProducts = products.length
-  const activeProducts = products.filter((p) => p.featured || p.condition === "nuevo").length
-  const featuredProducts = products.filter((p) => p.featured).length
-  const totalValue = products.reduce((sum, product) => sum + product.price, 0) / products.length || 0
-  const activeInstallments = installmentPlans.filter((p) => p.isActive).length
-
-  // Obtener planes por categoría
-  const visaMastercardPlans = getInstallmentPlansByCategory("visa-mastercard")
-  const naranjaPlans = getInstallmentPlansByCategory("naranja")
-
-  // Filtrar productos
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  const handleUpdateDollarRate = async () => {
-    if (dollarRate) {
-      updateDollarConfig({
-        blueRate: dollarRate.blue,
-        lastUpdated: new Date().toISOString(),
-      })
+  const handleUpdateProduct = async (productData: any) => {
+    if (!editingProduct) return false
+    const success = await updateProduct(editingProduct.id, productData)
+    if (success) {
+      setEditingProduct(null)
     }
-    await refreshDollarRate()
+    return success
   }
 
-  const handleDeleteProduct = async (productId: string) => {
-    setDeletingProductId(productId)
-    try {
-      const success = await deleteProduct(productId)
-      if (success) {
-        console.log("Producto eliminado exitosamente")
-      }
-    } catch (error) {
-      console.error("Error al eliminar producto:", error)
-    } finally {
-      setDeletingProductId(null)
+  const handleDeleteProduct = async (id: string) => {
+    if (confirm("¿Estás seguro de que quieres eliminar este producto?")) {
+      await deleteProduct(id)
     }
+  }
+
+  const calculatePesoPrice = (usdPrice: number) => {
+    if (!dollarRate || !usdPrice) return 0
+    return Math.round(usdPrice * (dollarRate.blue + dollarConfig.markup))
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <MinimalNavbar />
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
+          <p className="text-gray-600 mt-2">Gestiona productos, cuotas y configuración del dólar</p>
+        </div>
 
-      <div className="pt-20 pb-8">
-        <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
-              <p className="text-gray-600">Gestiona tu tienda Apple de manera eficiente</p>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="productos" className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Productos
+            </TabsTrigger>
+            <TabsTrigger value="cuotas" className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4" />
+              Cuotas
+            </TabsTrigger>
+            <TabsTrigger value="dolar" className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Dólar
+            </TabsTrigger>
+            <TabsTrigger value="configuracion" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Configuración
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Productos Tab */}
+          <TabsContent value="productos" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">Gestión de Productos</h2>
+              <Button onClick={() => setShowAddForm(true)} className="flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Agregar Producto
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              onClick={logout}
-              className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
-            >
-              Cerrar Sesión
-            </Button>
-          </div>
 
-          <Tabs defaultValue="products" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="products" className="flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                Productos
-              </TabsTrigger>
-              <TabsTrigger value="installments" className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                Cuotas
-              </TabsTrigger>
-              <TabsTrigger value="dollar" className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Dólar
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                Configuración
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Products Tab */}
-            <TabsContent value="products" className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                <div className="flex-1 max-w-md">
-                  <Input
-                    placeholder="Buscar productos..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Agregar Producto
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Agregar Nuevo Producto</DialogTitle>
-                    </DialogHeader>
-                    <ProductForm
-                      onSubmit={async (productData) => {
-                        const success = await addProduct(productData)
-                        if (success) setIsAddProductOpen(false)
-                        return success
-                      }}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              {productsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-                  <span className="ml-2 text-gray-600">Cargando productos...</span>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProducts.map((product) => (
-                    <Card
-                      key={product.id}
-                      className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-sm"
-                    >
-                      <div className="relative aspect-square">
-                        <Image
-                          src={product.images[0] || "/placeholder.svg?height=300&width=300"}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                        />
-                        <div className="absolute top-2 left-2 flex gap-2">
-                          {product.featured && <Badge className="bg-gray-900 text-white">Destacado</Badge>}
-                          <Badge variant={product.condition === "nuevo" ? "default" : "secondary"}>
-                            {product.condition}
-                          </Badge>
-                        </div>
-                      </div>
-                      <CardContent className="p-4">
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
-                          <p className="text-sm text-gray-600 capitalize">{product.category}</p>
-                          <div className="flex justify-between items-center">
-                            <span className="text-xl font-bold">${product.price.toLocaleString("es-AR")}</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 mt-4">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-                                <Edit className="w-4 h-4 mr-1" />
-                                Editar
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>Editar Producto</DialogTitle>
-                              </DialogHeader>
-                              <ProductForm
-                                initialData={product}
-                                onSubmit={async (productData) => {
-                                  const success = await updateProduct(product.id, productData)
-                                  return success
-                                }}
-                              />
-                            </DialogContent>
-                          </Dialog>
-
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent border-red-200"
-                                disabled={deletingProductId === product.id}
-                              >
-                                {deletingProductId === product.id ? (
-                                  <RefreshCw className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta acción no se puede deshacer. El producto "{product.name}" será eliminado
-                                  permanentemente de la base de datos.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteProduct(product.id)}
-                                  className="bg-red-600 hover:bg-red-700 text-white"
-                                >
-                                  Eliminar
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {filteredProducts.length === 0 && !productsLoading && (
-                <div className="text-center py-12">
-                  <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No se encontraron productos</h3>
-                  <p className="text-gray-600 mb-6">
-                    {searchTerm ? "Intenta con otros términos de búsqueda" : "Agrega tu primer producto para comenzar"}
-                  </p>
-                  {!searchTerm && (
-                    <Button
-                      onClick={() => setIsAddProductOpen(true)}
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Agregar Producto
-                    </Button>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* Installments Tab */}
-            <TabsContent value="installments" className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Gestión de Cuotas</h2>
-                  <p className="text-gray-600">Configura los planes de financiación disponibles</p>
-                </div>
-                <Dialog open={isAddInstallmentOpen} onOpenChange={setIsAddInstallmentOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Agregar Plan
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Agregar Plan de Cuotas</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="flex gap-2">
-                        <Button
-                          variant={installmentCategory === "visa-mastercard" ? "default" : "outline"}
-                          onClick={() => setInstallmentCategory("visa-mastercard")}
-                          className="flex-1"
-                        >
-                          Visa/Mastercard
-                        </Button>
-                        <Button
-                          variant={installmentCategory === "naranja" ? "default" : "outline"}
-                          onClick={() => setInstallmentCategory("naranja")}
-                          className="flex-1"
-                        >
-                          Naranja
-                        </Button>
-                      </div>
-                      <InstallmentForm
-                        category={installmentCategory}
-                        onSubmit={(data: InstallmentFormData) => {
-                          addInstallmentPlan(data)
-                          setIsAddInstallmentOpen(false)
-                        }}
-                        onCancel={() => setIsAddInstallmentOpen(false)}
-                      />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Visa/Mastercard Plans */}
-                <div>
-                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-blue-500 rounded"></div>
-                    Planes Visa/Mastercard
-                  </h3>
-                  <div className="space-y-4">
-                    {visaMastercardPlans.map((plan) => (
-                      <InstallmentPlanCard
-                        key={plan.id}
-                        plan={plan}
-                        onEdit={setEditingInstallment}
-                        onDelete={deleteInstallmentPlan}
-                        onUpdate={updateInstallmentPlan}
-                      />
-                    ))}
-                    {visaMastercardPlans.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <CreditCard className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                        <p>No hay planes configurados</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Naranja Plans */}
-                <div>
-                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-orange-500 rounded"></div>
-                    Planes Naranja
-                  </h3>
-                  <div className="space-y-4">
-                    {naranjaPlans.map((plan) => (
-                      <InstallmentPlanCard
-                        key={plan.id}
-                        plan={plan}
-                        onEdit={setEditingInstallment}
-                        onDelete={deleteInstallmentPlan}
-                        onUpdate={updateInstallmentPlan}
-                      />
-                    ))}
-                    {naranjaPlans.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <CreditCard className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                        <p>No hay planes configurados</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Edit Installment Dialog */}
-              {editingInstallment && (
-                <Dialog open={!!editingInstallment} onOpenChange={() => setEditingInstallment(null)}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Editar Plan de Cuotas</DialogTitle>
-                    </DialogHeader>
-                    <InstallmentForm
-                      category={editingInstallment.category}
-                      plan={editingInstallment}
-                      onSubmit={(data: InstallmentFormData) => {
-                        updateInstallmentPlan(editingInstallment.id, data)
-                        setEditingInstallment(null)
-                      }}
-                      onCancel={() => setEditingInstallment(null)}
-                    />
-                  </DialogContent>
-                </Dialog>
-              )}
-            </TabsContent>
-
-            {/* Dollar Tab */}
-            <TabsContent value="dollar" className="space-y-6">
-              <Card className="border-0 shadow-sm">
+            {showAddForm && (
+              <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="w-6 h-6 text-green-600" />
-                    Configuración del Dólar
-                  </CardTitle>
-                  <p className="text-sm text-gray-600">
-                    La API del dólar blue se actualiza automáticamente cada 5 minutos
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Dólar Blue Base</label>
-                      <Input
-                        type="number"
-                        value={dollarConfig.blueRate}
-                        onChange={(e) => updateDollarConfig({ blueRate: Number(e.target.value) })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Markup (Pesos)</label>
-                      <Input
-                        type="number"
-                        step="1"
-                        value={dollarConfig.markup}
-                        onChange={(e) => updateDollarConfig({ markup: Number(e.target.value) })}
-                        placeholder="Ej: 50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Dólar Final</label>
-                      <Input
-                        type="number"
-                        value={(dollarConfig.blueRate + dollarConfig.markup).toFixed(2)}
-                        disabled
-                        className="bg-gray-50"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">Información</h4>
-                    <p className="text-sm text-blue-800 mb-2">
-                      La API del dólar blue se actualiza automáticamente cada 5 minutos. Los precios en pesos se
-                      calculan multiplicando el precio en USD por la cotización configurada.
-                    </p>
-                    <p className="text-sm text-blue-800">
-                      Fórmula: Precio en Pesos = Precio USD × (Dólar Blue Base + Markup)
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Settings Tab */}
-            <TabsContent value="settings" className="space-y-6">
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="w-6 h-6 text-gray-600" />
-                    Configuración General
-                  </CardTitle>
+                  <CardTitle>Agregar Nuevo Producto</CardTitle>
+                  <CardDescription>
+                    Solo ingresa el precio en USD, el precio en pesos se calculará automáticamente
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8 text-gray-500">
-                    <Settings className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                    <h3 className="text-lg font-semibold mb-2">Configuración</h3>
-                    <p>Las opciones de configuración estarán disponibles próximamente.</p>
+                  <ProductForm onSubmit={handleAddProduct} />
+                  <div className="flex justify-end mt-4">
+                    <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                      Cancelar
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+            )}
+
+            {editingProduct && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Editar Producto</CardTitle>
+                  <CardDescription>
+                    Modifica el precio en USD, el precio en pesos se actualizará automáticamente
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProductForm onSubmit={handleUpdateProduct} initialData={editingProduct} isEditing={true} />
+                  <div className="flex justify-end mt-4">
+                    <Button variant="outline" onClick={() => setEditingProduct(null)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="grid gap-4">
+              {loading ? (
+                <div className="text-center py-8">Cargando productos...</div>
+              ) : products.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No hay productos. Agrega tu primer producto.</div>
+              ) : (
+                products.map((product) => (
+                  <Card key={product.id}>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg">{product.name}</h3>
+                          <p className="text-gray-600 mt-1">{product.description}</p>
+                          <div className="flex items-center gap-4 mt-3">
+                            <Badge variant="outline">{product.category}</Badge>
+                            <Badge variant={product.condition === "nuevo" ? "default" : "secondary"}>
+                              {product.condition}
+                            </Badge>
+                            {product.featured && <Badge variant="destructive">Destacado</Badge>}
+                          </div>
+                          <div className="mt-3 space-y-1">
+                            <div className="text-2xl font-bold">${product.price.toLocaleString()} ARS</div>
+                            {product.priceUSD && <div className="text-lg text-green-600">${product.priceUSD} USD</div>}
+                            {product.priceUSD && dollarRate && (
+                              <div className="text-sm text-gray-500">
+                                Calculado: ${product.priceUSD} × ${(dollarRate.blue + dollarConfig.markup).toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setEditingProduct(product)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Cuotas Tab */}
+          <TabsContent value="cuotas" className="space-y-6">
+            <h2 className="text-2xl font-semibold">Configuración de Cuotas</h2>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-600">
+                    <CreditCard className="w-5 h-5" />
+                    Naranja
+                  </CardTitle>
+                  <CardDescription>Configurar tasas de interés para Naranja</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {Object.entries(installmentConfig.naranja).map(([cuotas, interes]) => (
+                    <div key={cuotas} className="flex items-center justify-between">
+                      <Label>{cuotas} cuotas</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={interes}
+                          onChange={(e) =>
+                            setInstallmentConfig((prev) => ({
+                              ...prev,
+                              naranja: {
+                                ...prev.naranja,
+                                [cuotas]: Number(e.target.value),
+                              },
+                            }))
+                          }
+                          className="w-20"
+                        />
+                        <span className="text-sm text-gray-500">%</span>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-blue-600">
+                    <CreditCard className="w-5 h-5" />
+                    Tarjetas
+                  </CardTitle>
+                  <CardDescription>Configurar tasas de interés para Tarjetas</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {Object.entries(installmentConfig.tarjetas).map(([cuotas, interes]) => (
+                    <div key={cuotas} className="flex items-center justify-between">
+                      <Label>{cuotas} cuotas</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={interes}
+                          onChange={(e) =>
+                            setInstallmentConfig((prev) => ({
+                              ...prev,
+                              tarjetas: {
+                                ...prev.tarjetas,
+                                [cuotas]: Number(e.target.value),
+                              },
+                            }))
+                          }
+                          className="w-20"
+                        />
+                        <span className="text-sm text-gray-500">%</span>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Dólar Tab */}
+          <TabsContent value="dolar" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">Configuración del Dólar</h2>
+              <Button onClick={refresh} disabled={dollarLoading} className="flex items-center gap-2">
+                <RefreshCw className={`w-4 h-4 ${dollarLoading ? "animate-spin" : ""}`} />
+                Actualizar
+              </Button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Cotización Actual
+                  </CardTitle>
+                  <CardDescription>La API se actualiza automáticamente cada 5 minutos</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {dollarLoading ? (
+                    <div className="text-center py-4">Cargando cotización...</div>
+                  ) : dollarRate ? (
+                    <div className="space-y-4">
+                      <div className="text-3xl font-bold text-blue-600">${dollarRate.blue.toFixed(2)}</div>
+                      <div className="text-sm text-gray-500">
+                        Última actualización: {new Date(dollarRate.lastUpdate).toLocaleString()}
+                      </div>
+                      <div className="text-sm text-gray-500">Fuente: {dollarRate.source}</div>
+                    </div>
+                  ) : (
+                    <div className="text-red-500">Error al cargar cotización</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calculator className="w-5 h-5" />
+                    Configuración de Precios
+                  </CardTitle>
+                  <CardDescription>Los precios en pesos se calculan automáticamente</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="markup">Markup sobre dólar blue</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        id="markup"
+                        type="number"
+                        value={dollarConfig.markup}
+                        onChange={(e) =>
+                          setDollarConfig((prev) => ({
+                            ...prev,
+                            markup: Number(e.target.value),
+                          }))
+                        }
+                        className="w-24"
+                      />
+                      <span className="text-sm text-gray-500">pesos</span>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">Fórmula de cálculo:</div>
+                    <div className="bg-gray-50 p-3 rounded text-sm font-mono">
+                      Precio ARS = Precio USD × (Dólar Blue + Markup)
+                    </div>
+                    {dollarRate && (
+                      <div className="text-sm text-gray-600">
+                        Ejemplo: $100 USD × ${(dollarRate.blue + dollarConfig.markup).toFixed(2)} = $
+                        {calculatePesoPrice(100).toLocaleString()} ARS
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Configuración Tab */}
+          <TabsContent value="configuracion" className="space-y-6">
+            <h2 className="text-2xl font-semibold">Configuración General</h2>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuración del Sistema</CardTitle>
+                <CardDescription>Ajustes generales de la aplicación</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Actualización automática del dólar</Label>
+                    <p className="text-sm text-gray-500">Actualizar cotización cada 5 minutos</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={dollarConfig.autoUpdate}
+                    onChange={(e) =>
+                      setDollarConfig((prev) => ({
+                        ...prev,
+                        autoUpdate: e.target.checked,
+                      }))
+                    }
+                    className="rounded"
+                  />
+                </div>
+
+                <Separator />
+
+                <div>
+                  <Label>Información del sistema</Label>
+                  <div className="mt-2 space-y-1 text-sm text-gray-600">
+                    <div>Total de productos: {products.length}</div>
+                    <div>Productos destacados: {products.filter((p) => p.featured).length}</div>
+                    <div>Última actualización: {new Date().toLocaleString()}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
