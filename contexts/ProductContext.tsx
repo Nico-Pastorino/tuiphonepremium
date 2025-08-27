@@ -1,169 +1,148 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { supabase, testSupabaseConnection, isSupabaseConfigured } from "@/lib/supabase"
-import type { Product, ProductFormData, ProductFilters } from "@/types/product"
-import type { ProductRow } from "@/types/database"
+import { createContext, useContext, useState, useEffect, useCallback } from "react"
+import type { Product } from "@/types/product"
 
 interface ProductContextType {
   products: Product[]
   loading: boolean
   error: string | null
   supabaseConnected: boolean
-  addProduct: (product: ProductFormData) => Promise<boolean>
-  updateProduct: (id: string, product: Partial<ProductFormData>) => Promise<boolean>
-  deleteProduct: (id: string) => Promise<boolean>
-  getProductById: (id: string) => Product | undefined
-  getProductsByCategory: (category: string) => Product[]
+  addProduct: (product: Omit<Product, "id" | "createdAt" | "updatedAt">) => Promise<void>
+  updateProduct: (id: string, product: Partial<Product>) => Promise<void>
+  deleteProduct: (id: string) => Promise<void>
   getFeaturedProducts: () => Product[]
   searchProducts: (query: string) => Product[]
-  filterProducts: (filters: ProductFilters) => Product[]
+  filterProducts: (category?: string, condition?: string) => Product[]
   refreshProducts: () => Promise<void>
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
 
-// Función para transformar datos de Supabase a nuestro formato
-function transformSupabaseProduct(row: ProductRow): Product {
-  return {
-    id: row.id,
-    name: row.name,
-    description: row.description || "",
-    price: row.price,
-    originalPrice: row.original_price || undefined,
-    priceUSD: row.price_usd || undefined,
-    category: row.category,
-    condition: row.condition as "nuevo" | "seminuevo" | "usado",
-    images: row.images || [],
-    specifications: row.specifications || {},
-    stock: 1, // Siempre disponible
-    featured: row.featured,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at || undefined,
-  }
-}
-
-// Productos de fallback si Supabase no está disponible
+// Productos de fallback para desarrollo
 const fallbackProducts: Product[] = [
   {
     id: "1",
     name: "iPhone 15 Pro Max",
     description: "El iPhone más avanzado con chip A17 Pro y cámara de 48MP",
-    price: 1500000,
-    originalPrice: 1600000,
-    priceUSD: 1299,
+    price: 2500000,
+    originalPrice: 2800000,
+    priceUSD: 1200,
     category: "iphone",
     condition: "nuevo",
     images: ["/placeholder.svg?height=400&width=400&text=iPhone+15+Pro+Max"],
     specifications: {
-      storage: "256GB",
-      color: "Titanio Natural",
-      screen: "6.7 pulgadas",
+      pantalla: "6.7 pulgadas Super Retina XDR",
+      procesador: "A17 Pro",
+      almacenamiento: "256GB",
+      camara: "48MP + 12MP + 12MP",
     },
     stock: 1,
     featured: true,
-    createdAt: new Date().toISOString(),
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
   },
   {
     id: "2",
-    name: "MacBook Air M2",
-    description: "Ultraportátil con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
-    price: 1200000,
-    originalPrice: 1350000,
-    priceUSD: 1199,
-    category: "mac",
-    condition: "seminuevo",
-    images: ["/placeholder.svg?height=400&width=400&text=MacBook+Air+M2"],
+    name: "iPad Air M2",
+    description: "iPad Air con chip M2 para máximo rendimiento",
+    price: 1800000,
+    priceUSD: 850,
+    category: "ipad",
+    condition: "nuevo",
+    images: ["/placeholder.svg?height=400&width=400&text=iPad+Air+M2"],
     specifications: {
-      processor: "Apple M2",
-      memory: "8GB",
-      storage: "256GB SSD",
-      screen: "13.6 pulgadas",
+      pantalla: "10.9 pulgadas Liquid Retina",
+      procesador: "M2",
+      almacenamiento: "128GB",
+      conectividad: "Wi-Fi 6E",
     },
     stock: 1,
     featured: true,
-    createdAt: new Date().toISOString(),
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
   },
   {
     id: "3",
-    name: 'iPad Pro 12.9"',
-    description: "iPad Pro con chip M2 y pantalla Liquid Retina XDR",
-    price: 800000,
-    originalPrice: 900000,
-    priceUSD: 799,
-    category: "ipad",
+    name: "MacBook Pro 14",
+    description: "MacBook Pro con chip M3 Pro para profesionales",
+    price: 4200000,
+    priceUSD: 2000,
+    category: "mac",
     condition: "nuevo",
-    images: ["/placeholder.svg?height=400&width=400&text=iPad+Pro"],
+    images: ["/placeholder.svg?height=400&width=400&text=MacBook+Pro+14"],
     specifications: {
-      processor: "Apple M2",
-      storage: "128GB",
-      screen: "12.9 pulgadas",
-      connectivity: "Wi-Fi",
+      pantalla: "14.2 pulgadas Liquid Retina XDR",
+      procesador: "M3 Pro",
+      memoria: "18GB RAM",
+      almacenamiento: "512GB SSD",
     },
     stock: 1,
     featured: false,
-    createdAt: new Date().toISOString(),
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
   },
   {
     id: "4",
     name: "Apple Watch Series 9",
-    description: "El Apple Watch más avanzado con pantalla más brillante",
-    price: 450000,
-    originalPrice: 500000,
-    priceUSD: 399,
+    description: "Apple Watch con chip S9 y pantalla más brillante",
+    price: 850000,
+    priceUSD: 400,
     category: "watch",
     condition: "nuevo",
     images: ["/placeholder.svg?height=400&width=400&text=Apple+Watch+Series+9"],
     specifications: {
-      size: "45mm",
-      color: "Medianoche",
-      connectivity: "GPS + Cellular",
-      battery: "Hasta 18 horas",
+      pantalla: "45mm Always-On Retina",
+      procesador: "S9 SiP",
+      conectividad: "GPS + Cellular",
+      resistencia: "WR50",
     },
     stock: 1,
     featured: true,
-    createdAt: new Date().toISOString(),
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
   },
   {
     id: "5",
-    name: "AirPods Pro (2ª generación)",
-    description: "Cancelación activa de ruido de nueva generación",
-    price: 280000,
-    originalPrice: 320000,
-    priceUSD: 249,
-    category: "airpods",
-    condition: "nuevo",
-    images: ["/placeholder.svg?height=400&width=400&text=AirPods+Pro"],
-    specifications: {
-      connectivity: "Bluetooth 5.3",
-      battery: "Hasta 6 horas",
-      features: "Cancelación activa de ruido",
-      case: "Estuche de carga MagSafe",
-    },
-    stock: 1,
-    featured: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "6",
-    name: "Cable Lightning a USB-C",
-    description: "Cable oficial Apple para carga rápida",
-    price: 25000,
-    originalPrice: 30000,
-    priceUSD: 29,
+    name: "AirPods Pro 2",
+    description: "AirPods Pro con cancelación activa de ruido mejorada",
+    price: 650000,
+    priceUSD: 300,
     category: "accesorios",
     condition: "nuevo",
-    images: ["/placeholder.svg?height=400&width=400&text=Cable+Lightning"],
+    images: ["/placeholder.svg?height=400&width=400&text=AirPods+Pro+2"],
     specifications: {
-      length: "1 metro",
-      compatibility: "iPhone, iPad",
-      features: "Carga rápida",
-      material: "Cable trenzado",
+      audio: "Audio espacial personalizado",
+      bateria: "Hasta 6 horas de reproducción",
+      conectividad: "Bluetooth 5.3",
+      resistencia: "IPX4",
     },
     stock: 1,
     featured: false,
-    createdAt: new Date().toISOString(),
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: "6",
+    name: "iPhone 14 Seminuevo",
+    description: "iPhone 14 en excelente estado, garantía incluida",
+    price: 1800000,
+    originalPrice: 2200000,
+    priceUSD: 850,
+    category: "iphone",
+    condition: "seminuevo",
+    images: ["/placeholder.svg?height=400&width=400&text=iPhone+14+Seminuevo"],
+    specifications: {
+      pantalla: "6.1 pulgadas Super Retina XDR",
+      procesador: "A15 Bionic",
+      almacenamiento: "128GB",
+      camara: "12MP + 12MP",
+    },
+    stock: 1,
+    featured: false,
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
   },
 ]
 
@@ -173,238 +152,165 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
 
-  // Función para mostrar notificaciones
-  const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
-    console.log(`[${type.toUpperCase()}] ${message}`)
-  }, [])
-
-  // Función para cargar productos
-  const loadProducts = useCallback(async () => {
+  const refreshProducts = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // Verificar si Supabase está configurado
-      if (!isSupabaseConfigured()) {
-        console.warn("Supabase not configured, using fallback products")
+      console.log("ProductContext: Fetching products from API...")
+      const response = await fetch("/api/admin/products")
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("ProductContext: API response:", data)
+
+      if (Array.isArray(data) && data.length > 0) {
+        setProducts(data)
+        setSupabaseConnected(true)
+        console.log("ProductContext: Using Supabase data")
+      } else {
+        console.log("ProductContext: No data from API, using fallback")
         setProducts(fallbackProducts)
         setSupabaseConnected(false)
-        return
       }
-
-      // Verificar conexión a Supabase
-      const isConnected = await testSupabaseConnection()
-      setSupabaseConnected(isConnected)
-
-      if (!isConnected) {
-        console.warn("Supabase not available, using fallback products")
-        setProducts(fallbackProducts)
-        return
-      }
-
-      // Intentar cargar desde la API primero
-      try {
-        console.log("Loading products from API...")
-        const response = await fetch("/api/admin/products", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          console.log("API response:", result)
-
-          if (result.data && Array.isArray(result.data)) {
-            const transformedProducts = result.data.map(transformSupabaseProduct)
-            console.log("Transformed products:", transformedProducts)
-            setProducts(transformedProducts)
-            return
-          }
-        } else {
-          console.warn("API response not ok:", response.status, response.statusText)
-        }
-      } catch (apiError) {
-        console.warn("API not available, trying direct Supabase connection:", apiError)
-      }
-
-      // Fallback a conexión directa con Supabase
-      console.log("Trying direct Supabase connection...")
-      const { data, error: supabaseError } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false })
-
-      if (supabaseError) {
-        throw supabaseError
-      }
-
-      const transformedProducts = data?.map(transformSupabaseProduct) || []
-      console.log("Direct Supabase products:", transformedProducts)
-      setProducts(transformedProducts)
-    } catch (err) {
-      console.error("Error loading products:", err)
-      setError(err instanceof Error ? err.message : "Error desconocido")
+    } catch (error) {
+      console.error("ProductContext: Error fetching products:", error)
+      setError("Error al cargar productos")
       setProducts(fallbackProducts)
       setSupabaseConnected(false)
-      showToast("Usando datos de ejemplo. Verifica la configuración de Supabase.", "warning")
     } finally {
       setLoading(false)
     }
-  }, [showToast])
+  }, [])
 
-  // Cargar productos al montar el componente
   useEffect(() => {
-    loadProducts()
-  }, [loadProducts])
+    refreshProducts()
+  }, [refreshProducts])
 
-  // Función para agregar producto usando la API
-  const addProduct = async (productData: ProductFormData): Promise<boolean> => {
+  const addProduct = async (productData: Omit<Product, "id" | "createdAt" | "updatedAt">) => {
     try {
       console.log("ProductContext: Adding product:", productData)
 
+      if (!supabaseConnected) {
+        // Fallback local para desarrollo
+        const newProduct: Product = {
+          ...productData,
+          id: Date.now().toString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+        setProducts((prev) => [newProduct, ...prev])
+        return
+      }
+
       const response = await fetch("/api/admin/products", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productData),
       })
 
-      const result = await response.json()
-      console.log("ProductContext: API response:", result)
-
       if (!response.ok) {
-        throw new Error(result.error || `Error HTTP ${response.status}`)
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error al crear producto")
       }
 
-      if (!result.data) {
-        throw new Error("No se recibieron datos del producto creado")
-      }
+      const newProduct = await response.json()
+      console.log("ProductContext: Product created:", newProduct)
 
-      console.log("ProductContext: Product added successfully:", result.data)
-      showToast("Producto agregado exitosamente", "success")
-
-      // Recargar productos para mostrar el nuevo
-      await loadProducts()
-      return true
-    } catch (err) {
-      console.error("ProductContext: Error adding product:", err)
-      const errorMessage = err instanceof Error ? err.message : "Error desconocido"
-      showToast(`Error al agregar producto: ${errorMessage}`, "error")
-      setError(errorMessage)
-      return false
+      // Actualizar la lista de productos
+      await refreshProducts()
+    } catch (error) {
+      console.error("ProductContext: Error adding product:", error)
+      throw error
     }
   }
 
-  // Función para actualizar producto usando la API
-  const updateProduct = async (id: string, productData: Partial<ProductFormData>): Promise<boolean> => {
+  const updateProduct = async (id: string, productData: Partial<Product>) => {
     try {
-      console.log("ProductContext: Updating product:", { id, productData })
+      console.log("ProductContext: Updating product:", id, productData)
+
+      if (!supabaseConnected) {
+        // Fallback local para desarrollo
+        setProducts((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, ...productData, updatedAt: new Date().toISOString() } : p)),
+        )
+        return
+      }
 
       const response = await fetch(`/api/admin/products/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productData),
       })
 
-      const result = await response.json()
-      console.log("ProductContext: Update API response:", result)
-
       if (!response.ok) {
-        throw new Error(result.error || `Error HTTP ${response.status}`)
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error al actualizar producto")
       }
 
-      console.log("ProductContext: Product updated successfully:", result.data)
-      showToast("Producto actualizado exitosamente", "success")
+      const updatedProduct = await response.json()
+      console.log("ProductContext: Product updated:", updatedProduct)
 
-      // Recargar productos para mostrar los cambios
-      await loadProducts()
-      return true
-    } catch (err) {
-      console.error("ProductContext: Error updating product:", err)
-      const errorMessage = err instanceof Error ? err.message : "Error desconocido"
-      showToast(`Error al actualizar producto: ${errorMessage}`, "error")
-      setError(errorMessage)
-      return false
+      // Actualizar la lista de productos
+      await refreshProducts()
+    } catch (error) {
+      console.error("ProductContext: Error updating product:", error)
+      throw error
     }
   }
 
-  // Función para eliminar producto usando la API
-  const deleteProduct = async (id: string): Promise<boolean> => {
+  const deleteProduct = async (id: string) => {
     try {
       console.log("ProductContext: Deleting product:", id)
+
+      if (!supabaseConnected) {
+        // Fallback local para desarrollo
+        setProducts((prev) => prev.filter((p) => p.id !== id))
+        return
+      }
 
       const response = await fetch(`/api/admin/products/${id}`, {
         method: "DELETE",
       })
 
-      const result = await response.json()
-      console.log("ProductContext: Delete API response:", result)
-
       if (!response.ok) {
-        throw new Error(result.error || `Error HTTP ${response.status}`)
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error al eliminar producto")
       }
 
       console.log("ProductContext: Product deleted successfully")
-      showToast("Producto eliminado exitosamente", "success")
 
-      // Recargar productos para reflejar la eliminación
-      await loadProducts()
-      return true
-    } catch (err) {
-      console.error("ProductContext: Error deleting product:", err)
-      const errorMessage = err instanceof Error ? err.message : "Error desconocido"
-      showToast(`Error al eliminar producto: ${errorMessage}`, "error")
-      setError(errorMessage)
-      return false
+      // Actualizar la lista de productos
+      await refreshProducts()
+    } catch (error) {
+      console.error("ProductContext: Error deleting product:", error)
+      throw error
     }
   }
 
-  const getProductById = (id: string): Product | undefined => {
-    return products.find((product) => product.id === id)
-  }
-
-  const getProductsByCategory = (category: string): Product[] => {
-    return products.filter((product) => product.category === category)
-  }
-
-  const getFeaturedProducts = (): Product[] => {
+  const getFeaturedProducts = () => {
     return products.filter((product) => product.featured)
   }
 
-  const searchProducts = (query: string): Product[] => {
+  const searchProducts = (query: string) => {
     const lowercaseQuery = query.toLowerCase()
     return products.filter(
       (product) =>
         product.name.toLowerCase().includes(lowercaseQuery) ||
-        product.description.toLowerCase().includes(lowercaseQuery) ||
+        product.description?.toLowerCase().includes(lowercaseQuery) ||
         product.category.toLowerCase().includes(lowercaseQuery),
     )
   }
 
-  const filterProducts = (filters: ProductFilters): Product[] => {
+  const filterProducts = (category?: string, condition?: string) => {
     return products.filter((product) => {
-      if (filters.category && product.category !== filters.category) return false
-      if (filters.condition && product.condition !== filters.condition) return false
-      if (filters.priceRange) {
-        const [min, max] = filters.priceRange
-        if (product.price < min || product.price > max) return false
-      }
-      if (filters.search) {
-        const query = filters.search.toLowerCase()
-        if (!product.name.toLowerCase().includes(query) && !product.description.toLowerCase().includes(query))
-          return false
-      }
-      return true
+      const matchesCategory = !category || product.category === category
+      const matchesCondition = !condition || product.condition === condition
+      return matchesCategory && matchesCondition
     })
-  }
-
-  const refreshProducts = async () => {
-    await loadProducts()
   }
 
   const value: ProductContextType = {
@@ -415,8 +321,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     addProduct,
     updateProduct,
     deleteProduct,
-    getProductById,
-    getProductsByCategory,
     getFeaturedProducts,
     searchProducts,
     filterProducts,

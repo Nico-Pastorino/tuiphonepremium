@@ -140,15 +140,31 @@ export class ProductAdminService {
         throw new Error("ID del producto es requerido para eliminar")
       }
 
-      const { data, error } = await supabaseAdmin.from("products").delete().eq("id", id).select().single()
+      // Primero verificar que el producto existe
+      const { data: existingProduct, error: checkError } = await supabaseAdmin
+        .from("products")
+        .select("id")
+        .eq("id", id)
+        .single()
+
+      if (checkError) {
+        if (checkError.code === "PGRST116") {
+          throw new Error("El producto no existe")
+        }
+        console.error("ProductAdminService: Error checking product existence:", checkError)
+        throw new Error(`Error verificando producto: ${checkError.message}`)
+      }
+
+      // Ahora eliminar el producto sin usar .single() ya que delete no devuelve datos por defecto
+      const { error } = await supabaseAdmin.from("products").delete().eq("id", id)
 
       if (error) {
         console.error("ProductAdminService: Supabase delete error:", error)
         throw new Error(`Error de base de datos: ${error.message}`)
       }
 
-      console.log("ProductAdminService: Product deleted successfully:", data)
-      return { data, error: null }
+      console.log("ProductAdminService: Product deleted successfully")
+      return { data: { id }, error: null }
     } catch (error) {
       console.error("ProductAdminService: Delete product error:", error)
       return {
@@ -169,6 +185,9 @@ export class ProductAdminService {
       const { data, error } = await supabaseAdmin.from("products").select("*").eq("id", id).single()
 
       if (error) {
+        if (error.code === "PGRST116") {
+          return { data: null, error: new Error("Producto no encontrado") }
+        }
         console.error("ProductAdminService: Supabase get by ID error:", error)
         throw new Error(`Error de base de datos: ${error.message}`)
       }
