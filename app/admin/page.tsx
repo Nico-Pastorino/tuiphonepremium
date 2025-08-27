@@ -65,9 +65,9 @@ function AdminDashboard() {
 
   // Estadísticas
   const totalProducts = products.length
-  const totalStock = products.reduce((sum, product) => sum + product.stock, 0)
+  const activeProducts = products.filter((p) => p.featured || p.condition === "nuevo").length
   const featuredProducts = products.filter((p) => p.featured).length
-  const totalValue = products.reduce((sum, product) => sum + product.price * product.stock, 0)
+  const totalValue = products.reduce((sum, product) => sum + product.price, 0) / products.length || 0
   const activeInstallments = installmentPlans.filter((p) => p.isActive).length
 
   // Obtener planes por categoría
@@ -170,11 +170,11 @@ function AdminDashboard() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-600 text-sm font-medium">Stock Total</p>
-                        <p className="text-3xl font-bold text-gray-900">{totalStock}</p>
+                        <p className="text-gray-600 text-sm font-medium">Productos Activos</p>
+                        <p className="text-3xl font-bold text-gray-900">{activeProducts}</p>
                       </div>
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
                       </div>
                     </div>
                   </CardContent>
@@ -198,8 +198,10 @@ function AdminDashboard() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-600 text-sm font-medium">Valor Total</p>
-                        <p className="text-2xl font-bold text-gray-900">${(totalValue / 1000000).toFixed(1)}M</p>
+                        <p className="text-gray-600 text-sm font-medium">Precio Promedio</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          ${Math.round(totalValue).toLocaleString("es-AR")}
+                        </p>
                       </div>
                       <DollarSign className="w-8 h-8 text-gray-400" />
                     </div>
@@ -335,7 +337,6 @@ function AdminDashboard() {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-gray-900">${product.price.toLocaleString("es-AR")}</p>
-                          <p className="text-sm text-gray-600">Stock: {product.stock}</p>
                         </div>
                       </div>
                     ))}
@@ -409,7 +410,6 @@ function AdminDashboard() {
                           <p className="text-sm text-gray-600 capitalize">{product.category}</p>
                           <div className="flex justify-between items-center">
                             <span className="text-xl font-bold">${product.price.toLocaleString("es-AR")}</span>
-                            <span className="text-sm text-gray-600">Stock: {product.stock}</span>
                           </div>
                         </div>
                         <div className="flex gap-2 mt-4">

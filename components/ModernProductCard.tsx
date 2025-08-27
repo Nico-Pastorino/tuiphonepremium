@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Eye, Heart, MessageCircle } from "lucide-react"
+import { Eye, MessageCircle, Shield } from "lucide-react"
 import type { Product } from "@/types/product"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { useState } from "react"
@@ -16,7 +16,6 @@ interface ModernProductCardProps {
 
 export function ModernProductCard({ product }: ModernProductCardProps) {
   const { dollarRate } = useDollarRate()
-  const [isLiked, setIsLiked] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
 
   const priceInPesos = dollarRate ? product.priceUSD * dollarRate.blue : product.price
@@ -28,15 +27,17 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
       <CardContent className="p-0">
         {/* Image container */}
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-3xl">
-          <Image
-            src={product.images[0] || "/placeholder.svg?height=400&width=400&query=iPhone"}
-            alt={product.name}
-            fill
-            className={`object-cover transition-all duration-700 group-hover:scale-105 ${
-              imageLoaded ? "opacity-100" : "opacity-0"
-            }`}
-            onLoad={() => setImageLoaded(true)}
-          />
+          <Link href={`/productos/${product.id}`}>
+            <Image
+              src={product.images[0] || "/placeholder.svg?height=400&width=400&query=iPhone"}
+              alt={product.name}
+              fill
+              className={`object-cover transition-all duration-700 group-hover:scale-105 cursor-pointer ${
+                imageLoaded ? "opacity-100" : "opacity-0"
+              }`}
+              onLoad={() => setImageLoaded(true)}
+            />
+          </Link>
 
           {/* Status badges */}
           <div className="absolute top-4 left-4 flex flex-col gap-2">
@@ -57,38 +58,11 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
             )}
           </div>
 
-          {/* Quick actions */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-            <Button
-              size="sm"
-              variant="secondary"
-              className="w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border-0 backdrop-blur-sm"
-              onClick={() => setIsLiked(!isLiked)}
-            >
-              <Heart className={`w-4 h-4 ${isLiked ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border-0 backdrop-blur-sm"
-              asChild
-            >
-              <Link href={`/productos/${product.id}`}>
-                <Eye className="w-4 h-4 text-gray-600" />
-              </Link>
-            </Button>
-          </div>
-
           {/* Stock indicator */}
           <div className="absolute bottom-4 left-4">
-            <div
-              className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                product.stock > 0
-                  ? "bg-green-500/20 text-green-700 border border-green-500/30"
-                  : "bg-red-500/20 text-red-700 border border-red-500/30"
-              }`}
-            >
-              {product.stock > 0 ? `${product.stock} disponibles` : "Sin stock"}
+            <div className="px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-green-500/20 text-green-700 border border-green-500/30 flex items-center gap-1">
+              <Shield className="w-3 h-3" />
+              Disponible
             </div>
           </div>
         </div>
@@ -106,9 +80,11 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
           </div>
 
           {/* Title */}
-          <h3 className="font-bold text-xl mb-3 text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
-            {product.name}
-          </h3>
+          <Link href={`/productos/${product.id}`}>
+            <h3 className="font-bold text-xl mb-3 text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors cursor-pointer">
+              {product.name}
+            </h3>
+          </Link>
 
           {/* Key specifications */}
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -147,8 +123,7 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
           {/* Actions */}
           <div className="flex gap-3">
             <Button
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
-              disabled={product.stock === 0}
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
               asChild
             >
               <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">

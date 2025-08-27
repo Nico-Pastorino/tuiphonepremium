@@ -228,19 +228,16 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {/* Stock */}
+                {/* Availability */}
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${product.stock > 0 ? "bg-green-500" : "bg-red-500"}`} />
-                  <span className={`font-medium ${product.stock > 0 ? "text-green-700" : "text-red-700"}`}>
-                    {product.stock > 0 ? `${product.stock} disponibles` : "Sin stock"}
-                  </span>
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <span className="font-medium text-green-700">Disponible</span>
                 </div>
 
                 {/* Actions */}
                 <div className="flex gap-4">
                   <Button
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 rounded-xl text-lg"
-                    disabled={product.stock === 0}
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 rounded-xl text-lg"
                     asChild
                   >
                     <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">

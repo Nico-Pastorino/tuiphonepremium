@@ -1,15 +1,12 @@
 "use client"
 
-import type React from "react"
-
 import Image from "next/image"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Heart, ShoppingCart, Eye, Star, Zap, Shield, MessageCircle, GitCompare } from "lucide-react"
+import { Eye, Star, Zap, Shield, MessageCircle } from "lucide-react"
 import type { Product } from "@/types/product"
-import { useAppState } from "@/hooks/use-app-state"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
@@ -17,42 +14,15 @@ import { cn } from "@/lib/utils"
 interface ProductCardProps {
   product: Product
   variant?: "default" | "compact" | "featured"
-  showQuickActions?: boolean
 }
 
-export function ProductCard({ product, variant = "default", showQuickActions = true }: ProductCardProps) {
+export function ProductCard({ product, variant = "default" }: ProductCardProps) {
   const { dollarRate } = useDollarRate()
-  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, addToCompare, isInCompare } = useAppState()
-
   const [imageLoaded, setImageLoaded] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
 
   const priceInPesos = dollarRate ? product.priceUSD * dollarRate.blue : product.price
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
-
-  const handleWishlistToggle = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id)
-    } else {
-      addToWishlist(product)
-    }
-  }
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    addToCart(product)
-  }
-
-  const handleCompare = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    addToCompare(product)
-  }
 
   const cardVariants = {
     default:
@@ -64,13 +34,9 @@ export function ProductCard({ product, variant = "default", showQuickActions = t
   }
 
   return (
-    <Card
-      className={cardVariants[variant]}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <Card className={cardVariants[variant]}>
       <CardContent className="p-0">
-        {/* Image Container - Responsive aspect ratio */}
+        {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl sm:rounded-t-2xl">
           <Link href={`/productos/${product.id}`}>
             <Image
@@ -78,7 +44,7 @@ export function ProductCard({ product, variant = "default", showQuickActions = t
               alt={product.name}
               fill
               className={cn(
-                "object-cover transition-all duration-700 group-hover:scale-105",
+                "object-cover transition-all duration-700 group-hover:scale-105 cursor-pointer",
                 imageLoaded ? "opacity-100" : "opacity-0",
               )}
               onLoad={() => setImageLoaded(true)}
@@ -86,7 +52,7 @@ export function ProductCard({ product, variant = "default", showQuickActions = t
             />
           </Link>
 
-          {/* Badges - Responsive */}
+          {/* Badges */}
           <div className="absolute top-2 sm:top-3 left-2 sm:left-3 flex flex-col gap-1 sm:gap-2">
             {product.condition === "seminuevo" && (
               <Badge className="bg-emerald-500/90 text-white font-medium px-2 sm:px-3 py-1 rounded-full backdrop-blur-sm text-xs sm:text-sm">
@@ -107,74 +73,19 @@ export function ProductCard({ product, variant = "default", showQuickActions = t
             )}
           </div>
 
-          {/* Quick Actions - Solo desktop */}
-          {showQuickActions && (
-            <div
-              className={cn(
-                "absolute top-2 sm:top-3 right-2 sm:right-3 flex flex-col gap-1 sm:gap-2 transition-all duration-300 hidden sm:flex",
-                isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2",
-              )}
-            >
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border-0 backdrop-blur-sm p-0"
-                onClick={handleWishlistToggle}
-              >
-                <Heart
-                  className={cn(
-                    "w-3 h-3 sm:w-4 sm:h-4",
-                    isInWishlist(product.id) ? "fill-red-500 text-red-500" : "text-gray-600",
-                  )}
-                />
-              </Button>
-
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border-0 backdrop-blur-sm p-0"
-                onClick={handleCompare}
-              >
-                <GitCompare
-                  className={cn("w-3 h-3 sm:w-4 sm:h-4", isInCompare(product.id) ? "text-blue-500" : "text-gray-600")}
-                />
-              </Button>
-
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border-0 backdrop-blur-sm p-0"
-                asChild
-              >
-                <Link href={`/productos/${product.id}`}>
-                  <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
-                </Link>
-              </Button>
-            </div>
-          )}
-
-          {/* Stock Indicator - Responsive */}
+          {/* Stock Indicator */}
           <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3">
-            <div
-              className={cn(
-                "px-2 sm:px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm flex items-center gap-1",
-                product.stock > 0
-                  ? "bg-green-500/20 text-green-700 border border-green-500/30"
-                  : "bg-red-500/20 text-red-700 border border-red-500/30",
-              )}
-            >
+            <div className="px-2 sm:px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm flex items-center gap-1 bg-green-500/20 text-green-700 border border-green-500/30">
               <Shield className="w-2 h-2 sm:w-3 sm:h-3" />
-              <span className="hidden sm:inline">
-                {product.stock > 0 ? `${product.stock} disponibles` : "Sin stock"}
-              </span>
-              <span className="sm:hidden">{product.stock > 0 ? `${product.stock}` : "0"}</span>
+              <span className="hidden sm:inline">Disponible</span>
+              <span className="sm:hidden">✓</span>
             </div>
           </div>
         </div>
 
-        {/* Content - Responsive padding */}
+        {/* Content */}
         <div className="p-3 sm:p-4 lg:p-6">
-          {/* Category & Rating - Responsive */}
+          {/* Category & Rating */}
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 px-2 py-1">
               {product.category.toUpperCase()}
@@ -187,14 +98,14 @@ export function ProductCard({ product, variant = "default", showQuickActions = t
             </div>
           </div>
 
-          {/* Title - Responsive */}
+          {/* Title */}
           <Link href={`/productos/${product.id}`}>
-            <h3 className="font-bold text-sm sm:text-base lg:text-lg xl:text-xl mb-2 sm:mb-3 text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+            <h3 className="font-bold text-sm sm:text-base lg:text-lg xl:text-xl mb-2 sm:mb-3 text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors cursor-pointer">
               {product.name}
             </h3>
           </Link>
 
-          {/* Key Specifications - Solo en desktop */}
+          {/* Key Specifications */}
           {variant !== "compact" && (
             <div className="hidden sm:grid grid-cols-2 gap-2 mb-3 sm:mb-4">
               {Object.entries(product.specifications)
@@ -208,7 +119,7 @@ export function ProductCard({ product, variant = "default", showQuickActions = t
             </div>
           )}
 
-          {/* Price Section - Responsive */}
+          {/* Price Section */}
           <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
             <div className="flex items-baseline gap-2 sm:gap-3">
               <span className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">
@@ -234,26 +145,27 @@ export function ProductCard({ product, variant = "default", showQuickActions = t
             </div>
           </div>
 
-          {/* Actions - Responsive */}
+          {/* Actions */}
           <div className="flex gap-2 sm:gap-3">
             <Button
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-xs sm:text-sm"
-              disabled={product.stock === 0}
-              onClick={handleAddToCart}
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-xs sm:text-sm"
+              asChild
             >
-              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Agregar</span>
-              <span className="sm:hidden">+</span>
+              <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Consultar</span>
+                <span className="sm:hidden">WhatsApp</span>
+              </a>
             </Button>
 
             <Button
               variant="outline"
-              className="px-2 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-300 bg-transparent"
+              className="px-2 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 bg-transparent"
               asChild
             >
-              <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
-              </a>
+              <Link href={`/productos/${product.id}`}>
+                <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+              </Link>
             </Button>
           </div>
         </div>
