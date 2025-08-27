@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Faltan campos requeridos: name, price, category" }, { status: 400 })
     }
 
-    // Preparar datos para inserción
+    // Preparar datos para inserción con valores por defecto para campos opcionales
     const productData = {
       name: body.name,
       description: body.description || "",
@@ -37,11 +37,13 @@ export async function POST(request: NextRequest) {
       price_usd: body.priceUSD ? Number(body.priceUSD) : null,
       category: body.category,
       condition: body.condition || "nuevo",
-      images: body.images || [],
-      specifications: body.specifications || {},
-      stock: Number(body.stock) || 0,
+      images: Array.isArray(body.images) ? body.images : [],
+      specifications: typeof body.specifications === "object" ? body.specifications : {},
+      stock: 1, // Siempre disponible
       featured: Boolean(body.featured),
     }
+
+    console.log("Processed product data:", productData)
 
     const { data, error } = await ProductAdminService.createProduct(productData)
 

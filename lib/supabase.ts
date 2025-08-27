@@ -1,26 +1,38 @@
 import { createClient } from "@supabase/supabase-js"
+import type { Database } from "@/types/database"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
+// Función para verificar si Supabase está configurado
 export function isSupabaseConfigured(): boolean {
-  return !!(supabaseUrl && supabaseAnonKey)
+  return !!(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL !== "https://placeholder.supabase.co" &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY !== "placeholder-anon-key"
+  )
 }
 
+// Función para probar la conexión a Supabase
 export async function testSupabaseConnection(): Promise<boolean> {
-  if (!supabase) {
-    return false
-  }
-
   try {
-    // Simple query to test connection
-    const { error } = await supabase.from("products").select("count", { count: "exact", head: true })
+    if (!isSupabaseConfigured()) {
+      return false
+    }
 
-    return !error
-  } catch (err) {
-    console.warn("Supabase connection test failed:", err)
+    const { data, error } = await supabase.from("products").select("count").limit(1)
+
+    if (error) {
+      console.error("Supabase connection error:", error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error("Supabase connection failed:", error)
     return false
   }
 }

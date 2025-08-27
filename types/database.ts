@@ -1,3 +1,5 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
 export interface Database {
   public: {
     Tables: {
@@ -5,7 +7,20 @@ export interface Database {
         Row: ProductRow
         Insert: ProductInsert
         Update: ProductUpdate
+        Relationships: []
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
@@ -20,7 +35,7 @@ export interface ProductRow {
   category: string
   condition: string
   images: string[] | null
-  specifications: Record<string, any> | null
+  specifications: Json | null
   stock: number
   featured: boolean
   created_at: string
@@ -35,9 +50,9 @@ export interface ProductInsert {
   original_price?: number | null
   price_usd?: number | null
   category: string
-  condition: string
+  condition?: string
   images?: string[] | null
-  specifications?: Record<string, any> | null
+  specifications?: Json | null
   stock?: number
   featured?: boolean
   created_at?: string
@@ -54,7 +69,7 @@ export interface ProductUpdate {
   category?: string
   condition?: string
   images?: string[] | null
-  specifications?: Record<string, any> | null
+  specifications?: Json | null
   stock?: number
   featured?: boolean
   created_at?: string

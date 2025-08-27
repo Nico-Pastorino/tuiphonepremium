@@ -4,7 +4,7 @@ export interface Product {
   description: string
   price: number
   originalPrice?: number
-  priceUSD?: number // Add USD price for dollar conversion
+  priceUSD?: number
   category: string
   condition: "nuevo" | "seminuevo" | "usado"
   images: string[]
@@ -20,7 +20,7 @@ export interface ProductFormData {
   description: string
   price: number
   originalPrice?: number
-  priceUSD?: number // Add USD price field
+  priceUSD?: number
   category: string
   condition: "nuevo" | "seminuevo" | "usado"
   images: string[]

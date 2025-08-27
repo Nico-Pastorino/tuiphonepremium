@@ -2,10 +2,8 @@ import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
 
 // Configuración específica para operaciones de administrador
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
-const supabaseServiceKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-service-role-key"
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-service-role-key"
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.warn("Missing Supabase environment variables for admin operations")
@@ -44,7 +42,16 @@ export class ProductAdminService {
     try {
       console.log("Creating product with admin service:", productData)
 
-      const { data, error } = await supabaseAdmin.from("products").insert(productData).select().single()
+      // Asegurar que los campos opcionales tengan valores válidos
+      const cleanedData = {
+        ...productData,
+        price_usd: productData.price_usd || null,
+        original_price: productData.original_price || null,
+        images: productData.images || [],
+        specifications: productData.specifications || {},
+      }
+
+      const { data, error } = await supabaseAdmin.from("products").insert(cleanedData).select().single()
 
       if (error) {
         console.error("Admin create error:", error)
@@ -63,7 +70,16 @@ export class ProductAdminService {
     try {
       console.log("Updating product with admin service:", { id, productData })
 
-      const { data, error } = await supabaseAdmin.from("products").update(productData).eq("id", id).select().single()
+      // Asegurar que los campos opcionales tengan valores válidos
+      const cleanedData = {
+        ...productData,
+        price_usd: productData.price_usd || null,
+        original_price: productData.original_price || null,
+        images: productData.images || [],
+        specifications: productData.specifications || {},
+      }
+
+      const { data, error } = await supabaseAdmin.from("products").update(cleanedData).eq("id", id).select().single()
 
       if (error) {
         console.error("Admin update error:", error)
@@ -93,6 +109,22 @@ export class ProductAdminService {
       return { data, error: null }
     } catch (error) {
       console.error("Delete product error:", error)
+      return { data: null, error }
+    }
+  }
+
+  static async getProductById(id: string) {
+    try {
+      const { data, error } = await supabaseAdmin.from("products").select("*").eq("id", id).single()
+
+      if (error) {
+        console.error("Admin get by id error:", error)
+        throw error
+      }
+
+      return { data, error: null }
+    } catch (error) {
+      console.error("Get product by id error:", error)
       return { data: null, error }
     }
   }
