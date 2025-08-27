@@ -28,7 +28,7 @@ import type { Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
 import { InstallmentPlanCard } from "@/components/installment-plan-card"
-import { Trash2, Edit, Plus, RefreshCw, DollarSign, Settings, Package, CreditCard, BarChart3 } from "lucide-react"
+import { Trash2, Edit, Plus, RefreshCw, DollarSign, Settings, Package, CreditCard } from "lucide-react"
 
 export default function AdminPage() {
   const { isAuthenticated } = useAdmin()
@@ -126,12 +126,8 @@ function AdminDashboard() {
             </Button>
           </div>
 
-          <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="dashboard" className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Dashboard
-              </TabsTrigger>
+          <Tabs defaultValue="products" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="products" className="flex items-center gap-2">
                 <Package className="w-4 h-4" />
                 Productos
@@ -149,201 +145,6 @@ function AdminDashboard() {
                 Configuración
               </TabsTrigger>
             </TabsList>
-
-            {/* Dashboard Tab */}
-            <TabsContent value="dashboard" className="space-y-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-blue-100 text-sm font-medium">Total Productos</p>
-                        <p className="text-3xl font-bold">{totalProducts}</p>
-                      </div>
-                      <Package className="w-8 h-8 text-blue-200" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Productos Activos</p>
-                        <p className="text-3xl font-bold text-gray-900">{activeProducts}</p>
-                      </div>
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Destacados</p>
-                        <p className="text-3xl font-bold text-gray-900">{featuredProducts}</p>
-                      </div>
-                      <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                        <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Precio Promedio</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          ${Math.round(totalValue).toLocaleString("es-AR")}
-                        </p>
-                      </div>
-                      <DollarSign className="w-8 h-8 text-gray-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Planes Activos</p>
-                        <p className="text-3xl font-bold text-gray-900">{activeInstallments}</p>
-                      </div>
-                      <CreditCard className="w-8 h-8 text-gray-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Dollar Rate Card */}
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-6 h-6 text-blue-600" />
-                      Cotización del Dólar en Tiempo Real
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {dollarRate?.source && (
-                        <Badge variant="outline" className="text-xs">
-                          {dollarRate.source}
-                        </Badge>
-                      )}
-                      <Button onClick={handleUpdateDollarRate} size="sm" variant="outline" disabled={loading}>
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                        {loading ? "Actualizando..." : "Actualizar"}
-                      </Button>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <p className="text-sm text-blue-700 mb-1 font-medium">Dólar Blue (API)</p>
-                      <p className="text-3xl font-bold text-blue-800">
-                        ${dollarRate?.blue?.toLocaleString("es-AR") || "---"}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-1">Venta</p>
-                    </div>
-
-                    <div className="text-center p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="text-sm text-gray-700 mb-1 font-medium">Dólar Oficial</p>
-                      <p className="text-3xl font-bold text-gray-800">
-                        ${dollarRate?.official?.toLocaleString("es-AR") || "---"}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">Referencia</p>
-                    </div>
-
-                    <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
-                      <p className="text-sm text-green-700 mb-1 font-medium">Configurado</p>
-                      <p className="text-3xl font-bold text-green-800">
-                        ${dollarConfig.blueRate.toLocaleString("es-AR")}
-                      </p>
-                      <p className="text-xs text-green-600 mt-1">Tu precio base</p>
-                    </div>
-
-                    <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-100">
-                      <p className="text-sm text-purple-700 mb-1 font-medium">Final (+{dollarConfig.markup}%)</p>
-                      <p className="text-3xl font-bold text-purple-800">
-                        ${getEffectiveDollarRate().toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-1">Precio de venta</p>
-                    </div>
-                  </div>
-
-                  {/* Diferencia y recomendaciones */}
-                  {dollarRate && dollarRate.blue !== dollarConfig.blueRate && (
-                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-yellow-800 mb-1">Diferencia detectada</h4>
-                          <p className="text-sm text-yellow-700 mb-2">
-                            Tu cotización configurada (${dollarConfig.blueRate}) difiere de la cotización actual ($
-                            {dollarRate.blue}). Diferencia: $
-                            {Math.abs(dollarRate.blue - dollarConfig.blueRate).toLocaleString("es-AR")}
-                          </p>
-                          <Button
-                            size="sm"
-                            onClick={() => updateDollarConfig({ blueRate: dollarRate.blue })}
-                            className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                          >
-                            Actualizar a ${dollarRate.blue}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-red-700">Error al obtener cotización: {error.message}</span>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Recent Products */}
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle>Productos Recientes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {products.slice(0, 5).map((product) => (
-                      <div key={product.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 relative rounded-lg overflow-hidden">
-                            <Image
-                              src={product.images[0] || "/placeholder.svg?height=48&width=48"}
-                              alt={product.name}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{product.name}</h3>
-                            <p className="text-sm text-gray-600">
-                              {product.category} • {product.condition}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">${product.price.toLocaleString("es-AR")}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             {/* Products Tab */}
             <TabsContent value="products" className="space-y-6">
@@ -624,6 +425,9 @@ function AdminDashboard() {
                     <DollarSign className="w-6 h-6 text-green-600" />
                     Configuración del Dólar
                   </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    La API del dólar blue se actualiza automáticamente cada 5 minutos
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -658,9 +462,12 @@ function AdminDashboard() {
 
                   <div className="p-4 bg-blue-50 rounded-lg">
                     <h4 className="font-semibold text-blue-900 mb-2">Información</h4>
+                    <p className="text-sm text-blue-800 mb-2">
+                      La API del dólar blue se actualiza automáticamente cada 5 minutos. Los precios en pesos se
+                      calculan multiplicando el precio en USD por la cotización configurada.
+                    </p>
                     <p className="text-sm text-blue-800">
-                      El dólar final es el precio que se usará para convertir los precios en USD a pesos argentinos. Se
-                      calcula como: Dólar Blue Base + Markup en Pesos
+                      Fórmula: Precio en Pesos = Precio USD × (Dólar Blue Base + Markup)
                     </p>
                   </div>
                 </CardContent>
