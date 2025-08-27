@@ -1,147 +1,218 @@
 "use client"
 
-import Image from "next/image"
-import Link from "next/link"
+import { useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Eye, MessageCircle, Shield } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { MessageCircle, ChevronDown, ChevronUp, CreditCard, Smartphone } from "lucide-react"
 import type { Product } from "@/types/product"
-import { useDollarRate } from "@/hooks/use-dollar-rate"
-import { useState } from "react"
 
 interface ModernProductCardProps {
   product: Product
 }
 
-export function ModernProductCard({ product }: ModernProductCardProps) {
-  const { dollarRate } = useDollarRate()
-  const [imageLoaded, setImageLoaded] = useState(false)
+// Configuración de cuotas con interés
+const installmentOptions = {
+  naranja: [
+    { months: 3, rate: 0, color: "bg-orange-500" },
+    { months: 6, rate: 0.15, color: "bg-orange-600" },
+    { months: 9, rate: 0.25, color: "bg-orange-700" },
+    { months: 12, rate: 0.35, color: "bg-orange-800" },
+  ],
+  tarjetas: [
+    { months: 3, rate: 0, color: "bg-blue-500" },
+    { months: 6, rate: 0.2, color: "bg-blue-600" },
+    { months: 9, rate: 0.3, color: "bg-blue-700" },
+    { months: 12, rate: 0.4, color: "bg-blue-800" },
+  ],
+}
 
-  const priceInPesos = dollarRate ? product.priceUSD * dollarRate.blue : product.price
-  const discountPercentage = product.condition === "seminuevo" ? 15 : 0
-  const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
+export function ModernProductCard({ product }: ModernProductCardProps) {
+  const [naranjaOpen, setNaranjaOpen] = useState(false)
+  const [tarjetasOpen, setTarjetasOpen] = useState(false)
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+    }).format(price)
+  }
+
+  const formatUSD = (price: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+    }).format(price)
+  }
+
+  const calculateInstallment = (price: number, months: number, rate: number) => {
+    const totalWithInterest = price * (1 + rate)
+    return totalWithInterest / months
+  }
+
+  const getConditionColor = (condition: string) => {
+    switch (condition) {
+      case "nuevo":
+        return "bg-green-100 text-green-800"
+      case "seminuevo":
+        return "bg-yellow-100 text-yellow-800"
+      case "usado":
+        return "bg-gray-100 text-gray-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getConditionText = (condition: string) => {
+    switch (condition) {
+      case "nuevo":
+        return "Nuevo"
+      case "seminuevo":
+        return "Seminuevo"
+      case "usado":
+        return "Usado"
+      default:
+        return condition
+    }
+  }
+
+  const handleWhatsApp = () => {
+    const message = `Hola! Me interesa el ${product.name} - ${formatPrice(product.price)}`
+    const whatsappUrl = `https://wa.me/5491123456789?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, "_blank")
+  }
 
   return (
-    <Card className="group relative overflow-hidden bg-white border-0 shadow-sm hover:shadow-2xl transition-all duration-500 rounded-3xl">
-      <CardContent className="p-0">
-        {/* Image container */}
-        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-3xl">
-          <Link href={`/productos/${product.id}`}>
-            <Image
-              src={product.images[0] || "/placeholder.svg?height=400&width=400&query=iPhone"}
-              alt={product.name}
-              fill
-              className={`object-cover transition-all duration-700 group-hover:scale-105 cursor-pointer ${
-                imageLoaded ? "opacity-100" : "opacity-0"
-              }`}
-              onLoad={() => setImageLoaded(true)}
-            />
-          </Link>
-
-          {/* Status badges */}
-          <div className="absolute top-4 left-4 flex flex-col gap-2">
-            {product.condition === "seminuevo" && (
-              <Badge className="bg-emerald-500/90 text-white font-medium px-3 py-1 rounded-full backdrop-blur-sm">
-                Seminuevo
-              </Badge>
-            )}
-            {product.featured && (
-              <Badge className="bg-amber-500/90 text-white font-medium px-3 py-1 rounded-full backdrop-blur-sm">
-                Destacado
-              </Badge>
-            )}
-            {discountPercentage > 0 && (
-              <Badge className="bg-red-500/90 text-white font-bold px-3 py-1 rounded-full backdrop-blur-sm">
-                -{discountPercentage}%
-              </Badge>
-            )}
-          </div>
-
-          {/* Stock indicator */}
-          <div className="absolute bottom-4 left-4">
-            <div className="px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-green-500/20 text-green-700 border border-green-500/30 flex items-center gap-1">
-              <Shield className="w-3 h-3" />
-              Disponible
-            </div>
-          </div>
+    <Card className="group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
+      <div className="relative">
+        {/* Imagen del producto */}
+        <div className="aspect-square overflow-hidden bg-gray-50">
+          <img
+            src={product.images[0] || "/placeholder.svg?height=300&width=300"}
+            alt={product.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
         </div>
 
-        {/* Content */}
-        <div className="p-6">
-          {/* Category */}
-          <div className="flex items-center justify-between mb-3">
-            <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 px-2 py-1">
-              {product.category.toUpperCase()}
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2">
+          <Badge className={getConditionColor(product.condition)} variant="secondary">
+            {getConditionText(product.condition)}
+          </Badge>
+          {product.featured && (
+            <Badge className="bg-purple-100 text-purple-800" variant="secondary">
+              Destacado
             </Badge>
-            <span className="text-xs text-gray-500 font-medium">
-              {product.condition === "nuevo" ? "Nuevo" : "Seminuevo"}
-            </span>
+          )}
+        </div>
+
+        {/* Descuento */}
+        {product.originalPrice && product.originalPrice > product.price && (
+          <div className="absolute top-3 right-3">
+            <Badge className="bg-red-500 text-white">
+              -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+            </Badge>
           </div>
+        )}
+      </div>
 
-          {/* Title */}
-          <Link href={`/productos/${product.id}`}>
-            <h3 className="font-bold text-xl mb-3 text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors cursor-pointer">
-              {product.name}
-            </h3>
-          </Link>
+      <CardContent className="p-4 space-y-4">
+        {/* Información del producto */}
+        <div className="space-y-2">
+          <h3 className="font-semibold text-lg text-gray-900 line-clamp-2 leading-tight">{product.name}</h3>
+          <p className="text-sm text-gray-600 line-clamp-2">{product.description}</p>
+        </div>
 
-          {/* Key specifications */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {Object.entries(product.specifications)
-              .slice(0, 2)
-              .map(([key, value]) => (
-                <div key={key} className="bg-gray-50 rounded-xl p-3">
-                  <div className="text-xs text-gray-500 font-medium mb-1">{key}</div>
-                  <div className="text-sm text-gray-900 font-semibold">{value}</div>
+        {/* Precios */}
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-gray-900">{formatPrice(product.price)}</span>
+            {product.priceUSD && <span className="text-lg text-gray-600">{formatUSD(product.priceUSD)}</span>}
+          </div>
+          {product.originalPrice && product.originalPrice > product.price && (
+            <div className="text-sm text-gray-500 line-through">{formatPrice(product.originalPrice)}</div>
+          )}
+        </div>
+
+        {/* Disponibilidad */}
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span className="text-sm text-green-600 font-medium">Disponible</span>
+        </div>
+
+        {/* Opciones de cuotas */}
+        <div className="space-y-3">
+          {/* Naranja */}
+          <Collapsible open={naranjaOpen} onOpenChange={setNaranjaOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between h-10 border-orange-200 hover:bg-orange-50 text-orange-700 bg-transparent"
+              >
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4" />
+                  <span className="font-medium">Naranja</span>
+                </div>
+                {naranjaOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 mt-2">
+              {installmentOptions.naranja.map((option) => (
+                <div
+                  key={option.months}
+                  className="flex justify-between items-center p-2 bg-orange-50 rounded-lg border border-orange-100"
+                >
+                  <span className="text-sm font-medium text-orange-800">
+                    {option.months} cuotas {option.rate === 0 ? "sin interés" : `(${(option.rate * 100).toFixed(0)}%)`}
+                  </span>
+                  <span className="text-sm font-bold text-orange-900">
+                    {formatPrice(calculateInstallment(product.price, option.months, option.rate))}
+                  </span>
                 </div>
               ))}
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
 
-          {/* Price section */}
-          <div className="space-y-3 mb-6">
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</span>
-              {originalPrice && (
-                <span className="text-lg text-gray-500 line-through">${originalPrice.toLocaleString("es-AR")}</span>
-              )}
-            </div>
-
-            {dollarRate && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span className="bg-gray-100 px-2 py-1 rounded-lg font-medium">USD ${product.priceUSD}</span>
-                <span className="text-gray-400">•</span>
-                <span>Dólar Blue: ${dollarRate.blue}</span>
-              </div>
-            )}
-
-            <div className="text-sm text-emerald-600 font-medium bg-emerald-50 px-3 py-2 rounded-lg">
-              💳 Hasta 12 cuotas disponibles
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <Button
-              className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
-              asChild
-            >
-              <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Consultar
-              </a>
-            </Button>
-            <Button
-              variant="outline"
-              className="px-4 py-3 rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 bg-transparent"
-              asChild
-            >
-              <Link href={`/productos/${product.id}`}>
-                <Eye className="w-4 h-4" />
-              </Link>
-            </Button>
-          </div>
+          {/* Tarjetas */}
+          <Collapsible open={tarjetasOpen} onOpenChange={setTarjetasOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between h-10 border-blue-200 hover:bg-blue-50 text-blue-700 bg-transparent"
+              >
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  <span className="font-medium">Tarjetas</span>
+                </div>
+                {tarjetasOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 mt-2">
+              {installmentOptions.tarjetas.map((option) => (
+                <div
+                  key={option.months}
+                  className="flex justify-between items-center p-2 bg-blue-50 rounded-lg border border-blue-100"
+                >
+                  <span className="text-sm font-medium text-blue-800">
+                    {option.months} cuotas {option.rate === 0 ? "sin interés" : `(${(option.rate * 100).toFixed(0)}%)`}
+                  </span>
+                  <span className="text-sm font-bold text-blue-900">
+                    {formatPrice(calculateInstallment(product.price, option.months, option.rate))}
+                  </span>
+                </div>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
+
+        {/* Botón de WhatsApp */}
+        <Button onClick={handleWhatsApp} className="w-full bg-green-600 hover:bg-green-700 text-white font-medium h-11">
+          <MessageCircle className="w-4 h-4 mr-2" />
+          Consultar por WhatsApp
+        </Button>
       </CardContent>
     </Card>
   )

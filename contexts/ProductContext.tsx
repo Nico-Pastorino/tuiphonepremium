@@ -202,20 +202,35 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      // Intentar cargar desde la API primero, luego desde Supabase directamente
+      // Intentar cargar desde la API primero
       try {
-        const response = await fetch("/api/admin/products")
+        console.log("Loading products from API...")
+        const response = await fetch("/api/admin/products", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+
         if (response.ok) {
           const result = await response.json()
-          const transformedProducts = result.data?.map(transformSupabaseProduct) || []
-          setProducts(transformedProducts)
-          return
+          console.log("API response:", result)
+
+          if (result.data && Array.isArray(result.data)) {
+            const transformedProducts = result.data.map(transformSupabaseProduct)
+            console.log("Transformed products:", transformedProducts)
+            setProducts(transformedProducts)
+            return
+          }
+        } else {
+          console.warn("API response not ok:", response.status, response.statusText)
         }
       } catch (apiError) {
-        console.warn("API not available, trying direct Supabase connection")
+        console.warn("API not available, trying direct Supabase connection:", apiError)
       }
 
       // Fallback a conexión directa con Supabase
+      console.log("Trying direct Supabase connection...")
       const { data, error: supabaseError } = await supabase
         .from("products")
         .select("*")
@@ -226,6 +241,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       }
 
       const transformedProducts = data?.map(transformSupabaseProduct) || []
+      console.log("Direct Supabase products:", transformedProducts)
       setProducts(transformedProducts)
     } catch (err) {
       console.error("Error loading products:", err)
@@ -246,7 +262,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   // Función para agregar producto usando la API
   const addProduct = async (productData: ProductFormData): Promise<boolean> => {
     try {
-      console.log("Adding product:", productData)
+      console.log("ProductContext: Adding product:", productData)
 
       const response = await fetch("/api/admin/products", {
         method: "POST",
@@ -257,18 +273,27 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       })
 
       const result = await response.json()
+      console.log("ProductContext: API response:", result)
 
       if (!response.ok) {
-        throw new Error(result.error || "Error al agregar producto")
+        throw new Error(result.error || `Error HTTP ${response.status}`)
       }
 
-      console.log("Product added successfully:", result.data)
+      if (!result.data) {
+        throw new Error("No se recibieron datos del producto creado")
+      }
+
+      console.log("ProductContext: Product added successfully:", result.data)
       showToast("Producto agregado exitosamente", "success")
+
+      // Recargar productos para mostrar el nuevo
       await loadProducts()
       return true
     } catch (err) {
-      console.error("Error adding product:", err)
-      showToast(`Error al agregar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
+      console.error("ProductContext: Error adding product:", err)
+      const errorMessage = err instanceof Error ? err.message : "Error desconocido"
+      showToast(`Error al agregar producto: ${errorMessage}`, "error")
+      setError(errorMessage)
       return false
     }
   }
@@ -276,7 +301,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   // Función para actualizar producto usando la API
   const updateProduct = async (id: string, productData: Partial<ProductFormData>): Promise<boolean> => {
     try {
-      console.log("Updating product:", { id, productData })
+      console.log("ProductContext: Updating product:", { id, productData })
 
       const response = await fetch(`/api/admin/products/${id}`, {
         method: "PUT",
@@ -287,18 +312,23 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       })
 
       const result = await response.json()
+      console.log("ProductContext: Update API response:", result)
 
       if (!response.ok) {
-        throw new Error(result.error || "Error al actualizar producto")
+        throw new Error(result.error || `Error HTTP ${response.status}`)
       }
 
-      console.log("Product updated successfully:", result.data)
+      console.log("ProductContext: Product updated successfully:", result.data)
       showToast("Producto actualizado exitosamente", "success")
+
+      // Recargar productos para mostrar los cambios
       await loadProducts()
       return true
     } catch (err) {
-      console.error("Error updating product:", err)
-      showToast(`Error al actualizar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
+      console.error("ProductContext: Error updating product:", err)
+      const errorMessage = err instanceof Error ? err.message : "Error desconocido"
+      showToast(`Error al actualizar producto: ${errorMessage}`, "error")
+      setError(errorMessage)
       return false
     }
   }
@@ -306,25 +336,30 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   // Función para eliminar producto usando la API
   const deleteProduct = async (id: string): Promise<boolean> => {
     try {
-      console.log("Deleting product:", id)
+      console.log("ProductContext: Deleting product:", id)
 
       const response = await fetch(`/api/admin/products/${id}`, {
         method: "DELETE",
       })
 
       const result = await response.json()
+      console.log("ProductContext: Delete API response:", result)
 
       if (!response.ok) {
-        throw new Error(result.error || "Error al eliminar producto")
+        throw new Error(result.error || `Error HTTP ${response.status}`)
       }
 
-      console.log("Product deleted successfully:", result.data)
+      console.log("ProductContext: Product deleted successfully")
       showToast("Producto eliminado exitosamente", "success")
+
+      // Recargar productos para reflejar la eliminación
       await loadProducts()
       return true
     } catch (err) {
-      console.error("Error deleting product:", err)
-      showToast(`Error al eliminar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
+      console.error("ProductContext: Error deleting product:", err)
+      const errorMessage = err instanceof Error ? err.message : "Error desconocido"
+      showToast(`Error al eliminar producto: ${errorMessage}`, "error")
+      setError(errorMessage)
       return false
     }
   }

@@ -1,189 +1,208 @@
 import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Configuración específica para operaciones de administrador
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co"
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-service-role-key"
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn("Supabase admin credentials not found, using fallback mode")
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn("Missing Supabase environment variables for admin operations")
 }
 
-const supabaseAdmin =
-  supabaseUrl && supabaseServiceKey
-    ? createClient<Database>(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      })
-    : null
+// Cliente administrativo con permisos completos
+export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+  db: {
+    schema: "public",
+  },
+})
 
+// Función para verificar la conexión del admin
+export async function testAdminConnection(): Promise<boolean> {
+  try {
+    const { data, error } = await supabaseAdmin.from("products").select("count").limit(1)
+    if (error) {
+      console.error("Admin connection error:", error)
+      return false
+    }
+    console.log("Admin connection successful")
+    return true
+  } catch (error) {
+    console.error("Admin connection failed:", error)
+    return false
+  }
+}
+
+// Operaciones CRUD específicas para admin
 export class ProductAdminService {
-  static async getAllProducts() {
-    if (!supabaseAdmin) {
-      throw new Error("Supabase admin not configured")
-    }
-
-    const { data, error } = await supabaseAdmin.from("products").select("*").order("created_at", { ascending: false })
-
-    if (error) {
-      console.error("Supabase error:", error)
-      throw new Error(`Failed to fetch products: ${error.message}`)
-    }
-
-    return (
-      data?.map((product) => ({
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        originalPrice: product.original_price,
-        priceUSD: product.price_usd,
-        category: product.category,
-        condition: product.condition as "nuevo" | "seminuevo" | "usado",
-        images: product.images || [],
-        specifications: product.specifications || {},
-        stock: product.stock || 1,
-        featured: product.featured || false,
-        createdAt: product.created_at,
-        updatedAt: product.updated_at,
-      })) || []
-    )
-  }
-
-  static async getProductById(id: string) {
-    if (!supabaseAdmin) {
-      throw new Error("Supabase admin not configured")
-    }
-
-    const { data, error } = await supabaseAdmin.from("products").select("*").eq("id", id).single()
-
-    if (error) {
-      if (error.code === "PGRST116") {
-        return null
-      }
-      console.error("Supabase error:", error)
-      throw new Error(`Failed to fetch product: ${error.message}`)
-    }
-
-    return {
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      price: data.price,
-      originalPrice: data.original_price,
-      priceUSD: data.price_usd,
-      category: data.category,
-      condition: data.condition as "nuevo" | "seminuevo" | "usado",
-      images: data.images || [],
-      specifications: data.specifications || {},
-      stock: data.stock || 1,
-      featured: data.featured || false,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    }
-  }
-
   static async createProduct(productData: any) {
-    if (!supabaseAdmin) {
-      throw new Error("Supabase admin not configured")
-    }
+    try {
+      console.log("ProductAdminService: Creating product with data:", productData)
 
-    // Clean data before insertion
-    const cleanData = {
-      name: productData.name,
-      description: productData.description,
-      price: productData.price,
-      original_price: productData.original_price || null,
-      price_usd: productData.price_usd || null,
-      category: productData.category,
-      condition: productData.condition,
-      images: productData.images || [],
-      specifications: productData.specifications || {},
-      stock: 1,
-      featured: productData.featured || false,
-    }
+      // Validar datos antes de insertar
+      if (!productData.name || !productData.price || !productData.category) {
+        throw new Error("Faltan campos requeridos para crear el producto")
+      }
 
-    console.log("Creating product with data:", cleanData)
+      // Limpiar y validar datos
+      const cleanedData = {
+        name: productData.name,
+        description: productData.description || "",
+        price: Number(productData.price),
+        original_price: productData.original_price || null,
+        price_usd: productData.price_usd || null,
+        category: productData.category,
+        condition: productData.condition || "nuevo",
+        images: Array.isArray(productData.images) ? productData.images : [],
+        specifications: typeof productData.specifications === "object" ? productData.specifications : {},
+        stock: 1,
+        featured: Boolean(productData.featured),
+      }
 
-    const { data, error } = await supabaseAdmin.from("products").insert([cleanData]).select().single()
+      console.log("ProductAdminService: Cleaned data for insertion:", cleanedData)
 
-    if (error) {
-      console.error("Supabase insert error:", error)
-      throw new Error(`Failed to create product: ${error.message}`)
-    }
+      const { data, error } = await supabaseAdmin.from("products").insert([cleanedData]).select().single()
 
-    return {
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      price: data.price,
-      originalPrice: data.original_price,
-      priceUSD: data.price_usd,
-      category: data.category,
-      condition: data.condition as "nuevo" | "seminuevo" | "usado",
-      images: data.images || [],
-      specifications: data.specifications || {},
-      stock: data.stock || 1,
-      featured: data.featured || false,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
+      if (error) {
+        console.error("ProductAdminService: Supabase insert error:", error)
+        throw new Error(`Error de base de datos: ${error.message}`)
+      }
+
+      if (!data) {
+        throw new Error("No se recibieron datos después de la inserción")
+      }
+
+      console.log("ProductAdminService: Product created successfully:", data)
+      return { data, error: null }
+    } catch (error) {
+      console.error("ProductAdminService: Create product error:", error)
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Error desconocido al crear producto"),
+      }
     }
   }
 
-  static async updateProduct(id: string, updateData: any) {
-    if (!supabaseAdmin) {
-      throw new Error("Supabase admin not configured")
-    }
+  static async updateProduct(id: string, productData: any) {
+    try {
+      console.log("ProductAdminService: Updating product with ID:", id, "Data:", productData)
 
-    // Clean data before update
-    const cleanData = { ...updateData }
-    if (cleanData.originalPrice !== undefined) {
-      cleanData.original_price = cleanData.originalPrice
-      delete cleanData.originalPrice
-    }
-    if (cleanData.priceUSD !== undefined) {
-      cleanData.price_usd = cleanData.priceUSD
-      delete cleanData.priceUSD
-    }
+      if (!id) {
+        throw new Error("ID del producto es requerido para actualizar")
+      }
 
-    const { data, error } = await supabaseAdmin.from("products").update(cleanData).eq("id", id).select().single()
+      // Limpiar y validar datos
+      const cleanedData = {
+        name: productData.name,
+        description: productData.description || "",
+        price: Number(productData.price),
+        original_price: productData.original_price || null,
+        price_usd: productData.price_usd || null,
+        category: productData.category,
+        condition: productData.condition || "nuevo",
+        images: Array.isArray(productData.images) ? productData.images : [],
+        specifications: typeof productData.specifications === "object" ? productData.specifications : {},
+        stock: 1,
+        featured: Boolean(productData.featured),
+        updated_at: new Date().toISOString(),
+      }
 
-    if (error) {
-      console.error("Supabase update error:", error)
-      throw new Error(`Failed to update product: ${error.message}`)
-    }
+      const { data, error } = await supabaseAdmin.from("products").update(cleanedData).eq("id", id).select().single()
 
-    return {
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      price: data.price,
-      originalPrice: data.original_price,
-      priceUSD: data.price_usd,
-      category: data.category,
-      condition: data.condition as "nuevo" | "seminuevo" | "usado",
-      images: data.images || [],
-      specifications: data.specifications || {},
-      stock: data.stock || 1,
-      featured: data.featured || false,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
+      if (error) {
+        console.error("ProductAdminService: Supabase update error:", error)
+        throw new Error(`Error de base de datos: ${error.message}`)
+      }
+
+      if (!data) {
+        throw new Error("No se encontró el producto para actualizar")
+      }
+
+      console.log("ProductAdminService: Product updated successfully:", data)
+      return { data, error: null }
+    } catch (error) {
+      console.error("ProductAdminService: Update product error:", error)
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Error desconocido al actualizar producto"),
+      }
     }
   }
 
   static async deleteProduct(id: string) {
-    if (!supabaseAdmin) {
-      throw new Error("Supabase admin not configured")
+    try {
+      console.log("ProductAdminService: Deleting product with ID:", id)
+
+      if (!id) {
+        throw new Error("ID del producto es requerido para eliminar")
+      }
+
+      const { data, error } = await supabaseAdmin.from("products").delete().eq("id", id).select().single()
+
+      if (error) {
+        console.error("ProductAdminService: Supabase delete error:", error)
+        throw new Error(`Error de base de datos: ${error.message}`)
+      }
+
+      console.log("ProductAdminService: Product deleted successfully:", data)
+      return { data, error: null }
+    } catch (error) {
+      console.error("ProductAdminService: Delete product error:", error)
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Error desconocido al eliminar producto"),
+      }
     }
+  }
 
-    const { error } = await supabaseAdmin.from("products").delete().eq("id", id)
+  static async getProductById(id: string) {
+    try {
+      console.log("ProductAdminService: Getting product by ID:", id)
 
-    if (error) {
-      console.error("Supabase delete error:", error)
-      throw new Error(`Failed to delete product: ${error.message}`)
+      if (!id) {
+        throw new Error("ID del producto es requerido")
+      }
+
+      const { data, error } = await supabaseAdmin.from("products").select("*").eq("id", id).single()
+
+      if (error) {
+        console.error("ProductAdminService: Supabase get by ID error:", error)
+        throw new Error(`Error de base de datos: ${error.message}`)
+      }
+
+      console.log("ProductAdminService: Product found:", data)
+      return { data, error: null }
+    } catch (error) {
+      console.error("ProductAdminService: Get product by ID error:", error)
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error("Error desconocido al obtener producto"),
+      }
     }
+  }
 
-    return true
+  static async getAllProducts() {
+    try {
+      console.log("ProductAdminService: Getting all products")
+
+      const { data, error } = await supabaseAdmin.from("products").select("*").order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("ProductAdminService: Supabase get all error:", error)
+        throw new Error(`Error de base de datos: ${error.message}`)
+      }
+
+      console.log("ProductAdminService: Found", data?.length || 0, "products")
+      return { data: data || [], error: null }
+    } catch (error) {
+      console.error("ProductAdminService: Get all products error:", error)
+      return {
+        data: [],
+        error: error instanceof Error ? error : new Error("Error desconocido al obtener productos"),
+      }
+    }
   }
 }
