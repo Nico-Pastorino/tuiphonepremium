@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Eye, Zap, Shield, MessageCircle, ChevronDown, CreditCard, Smartphone } from "lucide-react"
 import type { Product } from "@/types/product"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
+import { useAdmin } from "@/contexts/AdminContext"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 
@@ -19,29 +20,34 @@ interface ProductCardProps {
 
 export function ProductCard({ product, variant = "default" }: ProductCardProps) {
   const { dollarRate } = useDollarRate()
+  const { dollarConfig, getInstallmentPlansByCategory } = useAdmin()
   const [imageLoaded, setImageLoaded] = useState(false)
   const [naranjaOpen, setNaranjaOpen] = useState(false)
   const [tarjetasOpen, setTarjetasOpen] = useState(false)
 
-  const priceInPesos = dollarRate ? product.priceUSD * dollarRate.blue : product.price
+  // Calcular precio en pesos usando la API del dólar + markup del admin
+  const priceInPesos =
+    dollarRate && product.priceUSD
+      ? Math.round(product.priceUSD * (dollarRate.blue + dollarConfig.markup))
+      : product.price
+
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
 
-  // Planes de cuotas Naranja
-  const naranjaPlans = [
-    { cuotas: 3, cuota: priceInPesos / 3 },
-    { cuotas: 6, cuota: (priceInPesos * 1.15) / 6 },
-    { cuotas: 9, cuota: (priceInPesos * 1.25) / 9 },
-    { cuotas: 12, cuota: (priceInPesos * 1.35) / 12 },
-  ]
+  // Obtener planes de cuotas configurados por el admin
+  const naranjaPlans = getInstallmentPlansByCategory("naranja")
+  const tarjetasPlans = getInstallmentPlansByCategory("visa-mastercard")
 
-  // Planes de cuotas Tarjetas
-  const tarjetasPlans = [
-    { cuotas: 3, cuota: priceInPesos / 3 },
-    { cuotas: 6, cuota: (priceInPesos * 1.2) / 6 },
-    { cuotas: 9, cuota: (priceInPesos * 1.3) / 9 },
-    { cuotas: 12, cuota: (priceInPesos * 1.4) / 12 },
-  ]
+  // Calcular cuotas usando los planes configurados
+  const calculateInstallments = (plans: any[]) => {
+    return plans.map((plan) => ({
+      cuotas: plan.months,
+      cuota: Math.round((priceInPesos * (1 + plan.interestRate / 100)) / plan.months),
+    }))
+  }
+
+  const naranjaInstallments = calculateInstallments(naranjaPlans)
+  const tarjetasInstallments = calculateInstallments(tarjetasPlans)
 
   const cardVariants = {
     default:
@@ -120,7 +126,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
           {/* Key Specifications */}
           {variant !== "compact" && (
             <div className="hidden sm:grid grid-cols-2 gap-2 mb-4 sm:mb-5">
-              {Object.entries(product.specifications)
+              {Object.entries(product.specifications || {})
                 .slice(0, 2)
                 .map(([key, value]) => (
                   <div key={key} className="bg-gray-50 rounded-lg p-2">
@@ -150,68 +156,72 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
                 </div>
 
                 {/* Precio en USD */}
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg sm:text-xl lg:text-2xl font-bold text-green-700">
-                    USD ${product.priceUSD}
-                  </span>
-                  <span className="text-xs sm:text-sm text-gray-500">Dólares</span>
-                </div>
+                {product.priceUSD && (
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg sm:text-xl lg:text-2xl font-bold text-green-700">
+                      USD ${product.priceUSD}
+                    </span>
+                    <span className="text-xs sm:text-sm text-gray-500">Dólares</span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Cuotas Naranja */}
-            <Collapsible open={naranjaOpen} onOpenChange={setNaranjaOpen}>
-              <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <Smartphone className="w-4 h-4 text-orange-600" />
-                    <span className="text-sm font-medium text-orange-700">Cuotas Naranja</span>
-                  </div>
-                  <ChevronDown
-                    className={cn("w-4 h-4 text-orange-600 transition-transform", naranjaOpen && "rotate-180")}
-                  />
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="space-y-2 bg-orange-50 rounded-lg p-3 border border-orange-200">
-                  {naranjaPlans.map((plan) => (
-                    <div key={plan.cuotas} className="flex justify-between items-center text-sm py-1">
-                      <span className="text-orange-700 font-medium">{plan.cuotas} cuotas</span>
-                      <span className="font-bold text-orange-800 text-base">
-                        ${plan.cuota.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-                      </span>
+            {naranjaInstallments.length > 0 && (
+              <Collapsible open={naranjaOpen} onOpenChange={setNaranjaOpen}>
+                <CollapsibleTrigger className="w-full">
+                  <div className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-orange-600" />
+                      <span className="text-sm font-medium text-orange-700">Cuotas Naranja</span>
                     </div>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                    <ChevronDown
+                      className={cn("w-4 h-4 text-orange-600 transition-transform", naranjaOpen && "rotate-180")}
+                    />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2">
+                  <div className="space-y-2 bg-orange-50 rounded-lg p-3 border border-orange-200">
+                    {naranjaInstallments.map((plan) => (
+                      <div key={plan.cuotas} className="flex justify-between items-center text-sm py-1">
+                        <span className="text-orange-700 font-medium">{plan.cuotas} cuotas</span>
+                        <span className="font-bold text-orange-800 text-base">
+                          ${plan.cuota.toLocaleString("es-AR")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
 
             {/* Cuotas Tarjetas */}
-            <Collapsible open={tarjetasOpen} onOpenChange={setTarjetasOpen}>
-              <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-700">Cuotas Tarjetas</span>
-                  </div>
-                  <ChevronDown
-                    className={cn("w-4 h-4 text-blue-600 transition-transform", tarjetasOpen && "rotate-180")}
-                  />
-                </div>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="space-y-2 bg-blue-50 rounded-lg p-3 border border-blue-200">
-                  {tarjetasPlans.map((plan) => (
-                    <div key={plan.cuotas} className="flex justify-between items-center text-sm py-1">
-                      <span className="text-blue-700 font-medium">{plan.cuotas} cuotas</span>
-                      <span className="font-bold text-blue-800 text-base">
-                        ${plan.cuota.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-                      </span>
+            {tarjetasInstallments.length > 0 && (
+              <Collapsible open={tarjetasOpen} onOpenChange={setTarjetasOpen}>
+                <CollapsibleTrigger className="w-full">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-700">Cuotas Tarjetas</span>
                     </div>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                    <ChevronDown
+                      className={cn("w-4 h-4 text-blue-600 transition-transform", tarjetasOpen && "rotate-180")}
+                    />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2">
+                  <div className="space-y-2 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    {tarjetasInstallments.map((plan) => (
+                      <div key={plan.cuotas} className="flex justify-between items-center text-sm py-1">
+                        <span className="text-blue-700 font-medium">{plan.cuotas} cuotas</span>
+                        <span className="font-bold text-blue-800 text-base">${plan.cuota.toLocaleString("es-AR")}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
           </div>
 
           {/* Actions */}
