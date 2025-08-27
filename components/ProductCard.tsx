@@ -5,7 +5,8 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Eye, Star, Zap, Shield, MessageCircle } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Eye, Zap, Shield, MessageCircle, ChevronDown, CreditCard, Smartphone } from "lucide-react"
 import type { Product } from "@/types/product"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { useState } from "react"
@@ -19,10 +20,28 @@ interface ProductCardProps {
 export function ProductCard({ product, variant = "default" }: ProductCardProps) {
   const { dollarRate } = useDollarRate()
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [naranjaOpen, setNaranjaOpen] = useState(false)
+  const [tarjetasOpen, setTarjetasOpen] = useState(false)
 
   const priceInPesos = dollarRate ? product.priceUSD * dollarRate.blue : product.price
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
+
+  // Planes de cuotas Naranja
+  const naranjaPlans = [
+    { cuotas: 3, interes: 0, cuota: priceInPesos / 3 },
+    { cuotas: 6, interes: 15, cuota: (priceInPesos * 1.15) / 6 },
+    { cuotas: 9, interes: 25, cuota: (priceInPesos * 1.25) / 9 },
+    { cuotas: 12, interes: 35, cuota: (priceInPesos * 1.35) / 12 },
+  ]
+
+  // Planes de cuotas Tarjetas
+  const tarjetasPlans = [
+    { cuotas: 3, interes: 0, cuota: priceInPesos / 3 },
+    { cuotas: 6, interes: 20, cuota: (priceInPesos * 1.2) / 6 },
+    { cuotas: 9, interes: 30, cuota: (priceInPesos * 1.3) / 9 },
+    { cuotas: 12, interes: 40, cuota: (priceInPesos * 1.4) / 12 },
+  ]
 
   const cardVariants = {
     default:
@@ -62,7 +81,6 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
             )}
             {product.featured && (
               <Badge className="bg-amber-500/90 text-white font-medium px-2 sm:px-3 py-1 rounded-full backdrop-blur-sm text-xs sm:text-sm">
-                <Star className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
                 Destacado
               </Badge>
             )}
@@ -85,17 +103,11 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
 
         {/* Content */}
         <div className="p-3 sm:p-4 lg:p-6">
-          {/* Category & Rating */}
-          <div className="flex items-center justify-between mb-2 sm:mb-3">
+          {/* Category */}
+          <div className="mb-2 sm:mb-3">
             <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 px-2 py-1">
               {product.category.toUpperCase()}
             </Badge>
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-2 h-2 sm:w-3 sm:h-3 fill-yellow-400 text-yellow-400" />
-              ))}
-              <span className="text-xs text-gray-500 ml-1 hidden sm:inline">(4.8)</span>
-            </div>
           </div>
 
           {/* Title */}
@@ -132,17 +144,67 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
               )}
             </div>
 
-            {dollarRate && (
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                <span className="bg-gray-100 px-2 py-1 rounded-lg font-medium">USD ${product.priceUSD}</span>
-                <span className="text-gray-400 hidden sm:inline">•</span>
-                <span className="hidden sm:inline">Dólar Blue: ${dollarRate.blue}</span>
-              </div>
-            )}
-
-            <div className="text-xs sm:text-sm text-emerald-600 font-medium bg-emerald-50 px-2 sm:px-3 py-1 sm:py-2 rounded-lg">
-              💳 Hasta 12 cuotas disponibles
+            <div className="text-xs sm:text-sm text-gray-600">
+              <span className="bg-gray-100 px-2 py-1 rounded-lg font-medium">USD ${product.priceUSD}</span>
             </div>
+
+            {/* Cuotas Naranja */}
+            <Collapsible open={naranjaOpen} onOpenChange={setNaranjaOpen}>
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-2 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-orange-600" />
+                    <span className="text-sm font-medium text-orange-700">Cuotas Naranja</span>
+                  </div>
+                  <ChevronDown
+                    className={cn("w-4 h-4 text-orange-600 transition-transform", naranjaOpen && "rotate-180")}
+                  />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="space-y-1 bg-orange-50 rounded-lg p-3 border border-orange-200">
+                  {naranjaPlans.map((plan) => (
+                    <div key={plan.cuotas} className="flex justify-between items-center text-sm">
+                      <span className="text-orange-700">
+                        {plan.cuotas} cuotas {plan.interes > 0 && `(${plan.interes}%)`}
+                      </span>
+                      <span className="font-bold text-orange-800">
+                        ${plan.cuota.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Cuotas Tarjetas */}
+            <Collapsible open={tarjetasOpen} onOpenChange={setTarjetasOpen}>
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-700">Cuotas Tarjetas</span>
+                  </div>
+                  <ChevronDown
+                    className={cn("w-4 h-4 text-blue-600 transition-transform", tarjetasOpen && "rotate-180")}
+                  />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="space-y-1 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                  {tarjetasPlans.map((plan) => (
+                    <div key={plan.cuotas} className="flex justify-between items-center text-sm">
+                      <span className="text-blue-700">
+                        {plan.cuotas} cuotas {plan.interes > 0 && `(${plan.interes}%)`}
+                      </span>
+                      <span className="font-bold text-blue-800">
+                        ${plan.cuota.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Actions */}

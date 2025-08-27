@@ -1,11 +1,15 @@
--- Hacer que la columna price_usd sea opcional (nullable)
+-- Make price_usd column nullable to allow products without USD pricing
 ALTER TABLE products ALTER COLUMN price_usd DROP NOT NULL;
 
--- Agregar un comentario para documentar el cambio
-COMMENT ON COLUMN products.price_usd IS 'Precio en USD - opcional, puede ser null si no se especifica';
+-- Also make original_price nullable if it isn't already
+ALTER TABLE products ALTER COLUMN original_price DROP NOT NULL;
 
--- Verificar la estructura de la tabla
-SELECT column_name, data_type, is_nullable, column_default
+-- Add comment to document the change
+COMMENT ON COLUMN products.price_usd IS 'USD price - nullable for products without USD pricing';
+COMMENT ON COLUMN products.original_price IS 'Original price before discount - nullable';
+
+-- Verify the changes
+SELECT column_name, is_nullable, data_type 
 FROM information_schema.columns 
 WHERE table_name = 'products' 
-ORDER BY ordinal_position;
+AND column_name IN ('price_usd', 'original_price');
