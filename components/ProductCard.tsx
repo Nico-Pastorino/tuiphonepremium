@@ -29,18 +29,18 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
 
   // Planes de cuotas Naranja
   const naranjaPlans = [
-    { cuotas: 3, interes: 0, cuota: priceInPesos / 3 },
-    { cuotas: 6, interes: 15, cuota: (priceInPesos * 1.15) / 6 },
-    { cuotas: 9, interes: 25, cuota: (priceInPesos * 1.25) / 9 },
-    { cuotas: 12, interes: 35, cuota: (priceInPesos * 1.35) / 12 },
+    { cuotas: 3, cuota: priceInPesos / 3 },
+    { cuotas: 6, cuota: (priceInPesos * 1.15) / 6 },
+    { cuotas: 9, cuota: (priceInPesos * 1.25) / 9 },
+    { cuotas: 12, cuota: (priceInPesos * 1.35) / 12 },
   ]
 
   // Planes de cuotas Tarjetas
   const tarjetasPlans = [
-    { cuotas: 3, interes: 0, cuota: priceInPesos / 3 },
-    { cuotas: 6, interes: 20, cuota: (priceInPesos * 1.2) / 6 },
-    { cuotas: 9, interes: 30, cuota: (priceInPesos * 1.3) / 9 },
-    { cuotas: 12, interes: 40, cuota: (priceInPesos * 1.4) / 12 },
+    { cuotas: 3, cuota: priceInPesos / 3 },
+    { cuotas: 6, cuota: (priceInPesos * 1.2) / 6 },
+    { cuotas: 9, cuota: (priceInPesos * 1.3) / 9 },
+    { cuotas: 12, cuota: (priceInPesos * 1.4) / 12 },
   ]
 
   const cardVariants = {
@@ -112,14 +112,14 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
 
           {/* Title */}
           <Link href={`/productos/${product.id}`}>
-            <h3 className="font-bold text-sm sm:text-base lg:text-lg xl:text-xl mb-2 sm:mb-3 text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors cursor-pointer">
+            <h3 className="font-bold text-sm sm:text-base lg:text-lg xl:text-xl mb-3 sm:mb-4 text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors cursor-pointer">
               {product.name}
             </h3>
           </Link>
 
           {/* Key Specifications */}
           {variant !== "compact" && (
-            <div className="hidden sm:grid grid-cols-2 gap-2 mb-3 sm:mb-4">
+            <div className="hidden sm:grid grid-cols-2 gap-2 mb-4 sm:mb-5">
               {Object.entries(product.specifications)
                 .slice(0, 2)
                 .map(([key, value]) => (
@@ -131,27 +131,38 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
             </div>
           )}
 
-          {/* Price Section */}
-          <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-            <div className="flex items-baseline gap-2 sm:gap-3">
-              <span className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">
-                ${priceInPesos.toLocaleString("es-AR")}
-              </span>
-              {originalPrice && (
-                <span className="text-sm sm:text-base lg:text-lg text-gray-500 line-through">
-                  ${originalPrice.toLocaleString("es-AR")}
-                </span>
-              )}
-            </div>
+          {/* Price Section - Mejorado */}
+          <div className="space-y-3 sm:space-y-4 mb-5 sm:mb-6">
+            {/* Precio Principal */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 sm:p-4">
+              <div className="flex flex-col gap-2">
+                {/* Precio en Pesos */}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+                    ${priceInPesos.toLocaleString("es-AR")}
+                  </span>
+                  <span className="text-sm sm:text-base text-gray-600 font-medium">ARS</span>
+                  {originalPrice && (
+                    <span className="text-lg sm:text-xl text-gray-500 line-through ml-2">
+                      ${originalPrice.toLocaleString("es-AR")}
+                    </span>
+                  )}
+                </div>
 
-            <div className="text-xs sm:text-sm text-gray-600">
-              <span className="bg-gray-100 px-2 py-1 rounded-lg font-medium">USD ${product.priceUSD}</span>
+                {/* Precio en USD */}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg sm:text-xl lg:text-2xl font-bold text-green-700">
+                    USD ${product.priceUSD}
+                  </span>
+                  <span className="text-xs sm:text-sm text-gray-500">Dólares</span>
+                </div>
+              </div>
             </div>
 
             {/* Cuotas Naranja */}
             <Collapsible open={naranjaOpen} onOpenChange={setNaranjaOpen}>
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-2 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors">
+                <div className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors">
                   <div className="flex items-center gap-2">
                     <Smartphone className="w-4 h-4 text-orange-600" />
                     <span className="text-sm font-medium text-orange-700">Cuotas Naranja</span>
@@ -162,13 +173,11 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2">
-                <div className="space-y-1 bg-orange-50 rounded-lg p-3 border border-orange-200">
+                <div className="space-y-2 bg-orange-50 rounded-lg p-3 border border-orange-200">
                   {naranjaPlans.map((plan) => (
-                    <div key={plan.cuotas} className="flex justify-between items-center text-sm">
-                      <span className="text-orange-700">
-                        {plan.cuotas} cuotas {plan.interes > 0 && `(${plan.interes}%)`}
-                      </span>
-                      <span className="font-bold text-orange-800">
+                    <div key={plan.cuotas} className="flex justify-between items-center text-sm py-1">
+                      <span className="text-orange-700 font-medium">{plan.cuotas} cuotas</span>
+                      <span className="font-bold text-orange-800 text-base">
                         ${plan.cuota.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                       </span>
                     </div>
@@ -180,7 +189,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
             {/* Cuotas Tarjetas */}
             <Collapsible open={tarjetasOpen} onOpenChange={setTarjetasOpen}>
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-blue-600" />
                     <span className="text-sm font-medium text-blue-700">Cuotas Tarjetas</span>
@@ -191,13 +200,11 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2">
-                <div className="space-y-1 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="space-y-2 bg-blue-50 rounded-lg p-3 border border-blue-200">
                   {tarjetasPlans.map((plan) => (
-                    <div key={plan.cuotas} className="flex justify-between items-center text-sm">
-                      <span className="text-blue-700">
-                        {plan.cuotas} cuotas {plan.interes > 0 && `(${plan.interes}%)`}
-                      </span>
-                      <span className="font-bold text-blue-800">
+                    <div key={plan.cuotas} className="flex justify-between items-center text-sm py-1">
+                      <span className="text-blue-700 font-medium">{plan.cuotas} cuotas</span>
+                      <span className="font-bold text-blue-800 text-base">
                         ${plan.cuota.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
                       </span>
                     </div>
@@ -210,11 +217,11 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
           {/* Actions */}
           <div className="flex gap-2 sm:gap-3">
             <Button
-              className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-xs sm:text-sm"
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 sm:py-4 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-sm sm:text-base"
               asChild
             >
               <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 <span className="hidden sm:inline">Consultar</span>
                 <span className="sm:hidden">WhatsApp</span>
               </a>
@@ -222,11 +229,11 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
 
             <Button
               variant="outline"
-              className="px-2 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 bg-transparent"
+              className="px-3 sm:px-4 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 bg-transparent"
               asChild
             >
               <Link href={`/productos/${product.id}`}>
-                <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
             </Button>
           </div>
