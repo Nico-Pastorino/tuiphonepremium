@@ -49,6 +49,18 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined)
 // Datos iniciales para Visa/Mastercard
 const initialVisaMastercardPlans: InstallmentPlan[] = [
   {
+    id: "visa-0",
+    months: 1,
+    interestRate: 0,
+    name: "1 cuota sin interés",
+    description: "Pago en una sola cuota con Visa/Mastercard",
+    isActive: true,
+    minAmount: 0,
+    maxAmount: 10000000,
+    createdAt: new Date().toISOString(),
+    category: "visa-mastercard",
+  },
+  {
     id: "visa-1",
     months: 3,
     interestRate: 0,
@@ -88,6 +100,18 @@ const initialVisaMastercardPlans: InstallmentPlan[] = [
 
 // Datos iniciales para Naranja
 const initialNaranjaPlans: InstallmentPlan[] = [
+  {
+    id: "naranja-0",
+    months: 1,
+    interestRate: 0,
+    name: "1 cuota Naranja",
+    description: "Pago en una sola cuota con Tarjeta Naranja",
+    isActive: true,
+    minAmount: 0,
+    maxAmount: 10000000,
+    createdAt: new Date().toISOString(),
+    category: "naranja",
+  },
   {
     id: "naranja-1",
     months: 3,

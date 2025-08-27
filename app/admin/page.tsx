@@ -218,8 +218,8 @@ function AdminDashboard() {
     const planData = {
       months,
       interestRate: rate,
-      name: `${months} cuotas ${category === "naranja" ? "Naranja" : "Tarjetas"}`,
-      description: `Plan de ${months} cuotas con ${rate}% de interés`,
+      name: `${months} ${months === 1 ? "cuota" : "cuotas"} ${category === "naranja" ? "Naranja" : "Tarjetas"}`,
+      description: `Plan de ${months} ${months === 1 ? "cuota" : "cuotas"} con ${rate}% de interés`,
       isActive: true,
       minAmount: 0,
       maxAmount: 10000000,
@@ -777,7 +777,7 @@ function AdminDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {[3, 6, 9, 12].map((months) => {
+                    {[1, 3, 6, 9, 12].map((months) => {
                       const plan = visaMastercardPlans.find((p) => p.months === months)
                       return (
                         <div key={months} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
@@ -815,7 +815,7 @@ function AdminDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {[3, 6, 9, 12].map((months) => {
+                    {[1, 3, 6, 9, 12].map((months) => {
                       const plan = naranjaPlans.find((p) => p.months === months)
                       return (
                         <div key={months} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
