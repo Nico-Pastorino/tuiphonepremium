@@ -1,106 +1,63 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { supabase, testSupabaseConnection, isSupabaseConfigured } from "@/lib/supabase"
-import type { Product, ProductFormData, ProductFilters } from "@/types/product"
-import type { ProductRow } from "@/types/database"
+import { createContext, useContext, useState, useEffect } from "react"
+import { supabase, isSupabaseConfigured, testSupabaseConnection } from "@/lib/supabase"
+import type { Product } from "@/types/product"
 
 interface ProductContextType {
   products: Product[]
   loading: boolean
   error: string | null
-  supabaseConnected: boolean
-  addProduct: (product: ProductFormData) => Promise<boolean>
-  updateProduct: (id: string, product: Partial<ProductFormData>) => Promise<boolean>
+  addProduct: (product: Omit<Product, "id">) => Promise<boolean>
+  updateProduct: (id: string, product: Omit<Product, "id">) => Promise<boolean>
   deleteProduct: (id: string) => Promise<boolean>
   getProductById: (id: string) => Product | undefined
   getProductsByCategory: (category: string) => Product[]
-  getFeaturedProducts: () => Product[]
-  searchProducts: (query: string) => Product[]
-  filterProducts: (filters: ProductFilters) => Product[]
   refreshProducts: () => Promise<void>
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
 
-// Función para transformar datos de Supabase a nuestro formato
-function transformSupabaseProduct(row: ProductRow): Product {
-  return {
-    id: row.id,
-    name: row.name,
-    description: row.description || "",
-    price: row.price,
-    originalPrice: row.original_price || undefined,
-    priceUSD: row.price_usd || undefined,
-    category: row.category,
-    condition: row.condition as "nuevo" | "seminuevo" | "usado",
-    images: row.images || [],
-    specifications: row.specifications || {},
-    stock: row.stock,
-    featured: row.featured,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at || undefined,
-  }
-}
-
-// Productos de fallback si Supabase no está disponible
+// Datos de fallback para cuando Supabase no esté disponible
 const fallbackProducts: Product[] = [
   {
     id: "1",
-    name: "iPhone 15 Pro Max",
-    description: "El iPhone más avanzado con chip A17 Pro y cámara de 48MP",
-    price: 1500000,
-    originalPrice: 1600000,
-    priceUSD: 1299,
+    name: "iPhone 15 Pro Max 256GB",
+    description: "El iPhone más avanzado con titanio, cámara de 48MP y chip A17 Pro",
+    price: 1299000,
+    priceUsd: 1299,
+    originalPrice: 1399000,
     category: "iphone",
     condition: "nuevo",
-    images: ["/placeholder.svg?height=400&width=400"],
+    images: ["/placeholder.svg?height=400&width=400&text=iPhone+15+Pro+Max"],
     specifications: {
-      storage: "256GB",
-      color: "Titanio Natural",
-      screen: "6.7 pulgadas",
+      Almacenamiento: "256GB",
+      Color: "Titanio Natural",
+      Pantalla: "6.7 pulgadas",
+      Cámara: "48MP + 12MP + 12MP",
     },
-    stock: 5,
     featured: true,
+    stock: 1,
   },
   {
     id: "2",
-    name: "MacBook Air M2",
-    description: "Ultraportátil con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
-    price: 1200000,
-    originalPrice: 1350000,
-    priceUSD: 1199,
+    name: 'MacBook Air M2 13"',
+    description: "Ultraportátil con chip M2, perfecta para trabajo y estudio",
+    price: 899000,
+    priceUsd: 899,
+    originalPrice: 999000,
     category: "mac",
-    condition: "seminuevo",
-    images: ["/placeholder.svg?height=400&width=400"],
-    specifications: {
-      processor: "Apple M2",
-      memory: "8GB",
-      storage: "256GB SSD",
-      screen: "13.6 pulgadas",
-    },
-    stock: 3,
-    featured: true,
-  },
-  {
-    id: "3",
-    name: 'iPad Pro 12.9"',
-    description: "iPad Pro con chip M2 y pantalla Liquid Retina XDR",
-    price: 800000,
-    originalPrice: 900000,
-    priceUSD: 799,
-    category: "ipad",
     condition: "nuevo",
-    images: ["/placeholder.svg?height=400&width=400"],
+    images: ["/placeholder.svg?height=400&width=400&text=MacBook+Air+M2"],
     specifications: {
-      processor: "Apple M2",
-      storage: "128GB",
-      screen: "12.9 pulgadas",
-      connectivity: "Wi-Fi",
+      Procesador: "Apple M2",
+      RAM: "8GB",
+      Almacenamiento: "256GB SSD",
+      Pantalla: "13.6 pulgadas Liquid Retina",
     },
-    stock: 7,
-    featured: false,
+    featured: true,
+    stock: 1,
   },
 ]
 
@@ -108,220 +65,182 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [supabaseConnected, setSupabaseConnected] = useState(false)
+  const [isSupabaseAvailable, setIsSupabaseAvailable] = useState(false)
 
-  // Función para mostrar notificaciones
-  const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
-    console.log(`[${type.toUpperCase()}] ${message}`)
+  useEffect(() => {
+    initializeProducts()
   }, [])
 
-  // Función para cargar productos
-  const loadProducts = useCallback(async () => {
+  const initializeProducts = async () => {
+    setLoading(true)
+    setError(null)
+
     try {
-      setLoading(true)
-      setError(null)
-
-      // Verificar si Supabase está configurado
-      if (!isSupabaseConfigured()) {
-        console.warn("Supabase not configured, using fallback products")
+      // Verificar si Supabase está configurado y disponible
+      const configured = isSupabaseConfigured()
+      if (!configured) {
+        console.warn("Supabase not configured, using fallback data")
         setProducts(fallbackProducts)
-        setSupabaseConnected(false)
+        setIsSupabaseAvailable(false)
+        setLoading(false)
         return
       }
 
-      // Verificar conexión a Supabase
-      const isConnected = await testSupabaseConnection()
-      setSupabaseConnected(isConnected)
-
-      if (!isConnected) {
-        console.warn("Supabase not available, using fallback products")
+      // Intentar conectar a Supabase
+      const connected = await testSupabaseConnection()
+      if (!connected) {
+        console.warn("Supabase connection failed, using fallback data")
         setProducts(fallbackProducts)
+        setIsSupabaseAvailable(false)
+        setLoading(false)
         return
       }
 
-      // Intentar cargar desde la API primero, luego desde Supabase directamente
-      try {
-        const response = await fetch("/api/admin/products")
-        if (response.ok) {
-          const result = await response.json()
-          const transformedProducts = result.data?.map(transformSupabaseProduct) || []
-          setProducts(transformedProducts)
-          return
-        }
-      } catch (apiError) {
-        console.warn("API not available, trying direct Supabase connection")
-      }
-
-      // Fallback a conexión directa con Supabase
-      const { data, error: supabaseError } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false })
-
-      if (supabaseError) {
-        throw supabaseError
-      }
-
-      const transformedProducts = data?.map(transformSupabaseProduct) || []
-      setProducts(transformedProducts)
+      // Si llegamos aquí, Supabase está disponible
+      setIsSupabaseAvailable(true)
+      await fetchProducts()
     } catch (err) {
-      console.error("Error loading products:", err)
-      setError(err instanceof Error ? err.message : "Error desconocido")
+      console.error("Error initializing products:", err)
+      setError("Error al cargar productos")
       setProducts(fallbackProducts)
-      setSupabaseConnected(false)
-      showToast("Usando datos de ejemplo. Verifica la configuración de Supabase.", "warning")
+      setIsSupabaseAvailable(false)
     } finally {
       setLoading(false)
     }
-  }, [showToast])
+  }
 
-  // Cargar productos al montar el componente
-  useEffect(() => {
-    loadProducts()
-  }, [loadProducts])
+  const fetchProducts = async () => {
+    if (!isSupabaseAvailable) {
+      setProducts(fallbackProducts)
+      return
+    }
 
-  // Función para agregar producto usando la API
-  const addProduct = async (productData: ProductFormData): Promise<boolean> => {
     try {
-      console.log("Adding product:", productData)
+      const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
 
-      const response = await fetch("/api/admin/products", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(productData),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Error al agregar producto")
+      if (error) {
+        console.error("Error fetching products:", error)
+        setProducts(fallbackProducts)
+        return
       }
 
-      console.log("Product added successfully:", result.data)
-      showToast("Producto agregado exitosamente", "success")
-      await loadProducts()
+      setProducts(data || [])
+    } catch (err) {
+      console.error("Error fetching products:", err)
+      setProducts(fallbackProducts)
+    }
+  }
+
+  const addProduct = async (productData: Omit<Product, "id">): Promise<boolean> => {
+    if (!isSupabaseAvailable) {
+      // Simular agregar producto en modo fallback
+      const newProduct: Product = {
+        ...productData,
+        id: Date.now().toString(),
+        stock: 1, // Siempre disponible
+      }
+      setProducts((prev) => [newProduct, ...prev])
+      return true
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .insert([{ ...productData, stock: 1 }])
+        .select()
+        .single()
+
+      if (error) {
+        console.error("Error adding product:", error)
+        setError("Error al agregar producto")
+        return false
+      }
+
+      setProducts((prev) => [data, ...prev])
       return true
     } catch (err) {
       console.error("Error adding product:", err)
-      showToast(`Error al agregar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
+      setError("Error al agregar producto")
       return false
     }
   }
 
-  // Función para actualizar producto usando la API
-  const updateProduct = async (id: string, productData: Partial<ProductFormData>): Promise<boolean> => {
+  const updateProduct = async (id: string, productData: Omit<Product, "id">): Promise<boolean> => {
+    if (!isSupabaseAvailable) {
+      // Simular actualizar producto en modo fallback
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...productData, id, stock: 1 } : p)))
+      return true
+    }
+
     try {
-      console.log("Updating product:", { id, productData })
+      const { data, error } = await supabase
+        .from("products")
+        .update({ ...productData, stock: 1 })
+        .eq("id", id)
+        .select()
+        .single()
 
-      const response = await fetch(`/api/admin/products/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(productData),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Error al actualizar producto")
+      if (error) {
+        console.error("Error updating product:", error)
+        setError("Error al actualizar producto")
+        return false
       }
 
-      console.log("Product updated successfully:", result.data)
-      showToast("Producto actualizado exitosamente", "success")
-      await loadProducts()
+      setProducts((prev) => prev.map((p) => (p.id === id ? data : p)))
       return true
     } catch (err) {
       console.error("Error updating product:", err)
-      showToast(`Error al actualizar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
+      setError("Error al actualizar producto")
       return false
     }
   }
 
-  // Función para eliminar producto usando la API
   const deleteProduct = async (id: string): Promise<boolean> => {
+    if (!isSupabaseAvailable) {
+      // Simular eliminar producto en modo fallback
+      setProducts((prev) => prev.filter((p) => p.id !== id))
+      return true
+    }
+
     try {
-      console.log("Deleting product:", id)
+      const { error } = await supabase.from("products").delete().eq("id", id)
 
-      const response = await fetch(`/api/admin/products/${id}`, {
-        method: "DELETE",
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Error al eliminar producto")
+      if (error) {
+        console.error("Error deleting product:", error)
+        setError("Error al eliminar producto")
+        return false
       }
 
-      console.log("Product deleted successfully:", result.data)
-      showToast("Producto eliminado exitosamente", "success")
-      await loadProducts()
+      setProducts((prev) => prev.filter((p) => p.id !== id))
       return true
     } catch (err) {
       console.error("Error deleting product:", err)
-      showToast(`Error al eliminar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
+      setError("Error al eliminar producto")
       return false
     }
   }
 
   const getProductById = (id: string): Product | undefined => {
-    return products.find((product) => product.id === id)
+    return products.find((p) => p.id === id)
   }
 
   const getProductsByCategory = (category: string): Product[] => {
-    return products.filter((product) => product.category === category)
-  }
-
-  const getFeaturedProducts = (): Product[] => {
-    return products.filter((product) => product.featured)
-  }
-
-  const searchProducts = (query: string): Product[] => {
-    const lowercaseQuery = query.toLowerCase()
-    return products.filter(
-      (product) =>
-        product.name.toLowerCase().includes(lowercaseQuery) ||
-        product.description.toLowerCase().includes(lowercaseQuery) ||
-        product.category.toLowerCase().includes(lowercaseQuery),
-    )
-  }
-
-  const filterProducts = (filters: ProductFilters): Product[] => {
-    return products.filter((product) => {
-      if (filters.category && product.category !== filters.category) return false
-      if (filters.condition && product.condition !== filters.condition) return false
-      if (filters.priceRange) {
-        const [min, max] = filters.priceRange
-        if (product.price < min || product.price > max) return false
-      }
-      if (filters.search) {
-        const query = filters.search.toLowerCase()
-        if (!product.name.toLowerCase().includes(query) && !product.description.toLowerCase().includes(query))
-          return false
-      }
-      return true
-    })
+    return products.filter((p) => p.category === category)
   }
 
   const refreshProducts = async () => {
-    await loadProducts()
+    await fetchProducts()
   }
 
   const value: ProductContextType = {
     products,
     loading,
     error,
-    supabaseConnected,
     addProduct,
     updateProduct,
     deleteProduct,
     getProductById,
     getProductsByCategory,
-    getFeaturedProducts,
-    searchProducts,
-    filterProducts,
     refreshProducts,
   }
 

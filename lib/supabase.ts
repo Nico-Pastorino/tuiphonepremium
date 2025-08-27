@@ -55,15 +55,20 @@ export async function testSupabaseConnection(): Promise<boolean> {
   }
 
   try {
-    const { data, error } = await supabase.from("products").select("count").limit(1)
+    // Usar una consulta más simple que no requiera tablas específicas
+    const { data, error } = await supabase.rpc("now")
     if (error) {
-      console.error("Supabase connection error:", error)
-      return false
+      // Si la función RPC no existe, intentar con una consulta básica
+      const { error: basicError } = await supabase.from("products").select("count").limit(0)
+      if (basicError && !basicError.message.includes("relation") && !basicError.message.includes("does not exist")) {
+        console.error("Supabase connection error:", basicError)
+        return false
+      }
     }
     console.log("Supabase connection successful")
     return true
   } catch (error) {
-    console.error("Supabase connection failed:", error)
+    console.warn("Supabase connection failed, using fallback mode:", error)
     return false
   }
 }
