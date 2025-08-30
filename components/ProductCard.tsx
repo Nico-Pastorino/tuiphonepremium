@@ -1,223 +1,232 @@
 "use client"
 
 import { useState } from "react"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Star, MessageCircle, Eye, Heart } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Star, MessageCircle, ExternalLink } from "lucide-react"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { useAdmin } from "@/contexts/AdminContext"
 import type { Product } from "@/types/product"
 
 interface ProductCardProps {
   product: Product
+  className?: string
 }
 
-export function ProductCard({ product }: ProductCardProps) {
-  const [isLiked, setIsLiked] = useState(false)
-  const { dollarRate } = useDollarRate()
+export function ProductCard({ product, className = "" }: ProductCardProps) {
+  const [imageError, setImageError] = useState(false)
+  const { rate: dollarRate, markup } = useDollarRate()
   const { installmentPlans } = useAdmin()
 
-  // Safe access to installment plans with default values
+  // Calculate price in ARS using dollar rate + markup
+  const finalDollarRate = dollarRate + (markup || 0)
+  const priceARS = product.priceUSD ? Math.round(product.priceUSD * finalDollarRate) : product.price
+
+  // Safe access to installment plans with fallback values
   const getBestInstallmentOptions = () => {
     if (!installmentPlans) {
       return {
-        visa: { cuotas: 3, tasa: 0 },
-        naranja: { cuotas: 3, tasa: 10 },
+        visa: { cuotas: 3, interes: 0 },
+        naranja: { cuotas: 3, interes: 5 },
       }
     }
 
-    const visaOptions = [
-      { cuotas: 1, tasa: installmentPlans.visa?.installments_1 || 0 },
-      { cuotas: 3, tasa: installmentPlans.visa?.installments_3 || 0 },
-      { cuotas: 6, tasa: installmentPlans.visa?.installments_6 || 15 },
-      { cuotas: 9, tasa: installmentPlans.visa?.installments_9 || 20 },
-      { cuotas: 12, tasa: installmentPlans.visa?.installments_12 || 25 },
-    ]
-
-    const naranjaOptions = [
-      { cuotas: 1, tasa: installmentPlans.naranja?.installments_1 || 0 },
-      { cuotas: 3, tasa: installmentPlans.naranja?.installments_3 || 10 },
-      { cuotas: 6, tasa: installmentPlans.naranja?.installments_6 || 18 },
-      { cuotas: 9, tasa: installmentPlans.naranja?.installments_9 || 22 },
-      { cuotas: 12, tasa: installmentPlans.naranja?.installments_12 || 28 },
-    ]
-
-    // Find best options (lowest interest rate with reasonable installments)
-    const bestVisa = visaOptions.find((opt) => opt.cuotas >= 3 && opt.tasa === 0) || visaOptions[1]
-    const bestNaranja = naranjaOptions.reduce((best, current) =>
-      current.cuotas >= 3 && current.tasa < best.tasa ? current : best,
-    )
+    const visaPlans = installmentPlans.visa || {}
+    const naranjaPlans = installmentPlans.naranja || {}
 
     return {
-      visa: bestVisa,
-      naranja: bestNaranja,
+      visa: {
+        cuotas: 3,
+        interes: visaPlans.installments_3 || 0,
+      },
+      naranja: {
+        cuotas: 3,
+        interes: naranjaPlans.installments_3 || 5,
+      },
     }
   }
 
-  const calculatePrice = () => {
-    if (!product.price_usd || !dollarRate) {
-      return {
-        ars: product.price || 0,
-        usd: product.price_usd || 0,
-      }
-    }
-
-    const arsPrice = product.price_usd * dollarRate
-    return {
-      ars: Math.round(arsPrice),
-      usd: product.price_usd,
-    }
-  }
-
-  const calculateInstallment = (price: number, cuotas: number, tasa: number) => {
-    const monthlyRate = tasa / 100 / 12
-    if (monthlyRate === 0) return price / cuotas
-
-    const installmentAmount =
-      (price * (monthlyRate * Math.pow(1 + monthlyRate, cuotas))) / (Math.pow(1 + monthlyRate, cuotas) - 1)
-    return installmentAmount
-  }
-
-  const prices = calculatePrice()
   const bestOptions = getBestInstallmentOptions()
+  const installmentPrice = Math.round((priceARS * (1 + bestOptions.visa.interes / 100)) / bestOptions.visa.cuotas)
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
+  }
+
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      iphone: "text-gray-700 border-gray-200 bg-gray-50",
+      ipad: "text-blue-700 border-blue-200 bg-blue-50",
+      mac: "text-gray-700 border-gray-200 bg-gray-50",
+      watch: "text-red-700 border-red-200 bg-red-50",
+      accesorios: "text-orange-700 border-orange-200 bg-orange-50",
+    }
+    return colors[category as keyof typeof colors] || "text-gray-700 border-gray-200 bg-gray-50"
+  }
+
+  const getConditionColor = (condition: string) => {
+    return condition === "nuevo"
+      ? "text-green-700 border-green-200 bg-green-50"
+      : "text-yellow-700 border-yellow-200 bg-yellow-50"
+  }
+
+  const whatsappMessage = `Hola! Me interesa el ${product.name}. ¿Podrías darme más información?`
+  const whatsappUrl = `https://wa.me/5491234567890?text=${encodeURIComponent(whatsappMessage)}`
 
   return (
-    <Card className="group relative overflow-hidden bg-white border-0 shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:scale-[1.02] rounded-xl xs:rounded-2xl lg:rounded-3xl">
-      {/* Featured Badge */}
-      {product.featured && (
-        <div className="absolute top-2 xs:top-3 sm:top-4 left-2 xs:left-3 sm:left-4 z-10">
-          <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold text-[9px] xs:text-xs sm:text-sm px-1.5 xs:px-2 sm:px-3 py-0.5 xs:py-1 rounded-md xs:rounded-lg">
-            <Star className="w-2 h-2 xs:w-3 h-3 sm:w-4 h-4 mr-1 fill-current" />
-            <span className="hidden xs:inline">Destacado</span>
-            <span className="xs:hidden">★</span>
-          </Badge>
+    <Card
+      className={`group overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white rounded-lg sm:rounded-xl md:rounded-2xl ${className}`}
+    >
+      <div className="relative">
+        {/* Featured Badge */}
+        {product.featured && (
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
+            <Badge className="bg-yellow-500 text-white border-0 text-[9px] xs:text-xs sm:text-sm px-1 py-0.5 sm:px-2 sm:py-1 font-medium">
+              <Star className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1 fill-current" />
+              <span className="hidden xs:inline">Destacado</span>
+              <span className="xs:hidden">★</span>
+            </Badge>
+          </div>
+        )}
+
+        {/* Product Image */}
+        <div className="aspect-square overflow-hidden bg-gray-50 rounded-t-lg sm:rounded-t-xl md:rounded-t-2xl">
+          <Image
+            src={
+              imageError
+                ? "/placeholder.svg?height=400&width=400&text=Producto"
+                : product.images?.[0] || "/placeholder.svg?height=400&width=400&text=Producto"
+            }
+            alt={product.name}
+            width={400}
+            height={400}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={() => setImageError(true)}
+            sizes="(max-width: 320px) 150px, (max-width: 640px) 200px, (max-width: 768px) 250px, (max-width: 1024px) 300px, 350px"
+          />
         </div>
-      )}
-
-      {/* Like Button */}
-      <button
-        onClick={() => setIsLiked(!isLiked)}
-        className="absolute top-2 xs:top-3 sm:top-4 right-2 xs:right-3 sm:right-4 z-10 w-6 h-6 xs:w-8 h-8 sm:w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all duration-300 shadow-sm hover:shadow-md"
-      >
-        <Heart
-          className={`w-3 h-3 xs:w-4 h-4 sm:w-5 h-5 transition-colors duration-300 ${
-            isLiked ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"
-          }`}
-        />
-      </button>
-
-      {/* Product Image */}
-      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl xs:rounded-t-2xl lg:rounded-t-3xl">
-        <Image
-          src={product.image_url || "/placeholder.svg?height=400&width=400"}
-          alt={product.name}
-          fill
-          className="object-cover group-hover:scale-110 transition-transform duration-700"
-          sizes="(max-width: 320px) 280px, (max-width: 640px) 300px, (max-width: 768px) 350px, (max-width: 1024px) 280px, 320px"
-        />
       </div>
 
       {/* Content */}
-      <div className="p-2 xs:p-3 sm:p-4 md:p-5 lg:p-6">
+      <CardContent className="p-2 xs:p-3 sm:p-4 md:p-5 lg:p-6">
         {/* Category */}
         <div className="mb-1 xs:mb-2 sm:mb-3">
           <Badge
             variant="outline"
-            className="text-[9px] xs:text-xs sm:text-sm font-medium text-blue-600 border-blue-200 bg-blue-50 px-1.5 xs:px-2 sm:px-3 py-0.5 xs:py-1 rounded-md xs:rounded-lg"
+            className={`text-[9px] xs:text-xs sm:text-sm font-medium px-1 py-0.5 xs:px-2 xs:py-1 ${getCategoryColor(product.category)}`}
           >
-            {product.category}
+            {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
           </Badge>
         </div>
 
-        {/* Title */}
-        <h3 className="font-bold text-gray-900 mb-1 xs:mb-2 sm:mb-3 line-clamp-2 text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl leading-tight">
+        {/* Product Name */}
+        <h3 className="font-bold text-gray-900 mb-1 xs:mb-2 sm:mb-3 text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl leading-tight line-clamp-2">
           {product.name}
         </h3>
 
         {/* Description - Hidden on very small screens */}
-        <p className="hidden sm:block text-gray-600 text-xs sm:text-sm md:text-base mb-2 sm:mb-3 md:mb-4 line-clamp-2 leading-relaxed">
-          {product.description}
-        </p>
+        {product.description && (
+          <p className="hidden sm:block text-gray-600 text-xs sm:text-sm md:text-base mb-2 sm:mb-3 md:mb-4 line-clamp-2 leading-relaxed">
+            {product.description}
+          </p>
+        )}
 
-        {/* Specifications - Only on tablets and up */}
-        {product.specifications && (
+        {/* Condition Badge */}
+        <div className="mb-2 xs:mb-3 sm:mb-4">
+          <Badge
+            variant="outline"
+            className={`text-[9px] xs:text-xs sm:text-sm font-medium px-1 py-0.5 xs:px-2 xs:py-1 ${getConditionColor(product.condition)}`}
+          >
+            {product.condition === "nuevo" ? "Nuevo" : "Seminuevo"}
+          </Badge>
+        </div>
+
+        {/* Specifications - Only show on tablets and up */}
+        {product.specifications && typeof product.specifications === "object" && (
           <div className="hidden md:block mb-3 lg:mb-4">
-            <div className="flex flex-wrap gap-1 lg:gap-2">
-              {product.specifications.slice(0, 2).map((spec, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="text-[10px] lg:text-xs px-1.5 lg:px-2 py-0.5 lg:py-1 bg-gray-100 text-gray-700 rounded-md"
-                >
-                  {spec}
-                </Badge>
-              ))}
+            <div className="space-y-1">
+              {Object.entries(product.specifications)
+                .slice(0, 2)
+                .map(([key, value]) => (
+                  <div key={key} className="flex justify-between text-xs lg:text-sm">
+                    <span className="text-gray-500 capitalize">{key}:</span>
+                    <span className="text-gray-700 font-medium truncate ml-2">{String(value)}</span>
+                  </div>
+                ))}
             </div>
           </div>
         )}
 
-        {/* Pricing */}
-        <div className="mb-2 xs:mb-3 sm:mb-4 md:mb-6">
-          <div className="flex flex-wrap items-baseline gap-1 xs:gap-2 sm:gap-3 mb-1 xs:mb-2 sm:mb-3">
+        {/* Price Section */}
+        <div className="mb-2 xs:mb-3 sm:mb-4">
+          <div className="flex flex-wrap items-baseline gap-1 xs:gap-2">
             <span className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
-              ${prices.ars.toLocaleString()}
+              {formatPrice(priceARS)}
             </span>
-            <span className="text-[10px] xs:text-xs sm:text-sm md:text-base text-gray-500 font-medium">
-              USD ${prices.usd}
-            </span>
+            {product.originalPrice && product.originalPrice > priceARS && (
+              <span className="text-[10px] xs:text-xs sm:text-sm text-gray-500 line-through">
+                {formatPrice(product.originalPrice)}
+              </span>
+            )}
           </div>
 
-          {/* Installments */}
-          <div className="space-y-1 xs:space-y-1.5 sm:space-y-2">
-            {/* Visa/Mastercard */}
-            <div className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm text-green-600 font-medium">
-              {bestOptions.visa.cuotas === 1
-                ? "1 cuota sin interés"
-                : `${bestOptions.visa.cuotas} cuotas de $${Math.round(calculateInstallment(prices.ars, bestOptions.visa.cuotas, bestOptions.visa.tasa)).toLocaleString()}`}
-              <span className="text-gray-500 ml-1">Visa/MC</span>
-            </div>
+          {/* USD Price - Show on larger screens */}
+          {product.priceUSD && (
+            <p className="hidden xs:block text-[10px] xs:text-xs sm:text-sm text-gray-600 mt-1">
+              USD ${product.priceUSD.toLocaleString()}
+            </p>
+          )}
 
-            {/* Naranja */}
-            <div className="text-[9px] xs:text-[10px] sm:text-xs md:text-sm text-orange-600 font-medium">
-              {bestOptions.naranja.cuotas === 1
-                ? "1 cuota Naranja"
-                : `${bestOptions.naranja.cuotas} cuotas de $${Math.round(calculateInstallment(prices.ars, bestOptions.naranja.cuotas, bestOptions.naranja.tasa)).toLocaleString()}`}
-              <span className="text-gray-500 ml-1">Naranja</span>
-            </div>
+          {/* Installments */}
+          <div className="mt-1 xs:mt-2">
+            <p className="text-[10px] xs:text-xs sm:text-sm text-green-600 font-medium">
+              {bestOptions.visa.cuotas}x {formatPrice(installmentPrice)}
+              {bestOptions.visa.interes === 0 && <span className="text-green-700"> sin interés</span>}
+            </p>
+            <p className="text-[9px] xs:text-[10px] sm:text-xs text-gray-500">Tarjetas Visa/Mastercard</p>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col xs:flex-row gap-1.5 xs:gap-2 sm:gap-3">
+        <div className="flex flex-col xs:flex-row gap-1 xs:gap-2 sm:gap-3">
           <Button
-            size="sm"
-            className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-lg xs:rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md text-[10px] xs:text-xs sm:text-sm md:text-base min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] md:min-h-[48px]"
             asChild
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white text-[10px] xs:text-xs sm:text-sm md:text-base font-semibold rounded-md xs:rounded-lg sm:rounded-xl min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] md:min-h-[48px] px-2 xs:px-3 sm:px-4"
           >
-            <Link href={`https://wa.me/1234567890?text=Hola! Me interesa el ${product.name}`}>
-              <MessageCircle className="w-2.5 h-2.5 xs:w-3 h-3 sm:w-4 h-4 md:w-5 h-5 mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0" />
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1 xs:gap-2"
+            >
+              <MessageCircle className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
               <span className="xs:hidden">WA</span>
               <span className="hidden xs:inline sm:hidden">WhatsApp</span>
               <span className="hidden sm:inline">Consultar</span>
-            </Link>
+            </a>
           </Button>
 
           <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 xs:flex-none border-2 border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 font-semibold rounded-lg xs:rounded-xl sm:rounded-2xl transition-all duration-300 bg-white hover:bg-gray-50 text-[10px] xs:text-xs sm:text-sm md:text-base min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] md:min-h-[48px] xs:min-w-[80px] sm:min-w-[100px]"
             asChild
+            variant="outline"
+            className="flex-1 border-gray-300 hover:border-blue-500 text-gray-700 hover:text-blue-600 hover:bg-blue-50 text-[10px] xs:text-xs sm:text-sm md:text-base font-semibold rounded-md xs:rounded-lg sm:rounded-xl min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] md:min-h-[48px] px-2 xs:px-3 sm:px-4 transition-all duration-200 bg-transparent"
           >
-            <Link href={`/productos/${product.id}`}>
-              <Eye className="w-2.5 h-2.5 xs:w-3 h-3 sm:w-4 h-4 md:w-5 h-5 xs:mr-1.5 sm:mr-2 flex-shrink-0" />
-              <span className="hidden xs:inline">Ver</span>
+            <Link href={`/productos/${product.id}`} className="flex items-center justify-center gap-1 xs:gap-2">
+              <ExternalLink className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 flex-shrink-0" />
+              <span className="xs:hidden">Ver</span>
+              <span className="hidden xs:inline">Ver más</span>
             </Link>
           </Button>
         </div>
-      </div>
+      </CardContent>
     </Card>
   )
 }
