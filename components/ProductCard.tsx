@@ -25,10 +25,28 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
   const effectiveDollarRate = getEffectiveDollarRate()
   const priceARS = product.price_usd ? Math.round(product.price_usd * effectiveDollarRate) : product.price
 
+  // Verificar que installmentPlans existe y tiene la estructura correcta
+  const safeInstallmentPlans = installmentPlans || {
+    visa: {
+      installments_1: 0,
+      installments_3: 0,
+      installments_6: 15,
+      installments_9: 20,
+      installments_12: 25,
+    },
+    naranja: {
+      installments_1: 0,
+      installments_3: 10,
+      installments_6: 18,
+      installments_9: 25,
+      installments_12: 30,
+    },
+  }
+
   // Calcular cuotas
   const calculateInstallment = (price: number, installments: number, rate: number) => {
-    const monthlyRate = rate / 100 / 12
     if (rate === 0) return price / installments
+    const monthlyRate = rate / 100 / 12
     return (
       (price * monthlyRate * Math.pow(1 + monthlyRate, installments)) / (Math.pow(1 + monthlyRate, installments) - 1)
     )
@@ -39,7 +57,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
     const options = []
 
     // Visa/Mastercard sin interés
-    if (installmentPlans.visa.installments_3 === 0) {
+    if (safeInstallmentPlans.visa?.installments_3 === 0) {
       options.push({
         installments: 3,
         amount: priceARS / 3,
@@ -49,24 +67,24 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
     }
 
     // Visa/Mastercard 6 cuotas
-    if (installmentPlans.visa.installments_6 > 0) {
+    if (safeInstallmentPlans.visa?.installments_6 > 0) {
       options.push({
         installments: 6,
-        amount: calculateInstallment(priceARS, 6, installmentPlans.visa.installments_6),
-        rate: installmentPlans.visa.installments_6,
+        amount: calculateInstallment(priceARS, 6, safeInstallmentPlans.visa.installments_6),
+        rate: safeInstallmentPlans.visa.installments_6,
         type: "Visa/Mastercard",
       })
     }
 
     // Naranja 3 cuotas
-    if (installmentPlans.naranja.installments_3 >= 0) {
+    if (safeInstallmentPlans.naranja?.installments_3 >= 0) {
       options.push({
         installments: 3,
         amount:
-          installmentPlans.naranja.installments_3 === 0
+          safeInstallmentPlans.naranja.installments_3 === 0
             ? priceARS / 3
-            : calculateInstallment(priceARS, 3, installmentPlans.naranja.installments_3),
-        rate: installmentPlans.naranja.installments_3,
+            : calculateInstallment(priceARS, 3, safeInstallmentPlans.naranja.installments_3),
+        rate: safeInstallmentPlans.naranja.installments_3,
         type: "Naranja",
       })
     }
