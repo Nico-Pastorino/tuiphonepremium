@@ -1,218 +1,229 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Star, MessageCircle, Eye } from "lucide-react"
 import { useAdmin } from "@/contexts/AdminContext"
-import { useDollarRate } from "@/hooks/use-dollar-rate"
-import type { Product } from "@/types/product"
-import { Star, MessageCircle, Eye, Zap, Shield, Truck } from "lucide-react"
+
+interface Product {
+  id: string
+  name: string
+  price_usd: number
+  original_price?: number
+  category: string
+  image_url?: string
+  description?: string
+  specifications?: string[]
+  is_featured?: boolean
+  stock_quantity?: number
+  created_at: string
+}
 
 interface ProductCardProps {
   product: Product
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const [imageError, setImageError] = useState(false)
-  const { getInstallmentPlansByCategory } = useAdmin()
-  const { dollarRate } = useDollarRate()
+  const [mounted, setMounted] = useState(false)
+  const { getEffectiveDollarRate } = useAdmin()
 
-  // Obtener planes de cuotas
-  const visaPlans = getInstallmentPlansByCategory("visa-mastercard").filter((p) => p.isActive)
-  const naranjaPlans = getInstallmentPlansByCategory("naranja").filter((p) => p.isActive)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  // Calcular cuota más baja
-  const calculateInstallment = (price: number, months: number, rate: number) => {
-    const monthlyRate = rate / 100 / 12
-    if (rate === 0) return price / months
-    return (price * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1)
+  if (!mounted) {
+    return null
   }
 
-  const getBestInstallment = () => {
-    const allPlans = [...visaPlans, ...naranjaPlans]
-    if (allPlans.length === 0) return null
+  const dollarRate = getEffectiveDollarRate()
+  const priceARS = Math.round(product.price_usd * dollarRate)
+  const originalPriceARS = product.original_price ? Math.round(product.original_price * dollarRate) : null
+  const discount = originalPriceARS ? Math.round(((originalPriceARS - priceARS) / originalPriceARS) * 100) : 0
 
-    const installments = allPlans.map((plan) => ({
-      ...plan,
-      monthlyPayment: calculateInstallment(product.price, plan.months, plan.interestRate),
-    }))
-
-    return installments.reduce((best, current) => (current.monthlyPayment < best.monthlyPayment ? current : best))
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
   }
 
-  const bestInstallment = getBestInstallment()
+  const formatPriceUSD = (price: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
+  }
 
-  const handleWhatsApp = () => {
-    const message = `Hola! Me interesa el ${product.name} - $${product.price.toLocaleString("es-AR")}`
-    const whatsappUrl = `https://wa.me/5491234567890?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, "_blank")
+  const getCategoryColor = (category: string) => {
+    switch (category.toLowerCase()) {
+      case "iphone":
+        return "bg-gray-900 text-white"
+      case "ipad":
+        return "bg-blue-600 text-white"
+      case "mac":
+        return "bg-gray-600 text-white"
+      case "accesorios":
+        return "bg-gradient-to-r from-yellow-500 to-orange-600 text-white"
+      default:
+        return "bg-gray-500 text-white"
+    }
   }
 
   return (
-    <Card className="group overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:scale-[1.02] border-0 shadow-lg bg-white/95 backdrop-blur-sm">
-      {/* Image Container */}
-      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+    <Card className="group cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 border-0 shadow-md bg-white rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden h-full">
+      <div className="relative aspect-square overflow-hidden">
         <Image
-          src={
-            imageError
-              ? "/placeholder.svg?height=400&width=400"
-              : product.images[0] || "/placeholder.svg?height=400&width=400"
-          }
+          src={product.image_url || "/placeholder.svg?height=400&width=400&text=Producto"}
           alt={product.name}
           fill
-          className="object-cover group-hover:scale-110 transition-transform duration-700"
-          onError={() => setImageError(true)}
-          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-700"
+          sizes="(max-width: 320px) 280px, (max-width: 640px) 300px, (max-width: 768px) 350px, (max-width: 1024px) 400px, 450px"
         />
 
         {/* Badges */}
-        <div className="absolute top-2 left-2 xs:top-3 xs:left-3 sm:top-4 sm:left-4 flex flex-col gap-1 xs:gap-2">
-          {product.featured && (
-            <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 text-[9px] xs:text-xs sm:text-sm px-1 xs:px-2 py-0.5 xs:py-1 font-medium shadow-lg">
-              <Star className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 mr-0.5 xs:mr-1 fill-current" />
+        <div className="absolute top-2 sm:top-3 md:top-4 left-2 sm:left-3 md:left-4 flex flex-col gap-1 sm:gap-2">
+          {product.is_featured && (
+            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-[9px] xs:text-xs sm:text-sm font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md sm:rounded-lg shadow-lg">
+              <Star className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1 fill-current" strokeWidth={1.5} />
               <span className="hidden xs:inline">Destacado</span>
               <span className="xs:hidden">★</span>
             </Badge>
           )}
-          <Badge
-            variant="outline"
-            className={`text-[9px] xs:text-xs sm:text-sm px-1 xs:px-2 py-0.5 xs:py-1 font-medium shadow-sm ${
-              product.condition === "nuevo"
-                ? "bg-green-50 text-green-700 border-green-200"
-                : product.condition === "seminuevo"
-                  ? "bg-blue-50 text-blue-700 border-blue-200"
-                  : "bg-gray-50 text-gray-700 border-gray-200"
-            }`}
-          >
-            {product.condition}
-          </Badge>
+          {discount > 0 && (
+            <Badge className="bg-red-500 text-white border-0 text-[9px] xs:text-xs sm:text-sm font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md sm:rounded-lg shadow-lg">
+              -{discount}%
+            </Badge>
+          )}
         </div>
 
-        {/* Quick Actions */}
-        <div className="absolute top-2 right-2 xs:top-3 xs:right-3 sm:top-4 sm:right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Link href={`/productos/${product.id}`}>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="w-6 h-6 xs:w-8 xs:h-8 sm:w-10 sm:h-10 p-0 rounded-full bg-white/90 hover:bg-white shadow-lg"
-            >
-              <Eye className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 text-gray-700" />
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-2 xs:p-3 sm:p-4 md:p-5 lg:p-6">
-        {/* Category */}
-        <div className="mb-1 xs:mb-2 sm:mb-3">
+        {/* Category Badge */}
+        <div className="absolute top-2 sm:top-3 md:top-4 right-2 sm:right-3 md:right-4">
           <Badge
-            variant="outline"
-            className="text-[9px] xs:text-xs sm:text-sm font-medium text-blue-600 border-blue-200 bg-blue-50 px-1 xs:px-2 py-0.5 xs:py-1"
+            className={`${getCategoryColor(product.category)} border-0 text-[9px] xs:text-xs sm:text-sm font-medium px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md sm:rounded-lg shadow-lg`}
           >
             {product.category}
           </Badge>
         </div>
 
+        {/* Stock indicator */}
+        {product.stock_quantity !== undefined && product.stock_quantity <= 5 && (
+          <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-2 sm:left-3 md:left-4">
+            <Badge
+              variant="outline"
+              className="bg-white/90 backdrop-blur-sm text-orange-600 border-orange-200 text-[9px] xs:text-xs sm:text-sm font-medium px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md sm:rounded-lg"
+            >
+              {product.stock_quantity > 0 ? `Solo ${product.stock_quantity} disponibles` : "Sin stock"}
+            </Badge>
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-2 xs:p-3 sm:p-4 lg:p-5 xl:p-6">
+        {/* Category */}
+        <div className="mb-1 xs:mb-2 sm:mb-3">
+          <Badge
+            variant="outline"
+            className="text-[9px] xs:text-xs sm:text-sm font-medium text-blue-600 border-blue-200 bg-blue-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md sm:rounded-lg"
+          >
+            {product.category.toUpperCase()}
+          </Badge>
+        </div>
+
         {/* Title */}
-        <h3 className="font-bold text-gray-900 mb-1 xs:mb-2 sm:mb-3 line-clamp-2 text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl leading-tight">
+        <h3 className="text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold text-gray-900 mb-1 xs:mb-2 sm:mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors duration-300 leading-tight">
           {product.name}
         </h3>
 
-        {/* Description - Hidden on mobile */}
+        {/* Description */}
         {product.description && (
-          <p className="text-gray-600 mb-2 xs:mb-3 sm:mb-4 line-clamp-2 text-[10px] xs:text-xs sm:text-sm hidden sm:block">
+          <p className="text-[9px] xs:text-xs sm:text-sm md:text-base text-gray-600 mb-2 xs:mb-3 sm:mb-4 line-clamp-2 leading-relaxed">
             {product.description}
           </p>
         )}
 
-        {/* Specifications - Only on tablets+ */}
-        {product.specifications && Object.keys(product.specifications).length > 0 && (
-          <div className="mb-2 xs:mb-3 sm:mb-4 hidden md:block">
-            <div className="flex flex-wrap gap-1 xs:gap-2">
-              {Object.entries(product.specifications)
-                .slice(0, 2)
-                .map(([key, value]) => (
-                  <Badge
-                    key={key}
-                    variant="outline"
-                    className="text-[9px] xs:text-xs bg-gray-50 text-gray-600 border-gray-200 px-1 xs:px-2 py-0.5"
-                  >
-                    {value}
-                  </Badge>
-                ))}
+        {/* Specifications - Only show on larger screens */}
+        {product.specifications && product.specifications.length > 0 && (
+          <div className="hidden md:block mb-3 lg:mb-4">
+            <div className="flex flex-wrap gap-1 lg:gap-2">
+              {product.specifications.slice(0, 2).map((spec, index) => (
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="text-[9px] lg:text-xs text-gray-600 bg-gray-100 border-0 px-1.5 py-0.5 lg:px-2 lg:py-1 rounded-md"
+                >
+                  {spec}
+                </Badge>
+              ))}
             </div>
           </div>
         )}
 
         {/* Price Section */}
-        <div className="mb-2 xs:mb-3 sm:mb-4 space-y-1 xs:space-y-2">
-          <div className="flex flex-wrap items-baseline gap-1 xs:gap-2">
+        <div className="mb-2 xs:mb-3 sm:mb-4">
+          <div className="flex flex-wrap items-center gap-1 xs:gap-2 sm:gap-3 mb-1 xs:mb-2">
             <span className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
-              ${product.price.toLocaleString("es-AR")}
+              {formatPrice(priceARS)}
             </span>
-            {product.priceUSD && (
-              <span className="text-[10px] xs:text-xs sm:text-sm text-green-600 font-medium">
-                USD ${product.priceUSD}
+            {originalPriceARS && (
+              <span className="text-xs xs:text-sm sm:text-base md:text-lg text-gray-500 line-through">
+                {formatPrice(originalPriceARS)}
               </span>
             )}
           </div>
-
-          {/* Installments */}
-          {bestInstallment && (
-            <div className="text-[10px] xs:text-xs sm:text-sm text-gray-600">
-              <span className="font-medium">
-                {bestInstallment.months}x ${Math.round(bestInstallment.monthlyPayment).toLocaleString("es-AR")}
-              </span>
-              <span className="text-blue-600 ml-1 xs:ml-2">
-                {bestInstallment.category === "naranja" ? "Naranja" : "Tarjetas"}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Features - Only on larger screens */}
-        <div className="mb-3 xs:mb-4 sm:mb-6 hidden lg:block">
-          <div className="flex items-center gap-2 xs:gap-3 text-[10px] xs:text-xs text-gray-500">
-            <div className="flex items-center gap-1">
-              <Shield className="w-2 h-2 xs:w-3 xs:h-3" />
-              <span>Garantía</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Truck className="w-2 h-2 xs:w-3 xs:h-3" />
-              <span>Envío</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Zap className="w-2 h-2 xs:w-3 xs:h-3" />
-              <span>Original</span>
-            </div>
+          <div className="text-[9px] xs:text-xs sm:text-sm md:text-base text-gray-500">
+            {formatPriceUSD(product.price_usd)} • Dólar: ${Math.round(dollarRate)}
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-1 xs:gap-2 sm:gap-3">
-          <Button
-            onClick={handleWhatsApp}
-            className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-[10px] xs:text-xs sm:text-sm md:text-base font-medium px-2 xs:px-3 sm:px-4 py-1 xs:py-2 sm:py-3 rounded-md xs:rounded-lg sm:rounded-xl min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] md:min-h-[48px] shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            <MessageCircle className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 mr-1 xs:mr-2 flex-shrink-0" />
-            <span className="xs:hidden">WA</span>
-            <span className="hidden xs:inline sm:hidden">WhatsApp</span>
-            <span className="hidden sm:inline">Consultar</span>
-          </Button>
+        {/* Installments */}
+        <div className="mb-3 xs:mb-4 sm:mb-6">
+          <div className="text-[9px] xs:text-xs sm:text-sm md:text-base text-green-600 font-medium">
+            <span className="hidden sm:inline">Hasta </span>12 cuotas sin interés
+          </div>
+          <div className="text-[9px] xs:text-xs sm:text-sm text-gray-500">
+            <span className="hidden xs:inline">desde </span>
+            {formatPrice(Math.round(priceARS / 12))}/mes
+          </div>
+        </div>
 
-          <Link href={`/productos/${product.id}`} className="flex-shrink-0">
-            <Button
-              variant="outline"
-              className="bg-white hover:bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300 text-[10px] xs:text-xs sm:text-sm md:text-base font-medium px-2 xs:px-3 sm:px-4 py-1 xs:py-2 sm:py-3 rounded-md xs:rounded-lg sm:rounded-xl min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] md:min-h-[48px] shadow-sm hover:shadow-md transition-all duration-300"
-            >
-              <Eye className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 sm:mr-2 flex-shrink-0" />
-              <span className="hidden sm:inline">Ver</span>
-            </Button>
-          </Link>
+        {/* Actions */}
+        <div className="flex flex-col xs:flex-row gap-1.5 xs:gap-2 sm:gap-3">
+          <Button
+            asChild
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white text-[9px] xs:text-xs sm:text-sm md:text-base font-medium rounded-md sm:rounded-lg transition-all duration-300 min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] md:min-h-[48px] shadow-md hover:shadow-lg"
+          >
+            <Link href={`https://wa.me/5491234567890?text=Hola! Me interesa el ${product.name}`}>
+              <MessageCircle
+                className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0"
+                strokeWidth={1.5}
+              />
+              <span className="xs:hidden">WA</span>
+              <span className="hidden xs:inline sm:hidden">WhatsApp</span>
+              <span className="hidden sm:inline">Consultar</span>
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            className="flex-1 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 text-[9px] xs:text-xs sm:text-sm md:text-base font-medium rounded-md sm:rounded-lg transition-all duration-300 min-h-[32px] xs:min-h-[36px] sm:min-h-[40px] md:min-h-[48px] shadow-sm hover:shadow-md bg-transparent"
+          >
+            <Link href={`/productos/${product.id}`}>
+              <Eye
+                className="w-2 h-2 xs:w-3 xs:h-3 sm:w-4 sm:h-4 mr-1 xs:mr-1.5 sm:mr-2 flex-shrink-0"
+                strokeWidth={1.5}
+              />
+              <span className="hidden xs:inline">Ver</span>
+            </Link>
+          </Button>
         </div>
       </div>
     </Card>
