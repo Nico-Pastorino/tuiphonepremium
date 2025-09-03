@@ -100,33 +100,94 @@
   }
 }
 
-/* Hero image responsive positioning */
+/* Hero image responsive positioning - Optimized for mobile */
 @layer utilities {
   .hero-image {
-    object-position: center 40%;
+    object-position: center 20%;
+    object-fit: cover;
   }
 
-  @media (min-width: 640px) {
+  @media (max-width: 480px) {
     .hero-image {
-      object-position: center 35%;
+      object-position: center 15%;
+      object-fit: cover;
     }
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 481px) and (max-width: 640px) {
+    .hero-image {
+      object-position: center 25%;
+      object-fit: cover;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 768px) {
     .hero-image {
       object-position: center 30%;
+      object-fit: cover;
     }
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .hero-image {
+      object-position: center 35%;
+      object-fit: cover;
+    }
+  }
+
+  @media (min-width: 1025px) {
     .hero-image {
       object-position: center center;
+      object-fit: cover;
+    }
+  }
+}
+
+/* Mobile-specific hero adjustments */
+@layer utilities {
+  .hero-mobile-overlay {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      rgba(255, 255, 255, 0.1) 100%
+    );
+  }
+
+  @media (max-width: 640px) {
+    .hero-mobile-overlay {
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.4) 40%,
+        rgba(255, 255, 255, 0.3) 70%,
+        rgba(255, 255, 255, 0.1) 100%
+      );
+    }
+  }
+}
+
+/* Scroll indicator positioning - Mobile optimized */
+@layer utilities {
+  .scroll-indicator {
+    bottom: 2rem;
+  }
+
+  @media (max-width: 640px) {
+    .scroll-indicator {
+      bottom: 1rem;
     }
   }
 
-  @media (min-width: 1280px) {
-    .hero-image {
-      object-position: center 45%;
+  @media (min-width: 641px) and (max-width: 768px) {
+    .scroll-indicator {
+      bottom: 1.5rem;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .scroll-indicator {
+      bottom: 2rem;
     }
   }
 }
@@ -141,6 +202,26 @@
   .h-screen-safe {
     height: 100vh;
     height: 100dvh; /* Dynamic viewport height for mobile */
+  }
+
+  /* Mobile hero height adjustments */
+  .hero-height {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  @media (max-width: 640px) {
+    .hero-height {
+      min-height: 90vh;
+      min-height: 90dvh;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 768px) {
+    .hero-height {
+      min-height: 95vh;
+      min-height: 95dvh;
+    }
   }
 }
 
