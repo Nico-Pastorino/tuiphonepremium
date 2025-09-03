@@ -123,39 +123,39 @@ export default function HomePage() {
       <MinimalNavbar />
 
       {/* Hero Section - Mobile Optimized */}
-      <section className="relative min-h-[85vh] sm:min-h-[90vh] md:min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background Image - Mobile Optimized */}
         <div className="absolute inset-0 z-0">
           <Image
             src="/portada.jpg"
             alt="Apple Products Collection"
             fill
-            className="hero-image"
+            className="object-cover object-center sm:object-contain"
             priority
             sizes="100vw"
           />
           {/* Mobile-Optimized Overlay */}
-          <div className="absolute inset-0 hero-mobile-overlay backdrop-blur-[0.5px]" />
+          <div className="absolute inset-0 bg-white/10 backdrop-blur-[0.5px]" />
         </div>
 
         {/* Content - Mobile Optimized */}
-        <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 md:pt-16">
+        <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 pt-16 sm:pt-8 md:pt-16">
           <AnimatedSection>
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-gray-900 mb-4 xs:mb-6 sm:mb-8 md:mb-10 leading-tight">
+              <h1 className="text-5xl xs:text-6xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-gray-900 mb-6 xs:mb-8 sm:mb-8 md:mb-10 leading-tight">
                 Tu iPhone
                 <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Premium
                 </span>
               </h1>
-              <p className="text-lg xs:text-xl sm:text-2xl md:text-3xl text-gray-700 mb-8 xs:mb-10 sm:mb-12 md:mb-16 max-w-3xl mx-auto leading-relaxed px-2">
+              <p className="text-xl xs:text-2xl sm:text-2xl md:text-3xl text-gray-700 mb-10 xs:mb-12 sm:mb-12 md:mb-16 max-w-3xl mx-auto leading-relaxed px-2">
                 Los mejores productos Apple con garantía oficial y financiación flexible
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 xs:gap-6 sm:gap-8 justify-center items-center px-4">
+              <div className="flex flex-col sm:flex-row gap-5 xs:gap-6 sm:gap-8 justify-center items-center px-4">
                 <Button
                   onClick={scrollToProducts}
                   size="lg"
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 xs:px-10 py-4 xs:py-5 text-lg xs:text-xl font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 w-full xs:w-auto touch-target"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-10 xs:px-12 py-5 xs:py-6 text-xl xs:text-2xl font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 w-full xs:w-auto touch-target"
                 >
                   Ver Productos
                 </Button>
@@ -163,7 +163,7 @@ export default function HomePage() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 px-8 xs:px-10 py-4 xs:py-5 text-lg xs:text-xl font-semibold rounded-full transition-all duration-300 bg-white/80 backdrop-blur-sm w-full touch-target"
+                    className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 px-10 xs:px-12 py-5 xs:py-6 text-xl xs:text-2xl font-semibold rounded-full transition-all duration-300 bg-white/80 backdrop-blur-sm w-full touch-target"
                   >
                     Ver Cuotas
                   </Button>
@@ -173,14 +173,14 @@ export default function HomePage() {
           </AnimatedSection>
 
           {/* Scroll Indicator - Mobile Optimized */}
-          <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+          <div className="absolute bottom-6 xs:bottom-8 sm:bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
             <Button
               variant="ghost"
               size="sm"
               onClick={scrollToProducts}
-              className="text-gray-600 hover:text-gray-900 p-2 xs:p-3 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 touch-target"
+              className="text-gray-600 hover:text-gray-900 p-3 xs:p-4 rounded-full bg-white/30 backdrop-blur-sm hover:bg-white/40 transition-all duration-300 touch-target"
             >
-              <ArrowDown className="w-5 h-5 xs:w-6 xs:h-6" />
+              <ArrowDown className="w-6 h-6 xs:w-7 xs:h-7" />
             </Button>
           </div>
         </div>
