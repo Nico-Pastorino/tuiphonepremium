@@ -298,7 +298,7 @@ export default function HomePage() {
                 Todos nuestros productos
               </h2>
               <p className="text-base xs:text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-                {dollarRate && <>Precios actualizados al dólar blue: ${dollarRate.blue.toLocaleString("es-AR")}</>}
+                Encuentra el producto Apple que estás buscando
               </p>
             </div>
 
