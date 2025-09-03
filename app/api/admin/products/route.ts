@@ -1,57 +1,72 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { ProductAdminService } from "@/lib/supabase-admin"
+import { getProducts, createProduct } from "@/lib/supabase"
 
 export async function GET() {
   try {
-    const { data, error } = await ProductAdminService.getAllProducts()
+    console.log("API: Fetching products from Supabase...")
+    const products = await getProducts()
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    // Transform data to match frontend expectations
+    const transformedProducts = products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      originalPrice: product.original_price,
+      priceUSD: product.price_usd,
+      category: product.category,
+      condition: product.condition,
+      images: product.images || [],
+      specifications: product.specifications || {},
+      stock: product.stock || 1,
+      featured: product.featured || false,
+      createdAt: product.created_at,
+      updatedAt: product.updated_at,
+    }))
 
-    return NextResponse.json(data)
+    console.log(`API: Successfully fetched ${transformedProducts.length} products`)
+    return NextResponse.json(transformedProducts)
   } catch (error) {
-    console.error("Admin get all products error:", error)
-    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 })
+    console.error("API: Error fetching products:", error)
+    return NextResponse.json(
+      { error: "Error al obtener productos", details: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 },
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    console.log("API POST received:", body)
+    console.log("API: Creating product:", body)
 
-    // Validar campos requeridos
-    if (!body.name || !body.price || !body.category) {
-      return NextResponse.json({ error: "Faltan campos requeridos: name, price, category" }, { status: 400 })
+    const product = await createProduct(body)
+
+    // Transform response to match frontend expectations
+    const transformedProduct = {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      originalPrice: product.original_price,
+      priceUSD: product.price_usd,
+      category: product.category,
+      condition: product.condition,
+      images: product.images || [],
+      specifications: product.specifications || {},
+      stock: product.stock || 1,
+      featured: product.featured || false,
+      createdAt: product.created_at,
+      updatedAt: product.updated_at,
     }
 
-    // Preparar datos para inserción
-    const productData = {
-      name: String(body.name).trim(),
-      description: body.description ? String(body.description).trim() : "",
-      price: Number(body.price),
-      original_price: body.originalPrice ? Number(body.originalPrice) : null,
-      price_usd: body.priceUSD ? Number(body.priceUSD) : null,
-      category: String(body.category).toLowerCase().trim(),
-      condition: body.condition || "nuevo",
-      images: Array.isArray(body.images) ? body.images : [],
-      specifications: typeof body.specifications === "object" ? body.specifications : {},
-      featured: Boolean(body.featured),
-    }
-
-    console.log("API POST processed data:", productData)
-
-    const { data, error } = await ProductAdminService.createProduct(productData)
-
-    if (error) {
-      console.error("API POST error:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json(data, { status: 201 })
+    console.log("API: Product created successfully:", transformedProduct)
+    return NextResponse.json(transformedProduct, { status: 201 })
   } catch (error) {
-    console.error("API POST error:", error)
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
+    console.error("API: Error creating product:", error)
+    return NextResponse.json(
+      { error: "Error al crear producto", details: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 },
+    )
   }
 }

@@ -3,15 +3,16 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 import type { Product } from "@/types/product"
+import { testSupabaseConnection } from "@/lib/supabase"
 
 interface ProductContextType {
   products: Product[]
   loading: boolean
   error: string | null
   supabaseConnected: boolean
-  addProduct: (product: Omit<Product, "id" | "createdAt" | "updatedAt">) => Promise<void>
-  updateProduct: (id: string, product: Partial<Product>) => Promise<void>
-  deleteProduct: (id: string) => Promise<void>
+  addProduct: (product: Omit<Product, "id" | "createdAt" | "updatedAt">) => Promise<boolean>
+  updateProduct: (id: string, product: Partial<Product>) => Promise<boolean>
+  deleteProduct: (id: string) => Promise<boolean>
   getFeaturedProducts: () => Product[]
   searchProducts: (query: string) => Product[]
   filterProducts: (category?: string, condition?: string) => Product[]
@@ -157,22 +158,31 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       setError(null)
 
-      console.log("ProductContext: Fetching products from API...")
-      const response = await fetch("/api/admin/products")
+      console.log("ProductContext: Testing Supabase connection...")
+      const isConnected = await testSupabaseConnection()
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      if (isConnected) {
+        console.log("ProductContext: Fetching products from API...")
+        const response = await fetch("/api/admin/products")
 
-      const data = await response.json()
-      console.log("ProductContext: API response:", data)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
 
-      if (Array.isArray(data) && data.length > 0) {
-        setProducts(data)
-        setSupabaseConnected(true)
-        console.log("ProductContext: Using Supabase data")
+        const data = await response.json()
+        console.log("ProductContext: API response:", data)
+
+        if (Array.isArray(data) && data.length >= 0) {
+          setProducts(data)
+          setSupabaseConnected(true)
+          console.log("ProductContext: Using Supabase data")
+        } else {
+          console.log("ProductContext: No data from API, using fallback")
+          setProducts(fallbackProducts)
+          setSupabaseConnected(false)
+        }
       } else {
-        console.log("ProductContext: No data from API, using fallback")
+        console.log("ProductContext: Supabase not connected, using fallback")
         setProducts(fallbackProducts)
         setSupabaseConnected(false)
       }
@@ -190,7 +200,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     refreshProducts()
   }, [refreshProducts])
 
-  const addProduct = async (productData: Omit<Product, "id" | "createdAt" | "updatedAt">) => {
+  const addProduct = async (productData: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<boolean> => {
     try {
       console.log("ProductContext: Adding product:", productData)
 
@@ -203,7 +213,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           updatedAt: new Date().toISOString(),
         }
         setProducts((prev) => [newProduct, ...prev])
-        return
+        return true
       }
 
       const response = await fetch("/api/admin/products", {
@@ -222,13 +232,15 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
       // Actualizar la lista de productos
       await refreshProducts()
+      return true
     } catch (error) {
       console.error("ProductContext: Error adding product:", error)
-      throw error
+      setError(error instanceof Error ? error.message : "Error al agregar producto")
+      return false
     }
   }
 
-  const updateProduct = async (id: string, productData: Partial<Product>) => {
+  const updateProduct = async (id: string, productData: Partial<Product>): Promise<boolean> => {
     try {
       console.log("ProductContext: Updating product:", id, productData)
 
@@ -237,7 +249,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         setProducts((prev) =>
           prev.map((p) => (p.id === id ? { ...p, ...productData, updatedAt: new Date().toISOString() } : p)),
         )
-        return
+        return true
       }
 
       const response = await fetch(`/api/admin/products/${id}`, {
@@ -256,20 +268,22 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
       // Actualizar la lista de productos
       await refreshProducts()
+      return true
     } catch (error) {
       console.error("ProductContext: Error updating product:", error)
-      throw error
+      setError(error instanceof Error ? error.message : "Error al actualizar producto")
+      return false
     }
   }
 
-  const deleteProduct = async (id: string) => {
+  const deleteProduct = async (id: string): Promise<boolean> => {
     try {
       console.log("ProductContext: Deleting product:", id)
 
       if (!supabaseConnected) {
         // Fallback local para desarrollo
         setProducts((prev) => prev.filter((p) => p.id !== id))
-        return
+        return true
       }
 
       const response = await fetch(`/api/admin/products/${id}`, {
@@ -285,9 +299,11 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
       // Actualizar la lista de productos
       await refreshProducts()
+      return true
     } catch (error) {
       console.error("ProductContext: Error deleting product:", error)
-      throw error
+      setError(error instanceof Error ? error.message : "Error al eliminar producto")
+      return false
     }
   }
 
