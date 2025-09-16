@@ -55,28 +55,24 @@ export function MinimalNavbar() {
   return (
     <>
       {/* Navbar - Logo y texto más grandes en móvil */}
-      <nav className="w-full flex items-center px-4 py-2 bg-white shadow-sm rounded-b-2xl">
-        <div className="flex items-center">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo-final.png" alt="TuiPhonepremium Logo" width={40} height={40} className="object-contain rounded-full" />
-            <span className="text-xl font-bold text-gray-900">TuIphonepremium</span>
-          </Link>
+      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-5xl flex items-center justify-between px-8 py-4 rounded-3xl shadow-lg z-50 bg-gradient-to-r from-blue-500 to-purple-600">
+        <div className="flex items-center gap-3">
+          <Image src="/logo-final.png" alt="TuiPhonepremium Logo" width={40} height={40} className="object-contain" />
+          <span className="text-2xl font-bold text-white">TuiPhonepremium</span>
         </div>
-        <div className="flex-1 flex justify-end items-center">
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={toggleMenu}
-            className="transition-all duration-300 p-3 rounded-xl text-gray-900"
-            aria-label="Abrir menú"
-          >
-            <div className="w-7 h-7 flex flex-col justify-center items-center">
-              <span className="block h-0.5 w-6 bg-current transition-all duration-300 ease-in-out -translate-y-1" />
-              <span className="block h-0.5 w-6 bg-current transition-all duration-300 ease-in-out" />
-              <span className="block h-0.5 w-6 bg-current transition-all duration-300 ease-in-out translate-y-1" />
-            </div>
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={toggleMenu}
+          className="transition-all duration-300 p-3 rounded-xl text-white"
+          aria-label="Abrir menú"
+        >
+          <div className="w-7 h-7 flex flex-col justify-center items-center">
+            <span className="block h-0.5 w-6 bg-white transition-all duration-300 ease-in-out -translate-y-1" />
+            <span className="block h-0.5 w-6 bg-white transition-all duration-300 ease-in-out" />
+            <span className="block h-0.5 w-6 bg-white transition-all duration-300 ease-in-out translate-y-1" />
+          </div>
+        </Button>
       </nav>
 
       {/* Slide-out menu - Responsive */}
