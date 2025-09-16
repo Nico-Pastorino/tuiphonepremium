@@ -90,7 +90,7 @@ export function MinimalNavbar() {
           <div className="flex items-center justify-between p-6 border-b border-white/10">
             <div className="flex items-center gap-4">
               <Image src="/logo-final.png" alt="TuiPhonepremium Logo" width={40} height={40} className="object-contain" />
-              <span className="text-xl font-bold text-white">TuIphonepremium</span>
+              <span className="text-xl font-bold text-white">TuiPhonepremium</span>
             </div>
             <Button
               variant="ghost"
