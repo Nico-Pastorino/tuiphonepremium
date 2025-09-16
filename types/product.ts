@@ -2,17 +2,14 @@ export interface Product {
   id: string
   name: string
   description: string
-  price: number
-  originalPrice?: number
-  priceUSD?: number // Add USD price for dollar conversion
   category: string
-  condition: "nuevo" | "seminuevo" | "usado"
+  condition: string
+  price: number
+  createdAt: string
   images: string[]
   specifications: Record<string, string>
   stock: number
   featured: boolean
-  createdAt?: string
-  updatedAt?: string
 }
 
 export interface ProductFormData {

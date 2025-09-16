@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
@@ -11,29 +12,31 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Filter, Grid, List } from "lucide-react"
 import { useProducts } from "@/contexts/ProductContext"
+import type { Product } from "@/types/product" // <-- Importa el tipo correcto
 
 export default function ProductsPage() {
-  const { products } = useProducts()
+  // Tipado explícito para products
+  const { products } = useProducts() // El contexto ya provee el tipo correcto
   const searchParams = useSearchParams()
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState<string>("")
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState("name")
+  const [sortBy, setSortBy] = useState<string>("name")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState<boolean>(false)
 
   // Obtener filtros de la URL
   useEffect(() => {
     const category = searchParams.get("category")
     const condition = searchParams.get("condition")
 
-    if (category) setSelectedCategory(category)
-    if (condition) setSelectedCondition(condition)
+    setSelectedCategory(category || null)
+    setSelectedCondition(condition || null)
   }, [searchParams])
 
   // Filtrar y ordenar productos
   const filteredProducts = products
-    .filter((product) => {
+    .filter((product: Product) => {
       const matchesSearch =
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -42,7 +45,7 @@ export default function ProductsPage() {
 
       return matchesSearch && matchesCategory && matchesCondition
     })
-    .sort((a, b) => {
+    .sort((a: Product, b: Product) => {
       switch (sortBy) {
         case "price-low":
           return a.price - b.price
@@ -57,9 +60,9 @@ export default function ProductsPage() {
       }
     })
 
-  const handleFilterChange = (filters: any) => {
-    setSelectedCategory(filters.category)
-    setSelectedCondition(filters.condition)
+  const handleFilterChange = (filters: { category?: string | null; condition?: string | null }) => {
+    setSelectedCategory(filters.category ?? null)
+    setSelectedCondition(filters.condition ?? null)
   }
 
   return (
@@ -89,7 +92,7 @@ export default function ProductsPage() {
                     <Input
                       placeholder="Buscar productos..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                       className="pl-10"
                     />
                   </div>
@@ -117,6 +120,7 @@ export default function ProductsPage() {
                       size="sm"
                       onClick={() => setViewMode("grid")}
                       className="rounded-r-none"
+                      aria-label="Vista de cuadrícula"
                     >
                       <Grid className="w-4 h-4" />
                     </Button>
@@ -125,6 +129,7 @@ export default function ProductsPage() {
                       size="sm"
                       onClick={() => setViewMode("list")}
                       className="rounded-l-none"
+                      aria-label="Vista de lista"
                     >
                       <List className="w-4 h-4" />
                     </Button>
@@ -192,7 +197,7 @@ export default function ProductsPage() {
                       viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" : "space-y-6"
                     }
                   >
-                    {filteredProducts.map((product, index) => (
+                    {filteredProducts.map((product: Product, index: number) => (
                       <AnimatedSection key={product.id} animation="fadeUp" delay={index * 50}>
                         <ModernProductCard product={product} />
                       </AnimatedSection>
