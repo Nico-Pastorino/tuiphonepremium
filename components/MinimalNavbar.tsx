@@ -55,16 +55,16 @@ export function MinimalNavbar() {
   return (
     <>
       {/* Navbar - Logo y texto más grandes en móvil */}
-      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-5xl flex items-center justify-between px-8 py-4 rounded-3xl shadow-lg z-50 bg-gradient-to-r from-blue-500 to-purple-600">
-        <div className="flex items-center gap-3">
+      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-5xl flex items-center justify-between px-6 py-4 rounded-3xl shadow-lg z-50 bg-gradient-to-r from-blue-500 to-purple-600">
+        <div className="flex items-center gap-4">
           <Image src="/logo-final.png" alt="TuiPhonepremium Logo" width={40} height={40} className="object-contain" />
-          <span className="text-2xl font-bold text-white">TuiPhonepremium</span>
+          <span className="text-2xl font-bold text-white">TuIphonepremium</span>
         </div>
         <Button
           variant="ghost"
           size="lg"
           onClick={toggleMenu}
-          className="transition-all duration-300 p-3 rounded-xl text-white"
+          className="transition-all duration-300 p-3 rounded-xl text-white ml-auto"
           aria-label="Abrir menú"
         >
           <div className="w-7 h-7 flex flex-col justify-center items-center">
@@ -75,70 +75,57 @@ export function MinimalNavbar() {
         </Button>
       </nav>
 
-      {/* Slide-out menu - Responsive */}
-      <div className={`fixed inset-0 z-40 transition-all duration-300 ${isMenuOpen ? "visible" : "invisible"}`}>
+      {/* Slide-out menu - Responsive y profesional UX/UI */}
+      <div className={`fixed inset-0 z-50 transition-all duration-300 ${isMenuOpen ? "visible" : "invisible"}`}>
         {/* Backdrop */}
         <div
-          className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${
-            isMenuOpen ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0"}`}
           onClick={closeMenu}
         />
 
-        {/* Menu panel - Responsive width */}
+        {/* Menu panel - Gradiente, logo alineado y botón cerrar */}
         <div
-          className={`absolute right-0 top-0 h-full w-full sm:w-80 md:w-96 bg-white shadow-2xl transform transition-transform duration-300 z-50 ${
-            isMenuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
+          className={`absolute right-0 top-0 h-full w-full sm:w-80 md:w-96 bg-gradient-to-r from-blue-500 to-purple-600 shadow-2xl transform transition-transform duration-300 z-50 rounded-l-3xl flex flex-col` + (isMenuOpen ? " translate-x-0" : " translate-x-full")}
         >
-          <div className="h-full overflow-y-auto">
-            {/* Header responsive - Logo más grande */}
-            <div className="flex items-center justify-between p-5 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-purple-600">
-              <div className="flex items-center gap-3 sm:gap-3">
-                <div className="w-10 h-10 sm:w-10 sm:h-10 relative flex-shrink-0">
-                  <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
-                </div>
-                <span className="text-white font-bold text-lg sm:text-lg">TuIphonepremium</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={closeMenu}
-                className="text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
-                aria-label="Cerrar menú"
+          <div className="flex items-center justify-between p-6 border-b border-white/10">
+            <div className="flex items-center gap-4">
+              <Image src="/logo-final.png" alt="TuiPhonepremium Logo" width={40} height={40} className="object-contain" />
+              <span className="text-xl font-bold text-white">TuIphonepremium</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={closeMenu}
+              className="text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200"
+              aria-label="Cerrar menú"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+          </div>
+          <div className="py-2 flex-1 overflow-y-auto">
+            {menuItems.map((item, index) => (
+              <Link
+                key={index}
+                href={item.href}
+                onClick={handleLinkClick}
+                className="block px-8 py-5 text-white hover:bg-white/10 active:bg-white/20 transition-colors border-b border-white/10 font-semibold text-base touch-manipulation"
               >
-                <X className="w-6 h-6" />
+                {item.name}
+              </Link>
+            ))}
+          </div>
+          <div className="p-6 bg-white/10 border-t border-white/10">
+            <div className="text-center">
+              <p className="text-sm text-white mb-3 font-medium">¿Necesitas ayuda?</p>
+              <Button
+                asChild
+                size="lg"
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3"
+              >
+                <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+                  WhatsApp
+                </a>
               </Button>
-            </div>
-
-            {/* Menu items - Touch-friendly con texto más grande */}
-            <div className="py-2">
-              {menuItems.map((item, index) => (
-                <Link
-                  key={index}
-                  href={item.href}
-                  onClick={handleLinkClick}
-                  className="block px-5 sm:px-6 py-5 sm:py-5 text-gray-900 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-50 font-semibold text-base sm:text-base touch-manipulation"
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-
-            {/* Footer del menú - Solo en móvil con texto más grande */}
-            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 bg-gray-50 border-t border-gray-200 sm:hidden">
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-3 font-medium">¿Necesitas ayuda?</p>
-                <Button
-                  asChild
-                  size="lg"
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3"
-                >
-                  <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-                    WhatsApp
-                  </a>
-                </Button>
-              </div>
             </div>
           </div>
         </div>
