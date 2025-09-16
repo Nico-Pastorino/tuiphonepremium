@@ -7,7 +7,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Heart, ShoppingCart, Eye, Star, Zap, Shield, MessageCircle, GitCompare } from "lucide-react"
+import { Heart, Eye, Star, Zap, Shield, MessageCircle, GitCompare } from "lucide-react"
 import type { Product } from "@/types/product"
 import { useAppState } from "@/hooks/use-app-state"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
@@ -22,7 +22,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, variant = "default", showQuickActions = true }: ProductCardProps) {
   const { dollarRate } = useDollarRate()
-  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, addToCompare, isInCompare } = useAppState()
+  const { addToWishlist, removeFromWishlist, isInWishlist, addToCompare, isInCompare } = useAppState()
 
   const [imageLoaded, setImageLoaded] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -40,12 +40,6 @@ export function ProductCard({ product, variant = "default", showQuickActions = t
     } else {
       addToWishlist(product)
     }
-  }
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    addToCart(product)
   }
 
   const handleCompare = (e: React.MouseEvent) => {
@@ -237,18 +231,8 @@ export function ProductCard({ product, variant = "default", showQuickActions = t
           {/* Actions - Responsive */}
           <div className="flex gap-2 sm:gap-3">
             <Button
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-xs sm:text-sm"
-              disabled={product.stock === 0}
-              onClick={handleAddToCart}
-            >
-              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Agregar</span>
-              <span className="sm:hidden">+</span>
-            </Button>
-
-            <Button
               variant="outline"
-              className="px-2 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-300 bg-transparent"
+              className="w-full px-2 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-300 bg-transparent"
               asChild
             >
               <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">

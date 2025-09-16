@@ -4,7 +4,8 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
 import { supabase, testSupabaseConnection, isSupabaseConfigured } from "@/lib/supabase"
 import type { Product, ProductFormData, ProductFilters } from "@/types/product"
-import type { ProductRow } from "@/types/database"
+import { fallbackProducts } from "@/data/fallback-products"
+import { transformSupabaseProduct } from "@/lib/products"
 
 interface ProductContextType {
   products: Product[]
@@ -25,84 +26,6 @@ interface ProductContextType {
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
 
 // Función para transformar datos de Supabase a nuestro formato
-function transformSupabaseProduct(row: ProductRow): Product {
-  return {
-    id: row.id,
-    name: row.name,
-    description: row.description || "",
-    price: row.price,
-    originalPrice: row.original_price || undefined,
-    priceUSD: row.price_usd || undefined,
-    category: row.category,
-    condition: row.condition as "nuevo" | "seminuevo" | "usado",
-    images: row.images || [],
-    specifications: row.specifications || {},
-    stock: row.stock,
-    featured: row.featured,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at || undefined,
-  }
-}
-
-// Productos de fallback si Supabase no está disponible
-const fallbackProducts: Product[] = [
-  {
-    id: "1",
-    name: "iPhone 15 Pro Max",
-    description: "El iPhone más avanzado con chip A17 Pro y cámara de 48MP",
-    price: 1500000,
-    originalPrice: 1600000,
-    priceUSD: 1299,
-    category: "iphone",
-    condition: "nuevo",
-    images: ["/placeholder.svg?height=400&width=400"],
-    specifications: {
-      storage: "256GB",
-      color: "Titanio Natural",
-      screen: "6.7 pulgadas",
-    },
-    stock: 5,
-    featured: true,
-  },
-  {
-    id: "2",
-    name: "MacBook Air M2",
-    description: "Ultraportátil con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
-    price: 1200000,
-    originalPrice: 1350000,
-    priceUSD: 1199,
-    category: "mac",
-    condition: "seminuevo",
-    images: ["/placeholder.svg?height=400&width=400"],
-    specifications: {
-      processor: "Apple M2",
-      memory: "8GB",
-      storage: "256GB SSD",
-      screen: "13.6 pulgadas",
-    },
-    stock: 3,
-    featured: true,
-  },
-  {
-    id: "3",
-    name: 'iPad Pro 12.9"',
-    description: "iPad Pro con chip M2 y pantalla Liquid Retina XDR",
-    price: 800000,
-    originalPrice: 900000,
-    priceUSD: 799,
-    category: "ipad",
-    condition: "nuevo",
-    images: ["/placeholder.svg?height=400&width=400"],
-    specifications: {
-      processor: "Apple M2",
-      storage: "128GB",
-      screen: "12.9 pulgadas",
-      connectivity: "Wi-Fi",
-    },
-    stock: 7,
-    featured: false,
-  },
-]
 
 export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([])
