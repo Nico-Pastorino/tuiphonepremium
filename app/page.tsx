@@ -44,7 +44,7 @@ export default function HomePage() {
         <div className="relative w-full h-screen min-h-[700px] max-h-[900px] sm:min-h-[750px] md:min-h-[800px]">
           <div className="absolute inset-0">
             <Image
-              src="/portada-tuiphonepremium.png"
+              src="/portada.jpg"
               alt="Colección Premium de Productos Apple - MacBook, iPad, iPhone, Apple Watch, HomePod, Apple TV"
               fill
               className="object-cover hero-image opacity-40 sm:opacity-50 md:opacity-60"
