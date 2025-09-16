@@ -58,7 +58,7 @@ export function MinimalNavbar() {
       <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-5xl flex items-center justify-between px-6 py-4 rounded-3xl shadow-lg z-50 bg-gradient-to-r from-blue-500 to-purple-600">
         <div className="flex items-center gap-4">
           <Image src="/logo-final.png" alt="TuiPhonepremium Logo" width={40} height={40} className="object-contain" />
-          <span className="text-2xl font-bold text-white">TuIphonepremium</span>
+          <span className="text-2xl font-bold text-white">TuiPhonepremium</span>
         </div>
         <Button
           variant="ghost"

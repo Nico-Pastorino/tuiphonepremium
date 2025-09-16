@@ -2,7 +2,6 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Eye, Heart, MessageCircle } from "lucide-react"
@@ -15,13 +14,7 @@ interface ModernProductCardProps {
 }
 
 export function ModernProductCard({ product }: ModernProductCardProps) {
-  const { dollarRate } = useDollarRate()
-  const [isLiked, setIsLiked] = useState(false)
-  const [imageLoaded, setImageLoaded] = useState(false)
-
-  const priceInPesos = dollarRate ? product.priceUSD * dollarRate.blue : product.price
-  const discountPercentage = product.condition === "seminuevo" ? 15 : 0
-  const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
+  const priceInPesos = product.price
 
   return (
     <Card className="group relative overflow-hidden bg-white border-0 shadow-sm hover:shadow-2xl transition-all duration-500 rounded-3xl">
@@ -32,52 +25,8 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
             src={product.images[0] || "/placeholder.svg?height=400&width=400&query=iPhone"}
             alt={product.name}
             fill
-            className={`object-cover transition-all duration-700 group-hover:scale-105 ${
-              imageLoaded ? "opacity-100" : "opacity-0"
-            }`}
-            onLoad={() => setImageLoaded(true)}
+            className="object-cover transition-all duration-700 group-hover:scale-105"
           />
-
-          {/* Status badges */}
-          <div className="absolute top-4 left-4 flex flex-col gap-2">
-            {product.condition === "seminuevo" && (
-              <Badge className="bg-emerald-500/90 text-white font-medium px-3 py-1 rounded-full backdrop-blur-sm">
-                Seminuevo
-              </Badge>
-            )}
-            {product.featured && (
-              <Badge className="bg-amber-500/90 text-white font-medium px-3 py-1 rounded-full backdrop-blur-sm">
-                Destacado
-              </Badge>
-            )}
-            {discountPercentage > 0 && (
-              <Badge className="bg-red-500/90 text-white font-bold px-3 py-1 rounded-full backdrop-blur-sm">
-                -{discountPercentage}%
-              </Badge>
-            )}
-          </div>
-
-          {/* Quick actions */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-            <Button
-              size="sm"
-              variant="secondary"
-              className="w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border-0 backdrop-blur-sm"
-              onClick={() => setIsLiked(!isLiked)}
-            >
-              <Heart className={`w-4 h-4 ${isLiked ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border-0 backdrop-blur-sm"
-              asChild
-            >
-              <Link href={`/productos/${product.id}`}>
-                <Eye className="w-4 h-4 text-gray-600" />
-              </Link>
-            </Button>
-          </div>
 
           {/* Stock indicator */}
           <div className="absolute bottom-4 left-4">
@@ -95,52 +44,15 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
 
         {/* Content */}
         <div className="p-6">
-          {/* Category */}
-          <div className="flex items-center justify-between mb-3">
-            <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-200 bg-blue-50 px-2 py-1">
-              {product.category.toUpperCase()}
-            </Badge>
-            <span className="text-xs text-gray-500 font-medium">
-              {product.condition === "nuevo" ? "Nuevo" : "Seminuevo"}
-            </span>
-          </div>
-
           {/* Title */}
           <h3 className="font-bold text-xl mb-3 text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
             {product.name}
           </h3>
 
-          {/* Key specifications */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {Object.entries(product.specifications)
-              .slice(0, 2)
-              .map(([key, value]) => (
-                <div key={key} className="bg-gray-50 rounded-xl p-3">
-                  <div className="text-xs text-gray-500 font-medium mb-1">{key}</div>
-                  <div className="text-sm text-gray-900 font-semibold">{value}</div>
-                </div>
-              ))}
-          </div>
-
           {/* Price section */}
           <div className="space-y-3 mb-6">
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</span>
-              {originalPrice && (
-                <span className="text-lg text-gray-500 line-through">${originalPrice.toLocaleString("es-AR")}</span>
-              )}
-            </div>
-
-            {dollarRate && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span className="bg-gray-100 px-2 py-1 rounded-lg font-medium">USD ${product.priceUSD}</span>
-                <span className="text-gray-400">•</span>
-                <span>Dólar Blue: ${dollarRate.blue}</span>
-              </div>
-            )}
-
-            <div className="text-sm text-emerald-600 font-medium bg-emerald-50 px-3 py-2 rounded-lg">
-              💳 Hasta 12 cuotas disponibles
             </div>
           </div>
 
@@ -152,7 +64,6 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
               asChild
             >
               <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="w-4 h-4 mr-2" />
                 Consultar
               </a>
             </Button>
@@ -162,7 +73,7 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
               asChild
             >
               <Link href={`/productos/${product.id}`}>
-                <Eye className="w-4 h-4" />
+                Ver más
               </Link>
             </Button>
           </div>

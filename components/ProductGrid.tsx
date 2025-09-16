@@ -1,6 +1,6 @@
 "use client"
 
-import { ModernProductCard } from "@/components/ModernProductCard"
+import { ProductCard } from "@/components/ProductCard"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import type { Product } from "@/types/product"
 
@@ -22,10 +22,10 @@ export function ProductGrid({ products, title, subtitle, showViewAll = false }: 
           </AnimatedSection>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product, index) => (
             <AnimatedSection key={product.id} animation="fadeUp" delay={index * 100}>
-              <ModernProductCard product={product} />
+              <ProductCard product={product} />
             </AnimatedSection>
           ))}
         </div>
