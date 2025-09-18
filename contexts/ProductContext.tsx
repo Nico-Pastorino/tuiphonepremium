@@ -24,7 +24,7 @@ interface ProductContextType {
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
 
-// FunciÃ³n para transformar datos de Supabase a nuestro formato
+// Función para transformar datos de Supabase a nuestro formato
 function normalizeSpecifications(value: ProductRow["specifications"]): Record<string, string | number | boolean> {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, string | number | boolean>
@@ -52,7 +52,7 @@ function transformSupabaseProduct(row: ProductRow): Product {
   }
 }
 
-// Productos de fallback si Supabase no estÃ¡ disponible
+// Productos de respaldo si Supabase no está disponible
 const fallbackProducts: Product[] = [
   {
     id: "1",
@@ -121,18 +121,18 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
 
-  // FunciÃ³n para mostrar notificaciones
+  // Función para mostrar notificaciones
   const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
   }, [])
 
-  // FunciÃ³n para cargar productos
+  // Función para cargar productos
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // Verificar si Supabase estÃ¡ configurado
+      // Verificar si Supabase está configurado
       if (!isSupabaseConfigured()) {
         console.warn("Supabase not configured, using fallback products")
         setProducts(fallbackProducts)
@@ -140,7 +140,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      // Verificar conexiÃ³n a Supabase
+      // Verificar conexión a Supabase
       const isConnected = await testSupabaseConnection()
       setSupabaseConnected(isConnected)
 
@@ -163,7 +163,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         console.warn("API not available, trying direct Supabase connection")
       }
 
-      // Fallback a conexiÃ³n directa con Supabase
+      // Fallback a conexión directa con Supabase
       const { data, error: supabaseError } = await supabase
         .from("products")
         .select("*")
@@ -180,7 +180,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       setError(err instanceof Error ? err.message : "Error desconocido")
       setProducts(fallbackProducts)
       setSupabaseConnected(false)
-      showToast("Usando datos de ejemplo. Verifica la configuraciÃ³n de Supabase.", "warning")
+      showToast("Usando datos de ejemplo. Verificá la configuración de Supabase.", "warning")
     } finally {
       setLoading(false)
     }
@@ -191,7 +191,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     loadProducts()
   }, [loadProducts])
 
-  // FunciÃ³n para agregar producto usando la API
+  // Función para agregar producto usando la API
   const addProduct = async (productData: ProductFormData): Promise<boolean> => {
     try {
       console.log("Adding product:", productData)
@@ -221,7 +221,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // FunciÃ³n para actualizar producto usando la API
+  // Función para actualizar producto usando la API
   const updateProduct = async (id: string, productData: Partial<ProductFormData>): Promise<boolean> => {
     try {
       console.log("Updating product:", { id, productData })
@@ -251,7 +251,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // FunciÃ³n para eliminar producto usando la API
+  // Función para eliminar producto usando la API
   const deleteProduct = async (id: string): Promise<boolean> => {
     try {
       console.log("Deleting product:", id)

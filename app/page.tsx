@@ -31,10 +31,10 @@ import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
 
 const sectionIdToLabel: Record<"categories" | "featured" | "benefits" | "cta", string> = {
-  categories: "Explora por categorÃ­a",
+  categories: "Explorá por categoría",
   featured: "Productos destacados",
-  benefits: "Â¿Por quÃ© elegirnos?",
-  cta: "Listo para comprar?",
+  benefits: "¿Por qué elegirnos?",
+  cta: "¿Listo para comprar?",
 }
 
 export default function HomePage() {
@@ -45,7 +45,7 @@ export default function HomePage() {
   const enabledSections = homeConfig.sections.filter((section) => section.enabled)
   const firstSectionId = enabledSections[0]?.id
 
-  const heroImage = homeConfig.heroImage || "/portada.jpg"
+  const heroImage = homeConfig.heroImage || "/hero-iphone-orange.jpg"
   const whatsappLink = `https://wa.me/${homeConfig.whatsappNumber}`
 
   const scrollToFirstSection = () => {
@@ -62,7 +62,7 @@ export default function HomePage() {
               {sectionIdToLabel.categories}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-              EncontrÃ¡ exactamente lo que buscas en nuestra selecciÃ³n de productos Apple
+              Encontrá el dispositivo ideal dentro de nuestra selección premium de productos Apple
             </p>
           </AnimatedSection>
 
@@ -73,42 +73,42 @@ export default function HomePage() {
                 name: "iPhone",
                 count: `${products.filter((p) => p.category === "iphone").length}+ modelos`,
                 href: "/productos?category=iphone",
-                description: "Los Ãºltimos modelos",
+                description: "Los últimos lanzamientos",
               },
               {
                 icon: Tablet,
                 name: "iPad",
                 count: `${products.filter((p) => p.category === "ipad").length}+ modelos`,
                 href: "/productos?category=ipad",
-                description: "Para trabajo y creatividad",
+                description: "Herramientas versátiles para trabajar y crear",
               },
               {
                 icon: Laptop,
                 name: "Mac",
                 count: `${products.filter((p) => p.category === "mac").length}+ modelos`,
                 href: "/productos?category=mac",
-                description: "Potencia profesional",
+                description: "Potencia profesional para cualquier desafío",
               },
               {
                 icon: Watch,
                 name: "Apple Watch",
                 count: `${products.filter((p) => p.category === "watch").length}+ modelos`,
                 href: "/productos?category=watch",
-                description: "Tu salud en tu muÃ±eca",
+                description: "Tu bienestar siempre a mano",
               },
               {
                 icon: Headphones,
                 name: "AirPods",
                 count: `${products.filter((p) => p.category === "airpods").length}+ modelos`,
                 href: "/productos?category=airpods",
-                description: "Audio excepcional",
+                description: "Sonido envolvente para cada momento",
               },
               {
                 icon: Cable,
                 name: "Accesorios",
                 count: `${products.filter((p) => p.category === "accesorios").length}+ productos`,
                 href: "/productos?category=accesorios",
-                description: "Complementos perfectos",
+                description: "Accesorios imprescindibles para tu ecosistema",
               },
             ].map((category, index) => (
               <AnimatedSection key={category.name} animation="scale" delay={index * 100}>
@@ -147,7 +147,7 @@ export default function HomePage() {
               {sectionIdToLabel.featured}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-              Los mÃ¡s vendidos y mejor valorados por nuestros clientes
+              Los favoritos de nuestra comunidad, con la mejor valoración
             </p>
           </AnimatedSection>
 
@@ -164,7 +164,7 @@ export default function HomePage() {
               </p>
               <Button onClick={refreshProducts} variant="outline" className="border-gray-300 bg-transparent">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Reintentar conexiÃ³n
+                Reintentar conexión
               </Button>
             </div>
           ) : featuredProducts.length > 0 ? (
@@ -182,7 +182,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No hay productos destacados</h3>
               <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">
-                Los productos aparecerÃ¡n aquÃ­ una vez que sean agregados
+                Los productos aparecerán aquí en cuanto los agreguemos
               </p>
             </div>
           )}
@@ -215,7 +215,7 @@ export default function HomePage() {
               {sectionIdToLabel.benefits}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-              Beneficios que nos hacen la mejor opciÃ³n para tus productos Apple
+              Beneficios que nos convierten en tu mejor opción Apple
             </p>
           </AnimatedSection>
 
@@ -223,21 +223,21 @@ export default function HomePage() {
             {[
               {
                 icon: Shield,
-                title: "GarantÃ­a extendida",
-                description: "12 meses de garantÃ­a completa y soporte tÃ©cnico especializado",
-                features: ["Soporte 24/7", "ReparaciÃ³n gratuita", "Reemplazo inmediato"],
+                title: "Garantía extendida",
+                description: "12 meses de garantía total y soporte técnico especializado",
+                features: ["Soporte 24/7", "Reparación gratuita", "Reemplazo inmediato"],
               },
               {
                 icon: Truck,
-                title: "EnvÃ­o express",
-                description: "EnvÃ­o gratuito en CABA y GBA en menos de 24 horas",
-                features: ["EnvÃ­o gratis", "Tracking en tiempo real", "Seguro incluido"],
+                title: "Envío exprés",
+                description: "Envío gratuito en CABA y GBA en menos de 24 horas",
+                features: ["Envío gratis", "Tracking en tiempo real", "Seguro incluido"],
               },
               {
                 icon: Award,
                 title: "Calidad premium",
-                description: "Productos verificados y certificados con garantÃ­a de autenticidad",
-                features: ["100% originales", "CertificaciÃ³n Apple", "Prueba de calidad"],
+                description: "Productos verificados y certificados con garantía de autenticidad",
+                features: ["100% originales", "Certificación Apple", "Prueba de calidad"],
               },
             ].map((benefit, index) => (
               <AnimatedSection key={benefit.title} animation="fadeUp" delay={index * 200}>
@@ -277,7 +277,7 @@ export default function HomePage() {
               {sectionIdToLabel.cta}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-blue-100 mb-6 sm:mb-8 px-4">
-              Contactanos por WhatsApp y te ayudamos a encontrar el producto perfecto
+              Contáctanos por WhatsApp y te ayudamos a encontrar el producto perfecto
             </p>
             <Button
               asChild
@@ -311,7 +311,7 @@ export default function HomePage() {
           <div className="absolute inset-0">
             <Image
               src={heroImage}
-              alt="ColecciÃ³n Premium de Productos Apple - iPhone, iPad, Mac, Apple Watch, AirPods"
+              alt="Colección premium de productos Apple: iPhone, iPad, Mac, Apple Watch y AirPods"
               fill
               className="object-cover hero-image"
               priority
@@ -322,15 +322,15 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10 sm:bg-gradient-to-t sm:from-black/60 sm:via-black/20 sm:to-transparent md:bg-gradient-to-r md:from-black/60 md:via-black/30 md:to-transparent"></div>
         </div>
 
-        <div className="absolute inset-0 flex items-center justify-center sm:justify-start">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-            <div className="w-full max-w-4xl mx-auto sm:mx-0 text-center sm:text-left">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-center">
+            <div className="w-full max-w-4xl mx-auto text-center">
               <AnimatedSection animation="fadeUp">
                 <div className="space-y-4 sm:space-y-6 md:space-y-8">
                   <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-[1.1] sm:leading-tight">
                     {homeConfig.heroHeadline}
                   </h1>
-                  <div className="max-w-2xl mx-auto sm:mx-0">
+                  <div className="max-w-2xl mx-auto">
                     <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/95 leading-relaxed">
                       {homeConfig.heroSubheadline}
                       <span className="text-blue-300 font-medium block sm:inline mt-1 sm:mt-0">
@@ -338,7 +338,7 @@ export default function HomePage() {
                       </span>
                     </p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center sm:justify-start pt-2 sm:pt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-2 sm:pt-4">
                     <Button
                       size="lg"
                       className="w-full sm:w-auto bg-white text-gray-900 hover:bg-gray-50 font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-xl transition-all duration-300 shadow-lg text-base sm:text-lg min-h-[48px]"
@@ -456,7 +456,7 @@ export default function HomePage() {
                       <p className="text-xs sm:text-sm">info@tuiphonepremium.com.ar</p>
                     </div>
                     <div>
-                      <p className="font-medium text-white">UbicaciÃ³n</p>
+                      <p className="font-medium text-white">Ubicación</p>
                       <p className="text-xs sm:text-sm">Buenos Aires, Argentina</p>
                     </div>
                   </div>

@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { AdminLogin } from "@/components/AdminLogin"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
@@ -22,13 +24,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
+import type { HomeConfig } from "@/contexts/AdminContext"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import Image from "next/image"
 import type { Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
 import { InstallmentPlanCard } from "@/components/installment-plan-card"
-import { Trash2, Edit, Plus, RefreshCw, DollarSign, Settings, Package, CreditCard, BarChart3 } from "lucide-react"
+import { Trash2, Edit, Plus, RefreshCw, DollarSign, Settings, Package, CreditCard } from "lucide-react"
 
 export default function AdminPage() {
   const { isAuthenticated } = useAdmin()
@@ -38,6 +41,13 @@ export default function AdminPage() {
   }
 
   return <AdminDashboard />
+}
+
+function cloneHomeConfig(config: HomeConfig) {
+  return {
+    ...config,
+    sections: config.sections.map((section) => ({ ...section })),
+  }
 }
 
 function AdminDashboard() {
@@ -51,6 +61,9 @@ function AdminDashboard() {
     updateDollarConfig,
     getEffectiveDollarRate,
     getInstallmentPlansByCategory,
+    homeConfig,
+    updateHomeConfig,
+    updateHomeSection,
     logout,
   } = useAdmin()
   const { dollarRate, refresh: refreshDollarRate, loading, error } = useDollarRate()
@@ -63,12 +76,12 @@ function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
 
-  // Estadísticas
-  const totalProducts = products.length
-  const totalStock = products.reduce((sum, product) => sum + product.stock, 0)
-  const featuredProducts = products.filter((p) => p.featured).length
-  const totalValue = products.reduce((sum, product) => sum + product.price * product.stock, 0)
-  const activeInstallments = installmentPlans.filter((p) => p.isActive).length
+    const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
+  const [savingHomeConfig, setSavingHomeConfig] = useState(false)
+
+  useEffect(() => {
+    setHomeForm(cloneHomeConfig(homeConfig))
+  }, [homeConfig])
 
   // Obtener planes por categoría
   const visaMastercardPlans = getInstallmentPlansByCategory("visa-mastercard")
@@ -105,6 +118,34 @@ function AdminDashboard() {
     }
   }
 
+  const handleSectionToggle = (id: (typeof homeConfig.sections)[number]["id"], enabled: boolean) => {
+    setHomeForm((prev) => ({
+      ...prev,
+      sections: prev.sections.map((section) =>
+        section.id === id ? { ...section, enabled } : section,
+      ),
+    }))
+    updateHomeSection(id, { enabled })
+  }
+
+  const handleSaveHomeConfig = () => {
+    setSavingHomeConfig(true)
+    try {
+      updateHomeConfig({
+        heroImage: homeForm.heroImage,
+        heroHeadline: homeForm.heroHeadline,
+        heroSubheadline: homeForm.heroSubheadline,
+        promoMessage: homeForm.promoMessage,
+        whatsappNumber: homeForm.whatsappNumber,
+      })
+      console.log("Configuración de la portada actualizada")
+    } finally {
+      setSavingHomeConfig(false)
+    }
+  }
+
+  const heroPreview = homeForm.heroImage?.trim() ? homeForm.heroImage : "/hero-iphone-orange.jpg"
+
   return (
     <div className="min-h-screen bg-gray-50">
       <MinimalNavbar />
@@ -126,12 +167,8 @@ function AdminDashboard() {
             </Button>
           </div>
 
-          <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="dashboard" className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Dashboard
-              </TabsTrigger>
+          <Tabs defaultValue="products" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="products" className="flex items-center gap-2">
                 <Package className="w-4 h-4" />
                 Productos
@@ -149,200 +186,6 @@ function AdminDashboard() {
                 Configuración
               </TabsTrigger>
             </TabsList>
-
-            {/* Dashboard Tab */}
-            <TabsContent value="dashboard" className="space-y-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-blue-100 text-sm font-medium">Total Productos</p>
-                        <p className="text-3xl font-bold">{totalProducts}</p>
-                      </div>
-                      <Package className="w-8 h-8 text-blue-200" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Stock Total</p>
-                        <p className="text-3xl font-bold text-gray-900">{totalStock}</p>
-                      </div>
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Destacados</p>
-                        <p className="text-3xl font-bold text-gray-900">{featuredProducts}</p>
-                      </div>
-                      <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                        <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Valor Total</p>
-                        <p className="text-2xl font-bold text-gray-900">${(totalValue / 1000000).toFixed(1)}M</p>
-                      </div>
-                      <DollarSign className="w-8 h-8 text-gray-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-0 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium">Planes Activos</p>
-                        <p className="text-3xl font-bold text-gray-900">{activeInstallments}</p>
-                      </div>
-                      <CreditCard className="w-8 h-8 text-gray-400" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Dollar Rate Card */}
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-6 h-6 text-blue-600" />
-                      Cotización del Dólar en Tiempo Real
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {dollarRate?.source && (
-                        <Badge variant="outline" className="text-xs">
-                          {dollarRate.source}
-                        </Badge>
-                      )}
-                      <Button onClick={handleUpdateDollarRate} size="sm" variant="outline" disabled={loading}>
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                        {loading ? "Actualizando..." : "Actualizar"}
-                      </Button>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <p className="text-sm text-blue-700 mb-1 font-medium">Dólar Blue (API)</p>
-                      <p className="text-3xl font-bold text-blue-800">
-                        ${dollarRate?.blue?.toLocaleString("es-AR") || "---"}
-                      </p>
-                      <p className="text-xs text-blue-600 mt-1">Venta</p>
-                    </div>
-
-                    <div className="text-center p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="text-sm text-gray-700 mb-1 font-medium">Dólar Oficial</p>
-                      <p className="text-3xl font-bold text-gray-800">
-                        ${dollarRate?.official?.toLocaleString("es-AR") || "---"}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">Referencia</p>
-                    </div>
-
-                    <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
-                      <p className="text-sm text-green-700 mb-1 font-medium">Configurado</p>
-                      <p className="text-3xl font-bold text-green-800">
-                        ${dollarConfig.blueRate.toLocaleString("es-AR")}
-                      </p>
-                      <p className="text-xs text-green-600 mt-1">Tu precio base</p>
-                    </div>
-
-                    <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-100">
-                      <p className="text-sm text-purple-700 mb-1 font-medium">Final (+{dollarConfig.markup}%)</p>
-                      <p className="text-3xl font-bold text-purple-800">
-                        ${getEffectiveDollarRate().toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-1">Precio de venta</p>
-                    </div>
-                  </div>
-
-                  {/* Diferencia y recomendaciones */}
-                  {dollarRate && dollarRate.blue !== dollarConfig.blueRate && (
-                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-yellow-800 mb-1">Diferencia detectada</h4>
-                          <p className="text-sm text-yellow-700 mb-2">
-                            Tu cotización configurada (${dollarConfig.blueRate}) difiere de la cotización actual ($
-                            {dollarRate.blue}). Diferencia: $
-                            {Math.abs(dollarRate.blue - dollarConfig.blueRate).toLocaleString("es-AR")}
-                          </p>
-                          <Button
-                            size="sm"
-                            onClick={() => updateDollarConfig({ blueRate: dollarRate.blue })}
-                            className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                          >
-                            Actualizar a ${dollarRate.blue}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-red-700">Error al obtener cotización: {error.message}</span>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Recent Products */}
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle>Productos Recientes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {products.slice(0, 5).map((product) => (
-                      <div key={product.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 relative rounded-lg overflow-hidden">
-                            <Image
-                              src={product.images[0] || "/placeholder.svg?height=48&width=48"}
-                              alt={product.name}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{product.name}</h3>
-                            <p className="text-sm text-gray-600">
-                              {product.category} • {product.condition}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">${product.price.toLocaleString("es-AR")}</p>
-                          <p className="text-sm text-gray-600">Stock: {product.stock}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             {/* Products Tab */}
             <TabsContent value="products" className="space-y-6">
@@ -453,7 +296,7 @@ function AdminDashboard() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta acción no se puede deshacer. El producto "{product.name}" será eliminado
+                                  Esta acción no se puede deshacer. El producto “{product.name}” será eliminado
                                   permanentemente de la base de datos.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
@@ -626,6 +469,28 @@ function AdminDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <div className="flex flex-col gap-4 rounded-xl border border-green-100 bg-green-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-900">Cotización actual (API)</p>
+                      <p className="text-2xl font-bold text-green-700">
+                        ${dollarRate ? dollarRate.blue.toLocaleString("es-AR") : "---"}
+                      </p>
+                      <p className="text-xs text-green-700 mt-1">
+                        Última actualización: {dollarRate?.lastUpdate ? new Date(dollarRate.lastUpdate).toLocaleString("es-AR") : "sin datos"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {dollarRate?.source && (
+                        <Badge variant="outline" className="text-xs">
+                          {dollarRate.source}
+                        </Badge>
+                      )}
+                      <Button onClick={handleUpdateDollarRate} size="sm" variant="outline" disabled={loading}>
+                        <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                        {loading ? "Actualizando..." : "Actualizar"}
+                      </Button>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Dólar Blue Base</label>
@@ -673,14 +538,101 @@ function AdminDashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="w-6 h-6 text-gray-600" />
-                    Configuración General
+                    Configuración de la portada
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-gray-500">
-                    <Settings className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                    <h3 className="text-lg font-semibold mb-2">Configuración</h3>
-                    <p>Las opciones de configuración estarán disponibles próximamente.</p>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Título principal</label>
+                        <Input
+                          value={homeForm.heroHeadline}
+                          onChange={(event) =>
+                            setHomeForm((prev) => ({ ...prev, heroHeadline: event.target.value }))
+                          }
+                          placeholder="Ej: Productos Apple premium en Argentina"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Subtítulo</label>
+                        <Textarea
+                          value={homeForm.heroSubheadline}
+                          onChange={(event) =>
+                            setHomeForm((prev) => ({ ...prev, heroSubheadline: event.target.value }))
+                          }
+                          rows={3}
+                          placeholder="Describe la propuesta de valor de la portada"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Mensaje promocional</label>
+                        <Input
+                          value={homeForm.promoMessage}
+                          onChange={(event) =>
+                            setHomeForm((prev) => ({ ...prev, promoMessage: event.target.value }))
+                          }
+                          placeholder="Ej: Envíos rápidos y garantía incluida"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Imagen de portada (URL)</label>
+                        <Input
+                          value={homeForm.heroImage}
+                          onChange={(event) =>
+                            setHomeForm((prev) => ({ ...prev, heroImage: event.target.value }))
+                          }
+                          placeholder="/hero-iphone-orange.jpg"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Usa rutas internas (comenzando con /) o una URL completa. La imagen se muestra con
+                          optimización desactivada.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">WhatsApp (solo números)</label>
+                        <Input
+                          value={homeForm.whatsappNumber}
+                          onChange={(event) =>
+                            setHomeForm((prev) => ({ ...prev, whatsappNumber: event.target.value }))
+                          }
+                          placeholder="54911..."
+                        />
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                        <Button onClick={handleSaveHomeConfig} disabled={savingHomeConfig}>
+                          {savingHomeConfig ? "Guardando..." : "Guardar cambios"}
+                        </Button>
+                        <p className="text-xs text-gray-500">Los cambios se aplican de inmediato en la portada.</p>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                        <Image src={heroPreview} alt="Vista previa de la portada" fill className="object-cover" sizes="100vw" />
+                      </div>
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-800">Secciones visibles</h4>
+                        <div className="space-y-3">
+                          {homeForm.sections.map((section) => (
+                            <div
+                              key={section.id}
+                              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3"
+                            >
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{section.label}</p>
+                                <p className="text-xs text-gray-500">
+                                  {section.enabled ? "Visible en la home" : "Oculto en la home"}
+                                </p>
+                              </div>
+                              <Switch
+                                checked={section.enabled}
+                                onCheckedChange={(value) => handleSectionToggle(section.id, value)}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
