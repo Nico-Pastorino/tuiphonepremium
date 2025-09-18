@@ -1,34 +1,55 @@
-import { createClient } from "@supabase/supabase-js"
-import type { Database } from "@/types/database"
+import { createClient, type PostgrestError } from "@supabase/supabase-js"
+import type { Database, ProductInsert, ProductRow, ProductUpdate } from "@/types/database"
 
-// Configuración específica para operaciones de administrador
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error("Missing Supabase environment variables for admin operations")
+export const supabaseAdmin =
+  supabaseUrl && supabaseServiceKey
+    ? createClient<Database>(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+        db: {
+          schema: "public",
+        },
+      })
+    : null
+
+const getAdminClient = () => {
+  if (!supabaseAdmin) {
+    throw new Error("Missing Supabase environment variables for admin operations")
+  }
+
+  return supabaseAdmin
 }
 
-// Cliente administrativo con permisos completos
-export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-  db: {
-    schema: "public",
-  },
-})
+const normalizeError = (error: unknown): PostgrestError | Error => {
+  if (error instanceof Error) {
+    return error
+  }
 
-// Función para verificar la conexión del admin
+  if (error && typeof error === "object" && "message" in error) {
+    return new Error(String((error as { message: unknown }).message))
+  }
+
+  return new Error("Unknown Supabase error")
+}
+
 export async function testAdminConnection(): Promise<boolean> {
+  if (!supabaseAdmin) {
+    return false
+  }
+
   try {
-    const { data, error } = await supabaseAdmin.from("products").select("count").limit(1)
+    const { error } = await supabaseAdmin.from("products").select("count").limit(1)
+
     if (error) {
       console.error("Admin connection error:", error)
       return false
     }
-    console.log("Admin connection successful")
+
     return true
   } catch (error) {
     console.error("Admin connection failed:", error)
@@ -36,78 +57,107 @@ export async function testAdminConnection(): Promise<boolean> {
   }
 }
 
-// Operaciones CRUD específicas para admin
+type AdminResult<T> = { data: T | null; error: PostgrestError | Error | null }
+
 export class ProductAdminService {
-  static async createProduct(productData: any) {
-    try {
-      console.log("Creating product with admin service:", productData)
+  static async createProduct(productData: ProductInsert): Promise<AdminResult<ProductRow>> {
+    if (!supabaseAdmin) {
+      return { data: null, error: new Error("Admin client not configured") }
+    }
 
-      const { data, error } = await supabaseAdmin.from("products").insert(productData).select().single()
+    try {
+      const client = getAdminClient()
+      const { data, error } = await client.from("products").insert(productData).select("*").single()
 
       if (error) {
-        console.error("Admin create error:", error)
         throw error
       }
 
-      console.log("Product created successfully:", data)
-      return { data, error: null }
+      const typedData = data as ProductRow | null
+      return { data: typedData, error: null }
     } catch (error) {
-      console.error("Create product error:", error)
-      return { data: null, error }
+      const normalized = normalizeError(error)
+      console.error("Create product error:", normalized)
+      return { data: null, error: normalized }
     }
   }
 
-  static async updateProduct(id: string, productData: any) {
-    try {
-      console.log("Updating product with admin service:", { id, productData })
+  static async updateProduct(id: string, productData: ProductUpdate): Promise<AdminResult<ProductRow>> {
+    if (!supabaseAdmin) {
+      return { data: null, error: new Error("Admin client not configured") }
+    }
 
-      const { data, error } = await supabaseAdmin.from("products").update(productData).eq("id", id).select().single()
+    try {
+      const client = getAdminClient()
+      const { data, error } = await client
+        .from("products")
+        .update(productData)
+        .eq("id", id)
+        .select("*")
+        .single()
 
       if (error) {
-        console.error("Admin update error:", error)
         throw error
       }
 
-      console.log("Product updated successfully:", data)
-      return { data, error: null }
+      const typedData = data as ProductRow | null
+      return { data: typedData, error: null }
     } catch (error) {
-      console.error("Update product error:", error)
-      return { data: null, error }
+      const normalized = normalizeError(error)
+      console.error("Update product error:", normalized)
+      return { data: null, error: normalized }
     }
   }
 
-  static async deleteProduct(id: string) {
-    try {
-      console.log("Deleting product with admin service:", id)
+  static async deleteProduct(id: string): Promise<AdminResult<ProductRow>> {
+    if (!supabaseAdmin) {
+      return { data: null, error: new Error("Admin client not configured") }
+    }
 
-      const { data, error } = await supabaseAdmin.from("products").delete().eq("id", id).select().single()
+    try {
+      const client = getAdminClient()
+      const { data, error } = await client
+        .from("products")
+        .delete()
+        .eq("id", id)
+        .select("*")
+        .single()
 
       if (error) {
-        console.error("Admin delete error:", error)
         throw error
       }
 
-      console.log("Product deleted successfully:", data)
-      return { data, error: null }
+      const typedData = data as ProductRow | null
+      return { data: typedData, error: null }
     } catch (error) {
-      console.error("Delete product error:", error)
-      return { data: null, error }
+      const normalized = normalizeError(error)
+      console.error("Delete product error:", normalized)
+      return { data: null, error: normalized }
     }
   }
 
-  static async getAllProducts() {
+  static async getAllProducts(): Promise<AdminResult<ProductRow[]>> {
+    if (!supabaseAdmin) {
+      return { data: null, error: new Error("Admin client not configured") }
+    }
+
     try {
-      const { data, error } = await supabaseAdmin.from("products").select("*").order("created_at", { ascending: false })
+      const client = getAdminClient()
+      const { data, error } = await client
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false })
 
       if (error) {
-        console.error("Admin get all error:", error)
         throw error
       }
 
-      return { data, error: null }
+      const typedData = data as ProductRow[] | null
+      return { data: typedData, error: null }
     } catch (error) {
-      console.error("Get all products error:", error)
-      return { data: null, error }
+      const normalized = normalizeError(error)
+      console.error("Get all products error:", normalized)
+      return { data: null, error: normalized }
     }
   }
 }

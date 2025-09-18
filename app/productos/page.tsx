@@ -1,7 +1,6 @@
 "use client"
 
-import * as React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, ChangeEvent } from "react"
 import { useSearchParams } from "next/navigation"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { ModernProductCard } from "@/components/ModernProductCard"
@@ -92,7 +91,7 @@ export default function ProductsPage() {
                     <Input
                       placeholder="Buscar productos..."
                       value={searchTerm}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                       className="pl-10"
                     />
                   </div>

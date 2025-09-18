@@ -60,7 +60,10 @@ export default function ProductDetailPage() {
     )
   }
 
-  const priceInPesos = dollarRate ? product.priceUSD * dollarRate.blue : product.price
+  const priceInPesos =
+    dollarRate && product.priceUSD !== undefined && product.priceUSD !== null
+      ? product.priceUSD * dollarRate.blue
+      : product.price
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
 
@@ -217,7 +220,9 @@ export default function ProductDetailPage() {
 
                   {dollarRate && (
                     <div className="flex items-center gap-2 text-gray-600">
-                      <span className="bg-gray-100 px-3 py-1 rounded-lg font-medium">USD ${product.priceUSD}</span>
+                      {product.priceUSD !== undefined && product.priceUSD !== null && (
+                        <span className="bg-gray-100 px-3 py-1 rounded-lg font-medium">USD ${product.priceUSD}</span>
+                      )}
                       <span className="text-gray-400">•</span>
                       <span>Dólar Blue: ${dollarRate.blue}</span>
                     </div>

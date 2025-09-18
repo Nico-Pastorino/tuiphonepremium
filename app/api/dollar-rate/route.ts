@@ -25,20 +25,21 @@ interface BluelyticsResponse {
   last_update: string
 }
 
-interface DolarSiResponse {
+interface DolarSiItem {
   casa: {
     nombre: string
     venta: string
     compra: string
   }
 }
-;[]
+
+type DolarSiResponse = DolarSiItem[]
 
 async function fetchFromDolarAPI(): Promise<DollarRate> {
   const [blueResponse, officialResponse] = await Promise.all([
     fetch("https://dolarapi.com/v1/dolares/blue", {
       headers: { Accept: "application/json" },
-      next: { revalidate: 300 }, // Cache por 5 minutos
+      next: { revalidate: 300 },
     }),
     fetch("https://dolarapi.com/v1/dolares/oficial", {
       headers: { Accept: "application/json" },
@@ -50,8 +51,8 @@ async function fetchFromDolarAPI(): Promise<DollarRate> {
     throw new Error("DolarAPI request failed")
   }
 
-  const blueData: DollarAPIResponse = await blueResponse.json()
-  const officialData: DollarAPIResponse = await officialResponse.json()
+  const blueData = (await blueResponse.json()) as DollarAPIResponse
+  const officialData = (await officialResponse.json()) as DollarAPIResponse
 
   return {
     blue: blueData.venta,
@@ -71,7 +72,7 @@ async function fetchFromBluelytics(): Promise<DollarRate> {
     throw new Error("Bluelytics request failed")
   }
 
-  const data: BluelyticsResponse = await response.json()
+  const data = (await response.json()) as BluelyticsResponse
 
   return {
     blue: data.blue.value_sell,
@@ -91,7 +92,7 @@ async function fetchFromDolarSi(): Promise<DollarRate> {
     throw new Error("DolarSi request failed")
   }
 
-  const data: DolarSiResponse = await response.json()
+  const data = (await response.json()) as DolarSiResponse
 
   const blueData = data.find((item) => item.casa.nombre === "Dolar Blue")
   const officialData = data.find((item) => item.casa.nombre === "Dolar Oficial")
@@ -119,17 +120,15 @@ export async function GET() {
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000)),
         ])
 
-        // Validar datos
         if (rate.blue > 0 && rate.official > 0) {
           return NextResponse.json(rate)
         }
       } catch (error) {
         console.warn(`Error with ${fetchAPI.name}:`, error)
-        continue
       }
     }
 
-    return NextResponse.json({ error: "No se pudo obtener la cotización de ninguna fuente" }, { status: 503 })
+    return NextResponse.json({ error: "No se pudo obtener la cotizacion de ninguna fuente" }, { status: 503 })
   } catch (error) {
     console.error("Dollar rate API error:", error)
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })

@@ -4,10 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Eye, Heart, MessageCircle } from "lucide-react"
 import type { Product } from "@/types/product"
-import { useDollarRate } from "@/hooks/use-dollar-rate"
-import { useState } from "react"
 
 interface ModernProductCardProps {
   product: Product

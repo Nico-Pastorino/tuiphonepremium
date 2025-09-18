@@ -1,16 +1,29 @@
-export interface Database {
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json }
+  | Json[]
+
+export type Database = {
   public: {
     Tables: {
       products: {
         Row: ProductRow
         Insert: ProductInsert
         Update: ProductUpdate
+        Relationships: []
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
 
-export interface ProductRow {
+export type ProductRow = {
   id: string
   name: string
   description: string | null
@@ -20,14 +33,14 @@ export interface ProductRow {
   category: string
   condition: string
   images: string[] | null
-  specifications: Record<string, any> | null
+  specifications: Json | null
   stock: number
   featured: boolean
   created_at: string
   updated_at: string | null
 }
 
-export interface ProductInsert {
+export type ProductInsert = {
   id?: string
   name: string
   description?: string | null
@@ -37,14 +50,14 @@ export interface ProductInsert {
   category: string
   condition: string
   images?: string[] | null
-  specifications?: Record<string, any> | null
+  specifications?: Json | null
   stock?: number
   featured?: boolean
   created_at?: string
   updated_at?: string | null
 }
 
-export interface ProductUpdate {
+export type ProductUpdate = {
   id?: string
   name?: string
   description?: string | null
@@ -54,7 +67,7 @@ export interface ProductUpdate {
   category?: string
   condition?: string
   images?: string[] | null
-  specifications?: Record<string, any> | null
+  specifications?: Json | null
   stock?: number
   featured?: boolean
   created_at?: string

@@ -24,7 +24,15 @@ interface ProductContextType {
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
 
-// Función para transformar datos de Supabase a nuestro formato
+// FunciÃ³n para transformar datos de Supabase a nuestro formato
+function normalizeSpecifications(value: ProductRow["specifications"]): Record<string, string | number | boolean> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, string | number | boolean>
+  }
+
+  return {}
+}
+
 function transformSupabaseProduct(row: ProductRow): Product {
   return {
     id: row.id,
@@ -36,7 +44,7 @@ function transformSupabaseProduct(row: ProductRow): Product {
     category: row.category,
     condition: row.condition as "nuevo" | "seminuevo" | "usado",
     images: row.images || [],
-    specifications: row.specifications || {},
+    specifications: normalizeSpecifications(row.specifications),
     stock: row.stock,
     featured: row.featured,
     createdAt: row.created_at,
@@ -44,7 +52,7 @@ function transformSupabaseProduct(row: ProductRow): Product {
   }
 }
 
-// Productos de fallback si Supabase no está disponible
+// Productos de fallback si Supabase no estÃ¡ disponible
 const fallbackProducts: Product[] = [
   {
     id: "1",
@@ -63,6 +71,7 @@ const fallbackProducts: Product[] = [
     },
     stock: 5,
     featured: true,
+    createdAt: "2024-01-01T00:00:00.000Z",
   },
   {
     id: "2",
@@ -82,10 +91,11 @@ const fallbackProducts: Product[] = [
     },
     stock: 3,
     featured: true,
+    createdAt: "2024-01-01T00:00:00.000Z",
   },
   {
     id: "3",
-    name: 'iPad Pro 12.9"',
+    name: "iPad Pro 12.9\"",
     description: "iPad Pro con chip M2 y pantalla Liquid Retina XDR",
     price: 800000,
     originalPrice: 900000,
@@ -101,6 +111,7 @@ const fallbackProducts: Product[] = [
     },
     stock: 7,
     featured: false,
+    createdAt: "2024-01-01T00:00:00.000Z",
   },
 ]
 
@@ -110,18 +121,18 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
 
-  // Función para mostrar notificaciones
+  // FunciÃ³n para mostrar notificaciones
   const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
   }, [])
 
-  // Función para cargar productos
+  // FunciÃ³n para cargar productos
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // Verificar si Supabase está configurado
+      // Verificar si Supabase estÃ¡ configurado
       if (!isSupabaseConfigured()) {
         console.warn("Supabase not configured, using fallback products")
         setProducts(fallbackProducts)
@@ -129,7 +140,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      // Verificar conexión a Supabase
+      // Verificar conexiÃ³n a Supabase
       const isConnected = await testSupabaseConnection()
       setSupabaseConnected(isConnected)
 
@@ -143,8 +154,8 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await fetch("/api/admin/products")
         if (response.ok) {
-          const result = await response.json()
-          const transformedProducts = result.data?.map(transformSupabaseProduct) || []
+          const result = (await response.json()) as { data?: ProductRow[] }
+          const transformedProducts = (result.data ?? []).map(transformSupabaseProduct)
           setProducts(transformedProducts)
           return
         }
@@ -152,7 +163,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         console.warn("API not available, trying direct Supabase connection")
       }
 
-      // Fallback a conexión directa con Supabase
+      // Fallback a conexiÃ³n directa con Supabase
       const { data, error: supabaseError } = await supabase
         .from("products")
         .select("*")
@@ -162,14 +173,14 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         throw supabaseError
       }
 
-      const transformedProducts = data?.map(transformSupabaseProduct) || []
+      const transformedProducts = ((data ?? []) as ProductRow[]).map(transformSupabaseProduct)
       setProducts(transformedProducts)
     } catch (err) {
       console.error("Error loading products:", err)
       setError(err instanceof Error ? err.message : "Error desconocido")
       setProducts(fallbackProducts)
       setSupabaseConnected(false)
-      showToast("Usando datos de ejemplo. Verifica la configuración de Supabase.", "warning")
+      showToast("Usando datos de ejemplo. Verifica la configuraciÃ³n de Supabase.", "warning")
     } finally {
       setLoading(false)
     }
@@ -180,7 +191,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     loadProducts()
   }, [loadProducts])
 
-  // Función para agregar producto usando la API
+  // FunciÃ³n para agregar producto usando la API
   const addProduct = async (productData: ProductFormData): Promise<boolean> => {
     try {
       console.log("Adding product:", productData)
@@ -210,7 +221,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Función para actualizar producto usando la API
+  // FunciÃ³n para actualizar producto usando la API
   const updateProduct = async (id: string, productData: Partial<ProductFormData>): Promise<boolean> => {
     try {
       console.log("Updating product:", { id, productData })
@@ -240,7 +251,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Función para eliminar producto usando la API
+  // FunciÃ³n para eliminar producto usando la API
   const deleteProduct = async (id: string): Promise<boolean> => {
     try {
       console.log("Deleting product:", id)

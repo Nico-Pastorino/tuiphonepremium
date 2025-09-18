@@ -27,14 +27,15 @@ interface BluelyticsResponse {
   last_update: string
 }
 
-interface DolarSiResponse {
+interface DolarSiItem {
   casa: {
     nombre: string
     venta: string
     compra: string
   }
 }
-;[]
+
+type DolarSiResponse = DolarSiItem[]
 
 export function useDollarRate() {
   const [dollarRate, setDollarRate] = useState<DollarRate | null>(null)
@@ -53,11 +54,9 @@ export function useDollarRate() {
       throw new Error(`DolarAPI error: ${response.status}`)
     }
 
-    const data: DollarAPIResponse = await response.json()
-
-    // También obtenemos el dólar oficial
+    const data = (await response.json()) as DollarAPIResponse
     const officialResponse = await fetch("https://dolarapi.com/v1/dolares/oficial")
-    const officialData: DollarAPIResponse = await officialResponse.json()
+    const officialData = (await officialResponse.json()) as DollarAPIResponse
 
     return {
       blue: data.venta,
@@ -79,7 +78,7 @@ export function useDollarRate() {
       throw new Error(`Bluelytics error: ${response.status}`)
     }
 
-    const data: BluelyticsResponse = await response.json()
+    const data = (await response.json()) as BluelyticsResponse
 
     return {
       blue: data.blue.value_sell,
@@ -101,13 +100,13 @@ export function useDollarRate() {
       throw new Error(`DolarSi error: ${response.status}`)
     }
 
-    const data: DolarSiResponse = await response.json()
+    const data = (await response.json()) as DolarSiResponse
 
     const blueData = data.find((item) => item.casa.nombre === "Dolar Blue")
     const officialData = data.find((item) => item.casa.nombre === "Dolar Oficial")
 
     if (!blueData || !officialData) {
-      throw new Error("DolarSi: No se encontraron datos del dólar")
+      throw new Error("DolarSi: No se encontraron datos del dolar")
     }
 
     return {
@@ -127,7 +126,7 @@ export function useDollarRate() {
     for (const fetchAPI of apis) {
       try {
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 segundos timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
 
         const rate = await Promise.race([
           fetchAPI(),
@@ -140,7 +139,6 @@ export function useDollarRate() {
 
         clearTimeout(timeoutId)
 
-        // Validar que los datos sean válidos
         if (rate.blue > 0 && rate.official > 0) {
           setDollarRate(rate)
           setLoading(false)
@@ -148,12 +146,10 @@ export function useDollarRate() {
         }
       } catch (err) {
         console.warn(`Error fetching from ${fetchAPI.name}:`, err)
-        continue
       }
     }
 
-    // Si llegamos aquí, todas las APIs fallaron
-    setError(new Error("No se pudo obtener la cotización del dólar de ninguna fuente"))
+    setError(new Error("No se pudo obtener la cotizacion del dolar de ninguna fuente"))
     setLoading(false)
   }, [])
 
@@ -162,10 +158,7 @@ export function useDollarRate() {
   }, [fetchDollarRate])
 
   useEffect(() => {
-    // Cargar datos iniciales
     fetchDollarRate()
-
-    // Configurar actualización automática cada 5 minutos
     const interval = setInterval(fetchDollarRate, 5 * 60 * 1000)
 
     return () => clearInterval(interval)

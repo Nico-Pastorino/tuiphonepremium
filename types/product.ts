@@ -3,11 +3,14 @@ export interface Product {
   name: string
   description: string
   category: string
-  condition: string
+  condition: "nuevo" | "seminuevo" | "usado"
   price: number
+  originalPrice?: number | null
+  priceUSD?: number | null
   createdAt: string
+  updatedAt?: string | null
   images: string[]
-  specifications: Record<string, string>
+  specifications: Record<string, string | number | boolean>
   stock: number
   featured: boolean
 }
@@ -16,12 +19,12 @@ export interface ProductFormData {
   name: string
   description: string
   price: number
-  originalPrice?: number
-  priceUSD?: number // Add USD price field
+  originalPrice?: number | null
+  priceUSD?: number | null
   category: string
   condition: "nuevo" | "seminuevo" | "usado"
   images: string[]
-  specifications: Record<string, string>
+  specifications: Record<string, string | number | boolean>
   stock: number
   featured: boolean
 }
