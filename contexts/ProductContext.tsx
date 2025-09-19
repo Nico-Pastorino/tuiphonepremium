@@ -115,41 +115,6 @@ const fallbackProducts: Product[] = [
   },
 ]
 
-const generateLocalId = () =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : Date.now().toString()
-
-const buildLocalProduct = (productData: ProductFormData): Product => ({
-  id: generateLocalId(),
-  name: productData.name,
-  description: productData.description ?? "",
-  price: productData.price ?? 0,
-  originalPrice: productData.originalPrice ?? null,
-  priceUSD: productData.priceUSD ?? null,
-  category: productData.category,
-  condition: productData.condition,
-  images: productData.images ?? [],
-  specifications: productData.specifications ?? {},
-  stock: productData.stock ?? 0,
-  featured: Boolean(productData.featured),
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-})
-
-const applyLocalUpdate = (product: Product, updates: Partial<ProductFormData>): Product => ({
-  ...product,
-  ...updates,
-  price: updates.price ?? product.price,
-  originalPrice: updates.originalPrice ?? product.originalPrice ?? null,
-  priceUSD: updates.priceUSD ?? product.priceUSD ?? null,
-  images: updates.images ?? product.images,
-  specifications: updates.specifications ?? product.specifications,
-  stock: updates.stock ?? product.stock,
-  featured: updates.featured ?? product.featured,
-  updatedAt: new Date().toISOString(),
-})
-
 export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -231,13 +196,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Adding product:", productData)
 
-      if (isUsingFallbackData) {
-        setProducts((prev) => [buildLocalProduct(productData), ...prev])
-        showToast("Producto agregado exitosamente", "success")
-        return true
-      }
-
-      const response = await fetch("/api/admin/products", {
+const response = await fetch("/api/admin/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -267,15 +226,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Updating product:", { id, productData })
 
-      if (isUsingFallbackData) {
-        setProducts((prev) =>
-          prev.map((product) => (product.id === id ? applyLocalUpdate(product, productData) : product)),
-        )
-        showToast("Producto actualizado exitosamente", "success")
-        return true
-      }
-
-      const response = await fetch(`/api/admin/products/${id}`, {
+const response = await fetch(`/api/admin/products/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -305,13 +256,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Deleting product:", id)
 
-      if (isUsingFallbackData) {
-        setProducts((prev) => prev.filter((product) => product.id !== id))
-        showToast("Producto eliminado exitosamente", "success")
-        return true
-      }
-
-      const response = await fetch(`/api/admin/products/${id}`, {
+const response = await fetch(`/api/admin/products/${id}`, {
         method: "DELETE",
       })
 
