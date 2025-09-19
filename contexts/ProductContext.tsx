@@ -2,9 +2,12 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { supabase, testSupabaseConnection, isSupabaseConfigured } from "@/lib/supabase"
 import type { Product, ProductFormData, ProductFilters } from "@/types/product"
 import type { ProductRow } from "@/types/database"
+
+type ApiListResponse = { data?: ProductRow[]; error?: string }
+
+type ApiItemResponse = { data?: ProductRow; error?: string }
 
 interface ProductContextType {
   products: Product[]
@@ -24,7 +27,6 @@ interface ProductContextType {
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
 
-// Funci贸n para transformar datos de Supabase a nuestro formato
 function normalizeSpecifications(value: ProductRow["specifications"]): Record<string, string | number | boolean> {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, string | number | boolean>
@@ -39,27 +41,26 @@ function transformSupabaseProduct(row: ProductRow): Product {
     name: row.name,
     description: row.description || "",
     price: row.price,
-    originalPrice: row.original_price || undefined,
-    priceUSD: row.price_usd || undefined,
+    originalPrice: row.original_price ?? undefined,
+    priceUSD: row.price_usd ?? undefined,
     category: row.category,
     condition: row.condition as "nuevo" | "seminuevo" | "usado",
-    images: row.images || [],
+    images: row.images ?? [],
     specifications: normalizeSpecifications(row.specifications),
     stock: row.stock,
     featured: row.featured,
     createdAt: row.created_at,
-    updatedAt: row.updated_at || undefined,
+    updatedAt: row.updated_at ?? undefined,
   }
 }
 
-// Productos de respaldo si Supabase no est谩 disponible
 const fallbackProducts: Product[] = [
   {
     id: "00000000-0000-0000-0000-000000000001",
     name: "iPhone 15 Pro Max",
-    description: "El iPhone m谩s avanzado con chip A17 Pro y c谩mara de 48MP",
-    price: 1500000,
-    originalPrice: 1600000,
+    description: "El iPhone m醩 avanzado con chip A17 Pro y c醡ara de 48MP",
+    price: 1_500_000,
+    originalPrice: 1_600_000,
     priceUSD: 1299,
     category: "iphone",
     condition: "nuevo",
@@ -76,9 +77,9 @@ const fallbackProducts: Product[] = [
   {
     id: "00000000-0000-0000-0000-000000000002",
     name: "MacBook Air M2",
-    description: "Ultraport谩til con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
-    price: 1200000,
-    originalPrice: 1350000,
+    description: "Ultraport醫il con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
+    price: 1_200_000,
+    originalPrice: 1_350_000,
     priceUSD: 1199,
     category: "mac",
     condition: "seminuevo",
@@ -97,8 +98,8 @@ const fallbackProducts: Product[] = [
     id: "00000000-0000-0000-0000-000000000003",
     name: "iPad Pro 12.9\"",
     description: "iPad Pro con chip M2 y pantalla Liquid Retina XDR",
-    price: 800000,
-    originalPrice: 900000,
+    price: 800_000,
+    originalPrice: 900_000,
     priceUSD: 799,
     category: "ipad",
     condition: "nuevo",
@@ -121,12 +122,12 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
 
-  // Funci贸n para mostrar notificaciones
   const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
   }, [])
 
-  // Funci贸n para cargar productos
+  const mapProducts = (rows?: ProductRow[]): Product[] => (rows ?? []).map(transformSupabaseProduct)
+
   const loadProducts = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -137,19 +138,18 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await fetch("/api/admin/products")
         if (response.ok) {
-          const result = (await response.json()) as { data?: ProductRow[] }
-          const transformedProducts = (result.data ?? []).map(transformSupabaseProduct)
-          setProducts(transformedProducts)
+          const result = (await response.json()) as ApiListResponse
+          setProducts(mapProducts(result.data))
           setSupabaseConnected(true)
           loaded = true
         } else {
           console.warn("API /api/admin/products responded with status", response.status)
         }
       } catch (apiError) {
-        console.warn("Failed to fetch via API, trying direct Supabase connection", apiError)
+        console.warn("Failed to fetch via API, will try direct Supabase query", apiError)
       }
 
-      if (!loaded && isSupabaseConfigured()) {
+      if (!loaded) {
         try {
           const { data, error: supabaseError } = await supabase
             .from("products")
@@ -160,8 +160,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
             throw supabaseError
           }
 
-          const transformedProducts = ((data ?? []) as ProductRow[]).map(transformSupabaseProduct)
-          setProducts(transformedProducts)
+          setProducts(mapProducts(data ?? []))
           setSupabaseConnected(true)
           loaded = true
         } catch (directError) {
@@ -183,18 +182,24 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
   }, [showToast])
 
-
-  // Cargar productos al montar el componente
   useEffect(() => {
     loadProducts()
   }, [loadProducts])
 
-  // Funci贸n para agregar producto usando la API
+  const handleSuccess = (message: string) => {
+    showToast(message, "success")
+  }
+
+  const handleError = (action: string, err: unknown) => {
+    const msg = err instanceof Error ? err.message : "Error desconocido"
+    setError(msg)
+    showToast(`Error al ${action} producto: ${msg}`, "error")
+    return false
+  }
+
   const addProduct = async (productData: ProductFormData): Promise<boolean> => {
     try {
-      console.log("Adding product:", productData)
-
-const response = await fetch("/api/admin/products", {
+      const response = await fetch("/api/admin/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -202,29 +207,23 @@ const response = await fetch("/api/admin/products", {
         body: JSON.stringify(productData),
       })
 
-      const result = await response.json()
+      const result = (await response.json()) as ApiItemResponse
 
       if (!response.ok) {
         throw new Error(result.error || "Error al agregar producto")
       }
 
-      console.log("Product added successfully:", result.data)
-      showToast("Producto agregado exitosamente", "success")
+      handleSuccess("Producto agregado exitosamente")
       await loadProducts()
       return true
     } catch (err) {
-      console.error("Error adding product:", err)
-      showToast(`Error al agregar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
-      return false
+      return handleError("agregar", err)
     }
   }
 
-  // Funci贸n para actualizar producto usando la API
   const updateProduct = async (id: string, productData: Partial<ProductFormData>): Promise<boolean> => {
     try {
-      console.log("Updating product:", { id, productData })
-
-const response = await fetch(`/api/admin/products/${id}`, {
+      const response = await fetch(`/api/admin/products/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -232,60 +231,45 @@ const response = await fetch(`/api/admin/products/${id}`, {
         body: JSON.stringify(productData),
       })
 
-      const result = await response.json()
+      const result = (await response.json()) as ApiItemResponse
 
       if (!response.ok) {
         throw new Error(result.error || "Error al actualizar producto")
       }
 
-      console.log("Product updated successfully:", result.data)
-      showToast("Producto actualizado exitosamente", "success")
+      handleSuccess("Producto actualizado exitosamente")
       await loadProducts()
       return true
     } catch (err) {
-      console.error("Error updating product:", err)
-      showToast(`Error al actualizar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
-      return false
+      return handleError("actualizar", err)
     }
   }
 
-  // Funci贸n para eliminar producto usando la API
   const deleteProduct = async (id: string): Promise<boolean> => {
     try {
-      console.log("Deleting product:", id)
-
-const response = await fetch(`/api/admin/products/${id}`, {
+      const response = await fetch(`/api/admin/products/${id}`, {
         method: "DELETE",
       })
 
-      const result = await response.json()
+      const result = (await response.json()) as ApiItemResponse
 
       if (!response.ok) {
         throw new Error(result.error || "Error al eliminar producto")
       }
 
-      console.log("Product deleted successfully:", result.data)
-      showToast("Producto eliminado exitosamente", "success")
+      handleSuccess("Producto eliminado exitosamente")
       await loadProducts()
       return true
     } catch (err) {
-      console.error("Error deleting product:", err)
-      showToast(`Error al eliminar producto: ${err instanceof Error ? err.message : "Error desconocido"}`, "error")
-      return false
+      return handleError("eliminar", err)
     }
   }
 
-  const getProductById = (id: string): Product | undefined => {
-    return products.find((product) => product.id === id)
-  }
+  const getProductById = (id: string): Product | undefined => products.find((product) => product.id === id)
 
-  const getProductsByCategory = (category: string): Product[] => {
-    return products.filter((product) => product.category === category)
-  }
+  const getProductsByCategory = (category: string): Product[] => products.filter((product) => product.category === category)
 
-  const getFeaturedProducts = (): Product[] => {
-    return products.filter((product) => product.featured)
-  }
+  const getFeaturedProducts = (): Product[] => products.filter((product) => product.featured)
 
   const searchProducts = (query: string): Product[] => {
     const lowercaseQuery = query.toLowerCase()
