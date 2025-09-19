@@ -68,7 +68,7 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-gray-50">
       <MinimalNavbar />
 
-      <div className="pt-20 pb-8">
+      <div className="pt-28 pb-12 sm:pt-32">
         <div className="container mx-auto px-4">
           {/* Header */}
           <AnimatedSection animation="fadeUp">
@@ -85,7 +85,7 @@ export default function ProductsPage() {
             <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
               <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                 {/* Search */}
-                <div className="flex-1 max-w-md">
+                <div className="w-full lg:flex-1 max-w-md">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
@@ -98,10 +98,10 @@ export default function ProductsPage() {
                 </div>
 
                 {/* Controls */}
-                <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex flex-wrap gap-3 items-center w-full lg:w-auto justify-between lg:justify-end">
                   {/* Sort */}
                   <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-full sm:w-48">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -113,7 +113,7 @@ export default function ProductsPage() {
                   </Select>
 
                   {/* View Mode */}
-                  <div className="flex border rounded-lg">
+                  <div className="flex border rounded-lg w-full sm:w-auto overflow-hidden">
                     <Button
                       variant={viewMode === "grid" ? "default" : "ghost"}
                       size="sm"
@@ -135,7 +135,7 @@ export default function ProductsPage() {
                   </div>
 
                   {/* Filter Toggle */}
-                  <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="lg:hidden">
+                  <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="lg:hidden w-full sm:w-auto">
                     <Filter className="w-4 h-4 mr-2" />
                     Filtros
                   </Button>
@@ -171,10 +171,10 @@ export default function ProductsPage() {
             </div>
           </AnimatedSection>
 
-          <div className="flex gap-8">
+          <div className="flex flex-col gap-8 lg:flex-row">
             {/* Sidebar Filters */}
-            <div className={`w-80 ${showFilters ? "block" : "hidden lg:block"}`}>
-              <AnimatedSection animation="fadeLeft">
+            <div className={`lg:w-80 w-full ${showFilters ? "block" : "hidden lg:block"}`}>
+              <AnimatedSection animation="fadeLeft" className="lg:sticky lg:top-32">
                 <ProductFilters onFilterChange={handleFilterChange} />
               </AnimatedSection>
             </div>
@@ -183,7 +183,7 @@ export default function ProductsPage() {
             <div className="flex-1">
               <AnimatedSection animation="fadeRight">
                 {/* Results Count */}
-                <div className="mb-6">
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-gray-600">
                     Mostrando {filteredProducts.length} de {products.length} productos
                   </p>

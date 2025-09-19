@@ -25,18 +25,6 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
             className="object-cover transition-all duration-700 group-hover:scale-105"
           />
 
-          {/* Stock indicator */}
-          <div className="absolute bottom-4 left-4">
-            <div
-              className={`px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${
-                product.stock > 0
-                  ? "bg-green-500/20 text-green-700 border border-green-500/30"
-                  : "bg-red-500/20 text-red-700 border border-red-500/30"
-              }`}
-            >
-              {product.stock > 0 ? `${product.stock} disponibles` : "Sin stock"}
-            </div>
-          </div>
         </div>
 
         {/* Content */}

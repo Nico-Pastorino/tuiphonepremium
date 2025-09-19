@@ -75,6 +75,8 @@ export function MinimalNavbar() {
         </Button>
       </nav>
 
+      {/* Spacer to keep content away from fixed navbar */}
+      {!isHomePage && <div aria-hidden className="h-24 sm:h-28" />}
       {/* Slide-out menu - Responsive y profesional UX/UI */}
       <div className={`fixed inset-0 z-50 transition-all duration-300 ${isMenuOpen ? "visible" : "invisible"}`}>
         {/* Backdrop */}

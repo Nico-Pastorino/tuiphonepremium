@@ -41,12 +41,12 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
         {/* Categories */}
         <div className="mb-8">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Categorías</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="flex flex-wrap gap-3">
             {categories.map((category) => (
               <Button
                 key={category.id}
                 variant={activeCategory === category.id ? "default" : "outline"}
-                className={`p-4 h-auto flex flex-col items-center gap-2 rounded-2xl transition-all duration-300 ${
+                className={`flex items-center justify-start gap-3 rounded-2xl px-4 py-3 min-w-[140px] flex-1 transition-all duration-300 ${
                   activeCategory === category.id
                     ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
                     : "border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
@@ -58,15 +58,13 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
                 }}
               >
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
                     activeCategory === category.id ? "bg-white/20" : `bg-gradient-to-br ${category.color}`
                   }`}
                 >
-                  <category.icon
-                    className={`w-4 h-4 ${activeCategory === category.id ? "text-white" : "text-white"}`}
-                  />
+                  <category.icon className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm font-medium">{category.name}</span>
+                <span className="text-sm font-medium text-left">{category.name}</span>
               </Button>
             ))}
           </div>
@@ -75,7 +73,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
         {/* Conditions */}
         <div className="mb-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Estado</h4>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             {conditions.map((condition) => (
               <Button
                 key={condition.id}
