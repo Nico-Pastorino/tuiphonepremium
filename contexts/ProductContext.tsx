@@ -55,7 +55,7 @@ function transformSupabaseProduct(row: ProductRow): Product {
 // Productos de respaldo si Supabase no está disponible
 const fallbackProducts: Product[] = [
   {
-    id: "1",
+    id: "00000000-0000-0000-0000-000000000001",
     name: "iPhone 15 Pro Max",
     description: "El iPhone más avanzado con chip A17 Pro y cámara de 48MP",
     price: 1500000,
@@ -74,7 +74,7 @@ const fallbackProducts: Product[] = [
     createdAt: "2024-01-01T00:00:00.000Z",
   },
   {
-    id: "2",
+    id: "00000000-0000-0000-0000-000000000002",
     name: "MacBook Air M2",
     description: "Ultraportátil con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
     price: 1200000,
@@ -94,7 +94,7 @@ const fallbackProducts: Product[] = [
     createdAt: "2024-01-01T00:00:00.000Z",
   },
   {
-    id: "3",
+    id: "00000000-0000-0000-0000-000000000003",
     name: "iPad Pro 12.9\"",
     description: "iPad Pro con chip M2 y pantalla Liquid Retina XDR",
     price: 800000,
