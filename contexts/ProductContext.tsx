@@ -128,63 +128,61 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
   // Función para cargar productos
   const loadProducts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
     try {
-      setLoading(true)
-      setError(null)
+      let loaded = false
 
-      // Verificar si Supabase está configurado
-      if (!isSupabaseConfigured()) {
-        console.warn("Supabase not configured, using fallback products")
-        setProducts(fallbackProducts)
-        setSupabaseConnected(false)
-        return
-      }
-
-      // Verificar conexión a Supabase
-      const isConnected = await testSupabaseConnection()
-      setSupabaseConnected(isConnected)
-
-      if (!isConnected) {
-        console.warn("Supabase not available, using fallback products")
-        setProducts(fallbackProducts)
-        return
-      }
-
-      // Intentar cargar desde la API primero, luego desde Supabase directamente
       try {
         const response = await fetch("/api/admin/products")
         if (response.ok) {
           const result = (await response.json()) as { data?: ProductRow[] }
           const transformedProducts = (result.data ?? []).map(transformSupabaseProduct)
           setProducts(transformedProducts)
-          return
+          setSupabaseConnected(true)
+          loaded = true
+        } else {
+          console.warn("API /api/admin/products responded with status", response.status)
         }
       } catch (apiError) {
-        console.warn("API not available, trying direct Supabase connection")
+        console.warn("Failed to fetch via API, trying direct Supabase connection", apiError)
       }
 
-      // Fallback a conexión directa con Supabase
-      const { data, error: supabaseError } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false })
+      if (!loaded && isSupabaseConfigured()) {
+        try {
+          const { data, error: supabaseError } = await supabase
+            .from("products")
+            .select("*")
+            .order("created_at", { ascending: false })
 
-      if (supabaseError) {
-        throw supabaseError
+          if (supabaseError) {
+            throw supabaseError
+          }
+
+          const transformedProducts = ((data ?? []) as ProductRow[]).map(transformSupabaseProduct)
+          setProducts(transformedProducts)
+          setSupabaseConnected(true)
+          loaded = true
+        } catch (directError) {
+          console.error("Direct Supabase query failed:", directError)
+        }
       }
 
-      const transformedProducts = ((data ?? []) as ProductRow[]).map(transformSupabaseProduct)
-      setProducts(transformedProducts)
+      if (!loaded) {
+        throw new Error("No se pudo cargar productos desde Supabase ni desde la API")
+      }
     } catch (err) {
       console.error("Error loading products:", err)
       setError(err instanceof Error ? err.message : "Error desconocido")
       setProducts(fallbackProducts)
       setSupabaseConnected(false)
-      showToast("Usando datos de ejemplo. Verificá la configuración de Supabase.", "warning")
+      showToast("Usando datos de ejemplo. Verific� la configuraci�n de Supabase.", "warning")
     } finally {
       setLoading(false)
     }
   }, [showToast])
+
 
   // Cargar productos al montar el componente
   useEffect(() => {
