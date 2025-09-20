@@ -203,6 +203,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [dollarConfig, setDollarConfig] = useState<DollarConfig>(initialDollarConfig)
   const [homeConfig, setHomeConfig] = useState<HomeConfig>(defaultHomeConfig)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [dollarConfigInitialized, setDollarConfigInitialized] = useState(false)
+  const [homeConfigInitialized, setHomeConfigInitialized] = useState(false)
 
   useEffect(() => {
     const savedPlans = typeof window === "undefined" ? null : localStorage.getItem(INSTALLMENT_STORAGE_KEY)
@@ -254,6 +256,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         console.error("Failed to parse saved home config", error)
       }
     }
+    setDollarConfigInitialized(true)
+    setHomeConfigInitialized(true)
   }, [])
 
   useEffect(() => {
@@ -263,10 +267,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }, [installmentPlans])
 
   useEffect(() => {
+    if (!dollarConfigInitialized) return
     localStorage.setItem(DOLLAR_STORAGE_KEY, JSON.stringify(dollarConfig))
-  }, [dollarConfig])
+  }, [dollarConfig, dollarConfigInitialized])
 
   useEffect(() => {
+    if (!homeConfigInitialized) return
     localStorage.setItem(
       HOME_STORAGE_KEY,
       JSON.stringify({
@@ -274,7 +280,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         sections: homeConfig.sections.map((section) => ({ id: section.id, label: section.label, enabled: section.enabled })),
       }),
     )
-  }, [homeConfig])
+  }, [homeConfig, homeConfigInitialized])
 
   const addInstallmentPlan = (planData: Omit<InstallmentPlan, "id" | "createdAt">) => {
     const newPlan: InstallmentPlan = {
