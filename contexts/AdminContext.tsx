@@ -6,11 +6,7 @@ export interface InstallmentPlan {
   id: string
   months: number
   interestRate: number
-  name: string
-  description: string
   isActive: boolean
-  minAmount: number
-  maxAmount: number
   createdAt: string
   category: "visa-mastercard" | "naranja"
 }
@@ -65,16 +61,32 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined)
 
+function sanitizeInstallmentPlan(raw: any, fallbackIndex: number): InstallmentPlan | null {
+  const months = Number(raw?.months)
+  if (!Number.isFinite(months) || months <= 0) {
+    return null
+  }
+  const interestRate = Number(raw?.interestRate ?? 0)
+  const category: InstallmentPlan["category"] = raw?.category === "naranja" ? "naranja" : "visa-mastercard"
+  const hasValidId = typeof raw?.id === "string" && raw.id.trim().length > 0
+  const id = hasValidId ? (raw.id as string) : `${category}-${Date.now()}-${fallbackIndex}`
+  return {
+    id,
+    months,
+    interestRate: Number.isFinite(interestRate) ? interestRate : 0,
+    isActive: raw?.isActive !== undefined ? Boolean(raw.isActive) : true,
+    createdAt: typeof raw?.createdAt === "string" ? (raw.createdAt as string) : new Date().toISOString(),
+    category,
+  }
+}
+
+
 const initialVisaMastercardPlans: InstallmentPlan[] = [
   {
     id: "visa-1",
     months: 3,
     interestRate: 0,
-    name: "3 cuotas sin interés",
-    description: "Pagá en 3 cuotas fijas con Visa o Mastercard, sin recargos.",
     isActive: true,
-    minAmount: 0,
-    maxAmount: 500000,
     createdAt: new Date().toISOString(),
     category: "visa-mastercard",
   },
@@ -82,11 +94,7 @@ const initialVisaMastercardPlans: InstallmentPlan[] = [
     id: "visa-2",
     months: 6,
     interestRate: 12,
-    name: "6 cuotas",
-    description: "Financiación equilibrada en 6 cuotas con Visa o Mastercard.",
     isActive: true,
-    minAmount: 0,
-    maxAmount: 1000000,
     createdAt: new Date().toISOString(),
     category: "visa-mastercard",
   },
@@ -94,11 +102,7 @@ const initialVisaMastercardPlans: InstallmentPlan[] = [
     id: "visa-3",
     months: 12,
     interestRate: 25,
-    name: "12 cuotas",
-    description: "Máximo financiamiento en 12 cuotas con Visa o Mastercard.",
     isActive: true,
-    minAmount: 0,
-    maxAmount: 2000000,
     createdAt: new Date().toISOString(),
     category: "visa-mastercard",
   },
@@ -109,11 +113,7 @@ const initialNaranjaPlans: InstallmentPlan[] = [
     id: "naranja-1",
     months: 3,
     interestRate: 5,
-    name: "3 cuotas Naranja",
-    description: "Plan inicial en cuotas fijas con Tarjeta Naranja.",
     isActive: true,
-    minAmount: 0,
-    maxAmount: 400000,
     createdAt: new Date().toISOString(),
     category: "naranja",
   },
@@ -121,11 +121,7 @@ const initialNaranjaPlans: InstallmentPlan[] = [
     id: "naranja-2",
     months: 6,
     interestRate: 18,
-    name: "6 cuotas Naranja",
-    description: "Financiación intermedia con Tarjeta Naranja y cuotas accesibles.",
     isActive: true,
-    minAmount: 0,
-    maxAmount: 800000,
     createdAt: new Date().toISOString(),
     category: "naranja",
   },
@@ -133,11 +129,7 @@ const initialNaranjaPlans: InstallmentPlan[] = [
     id: "naranja-3",
     months: 9,
     interestRate: 28,
-    name: "9 cuotas Naranja",
-    description: "Plan extendido con Tarjeta Naranja",
     isActive: true,
-    minAmount: 0,
-    maxAmount: 1200000,
     createdAt: new Date().toISOString(),
     category: "naranja",
   },
@@ -145,11 +137,7 @@ const initialNaranjaPlans: InstallmentPlan[] = [
     id: "naranja-4",
     months: 12,
     interestRate: 35,
-    name: "12 cuotas Naranja",
-    description: "Cuotas extendidas con Tarjeta Naranja al mejor costo.",
     isActive: true,
-    minAmount: 0,
-    maxAmount: 1500000,
     createdAt: new Date().toISOString(),
     category: "naranja",
   },
@@ -214,9 +202,16 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     if (savedPlans) {
       try {
-        const parsed = JSON.parse(savedPlans) as InstallmentPlan[]
+        const parsed = JSON.parse(savedPlans) as unknown
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setInstallmentPlans(parsed)
+          const sanitized = parsed
+            .map((plan, index) => sanitizeInstallmentPlan(plan, index))
+            .filter((plan): plan is InstallmentPlan => plan !== null)
+          if (sanitized.length > 0) {
+            setInstallmentPlans(sanitized)
+          } else {
+            setInstallmentPlans([...initialVisaMastercardPlans, ...initialNaranjaPlans])
+          }
         } else {
           setInstallmentPlans([...initialVisaMastercardPlans, ...initialNaranjaPlans])
         }
@@ -403,4 +398,6 @@ export function getProductPriceWithDollar(priceUSD: number | null | undefined, d
   const effective = Number((priceUSD * dollarRate).toFixed(2))
   return effective
 }
+
+
 

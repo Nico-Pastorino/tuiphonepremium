@@ -64,37 +64,31 @@ export default function ProductDetailPage() {
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
 
-  const validInstallmentAmount = Number.isFinite(priceInPesos) ? Math.max(priceInPesos, 0) : null
   const categoryLabels = {
     "visa-mastercard": "Visa / Mastercard",
     naranja: "Tarjeta Naranja",
   } as const
   type InstallmentCategory = keyof typeof categoryLabels
 
-  const installmentGroups =
-    validInstallmentAmount === null
-      ? []
-      : (Object.entries(categoryLabels) as Array<[InstallmentCategory, string]>).map(([category, label]) => {
-          const options = installmentPlans
-            .filter((plan) => plan.category === category && plan.isActive)
-            .filter((plan) => {
-              if (validInstallmentAmount < plan.minAmount) return false
-              if (plan.maxAmount > 0 && validInstallmentAmount > plan.maxAmount) return false
-              return true
-            })
-            .map((plan) => {
-              const totalAmount = validInstallmentAmount * (1 + plan.interestRate / 100)
-              const monthlyAmount = plan.months > 0 ? totalAmount / plan.months : totalAmount
-              return {
-                id: plan.id,
-                months: plan.months,
-                monthlyAmount,
-              }
-            })
-            .sort((a, b) => a.months - b.months)
-
-          return { category, label, options }
+  const installmentGroups = (Object.entries(categoryLabels) as Array<[InstallmentCategory, string]>).map(
+    ([category, label]) => {
+      const options = installmentPlans
+        .filter((plan) => plan.category === category && plan.isActive)
+        .map((plan) => {
+          const totalAmount = priceInPesos * (1 + plan.interestRate / 100)
+          const monthlyAmount = plan.months > 0 ? totalAmount / plan.months : totalAmount
+          return {
+            id: plan.id,
+            months: plan.months,
+            interestRate: plan.interestRate,
+            monthlyAmount,
+          }
         })
+        .sort((a, b) => a.months - b.months)
+
+      return { category, label, options }
+    },
+  )
 
   const hasInstallmentOptions = installmentGroups.some((group) => group.options.length > 0)
 
@@ -323,7 +317,7 @@ export default function ProductDetailPage() {
                                 ))}
                               </div>
                             ) : (
-                              <p className="mt-2 text-xs text-blue-600/70">No hay planes disponibles para este monto.</p>
+                              <p className="mt-2 text-xs text-blue-600/70">No hay planes disponibles en este momento.</p>
                             )}
                           </div>
                         ))}

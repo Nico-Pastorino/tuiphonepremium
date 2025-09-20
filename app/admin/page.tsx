@@ -408,7 +408,6 @@ function AdminDashboard() {
                         plan={plan}
                         onEdit={setEditingInstallment}
                         onDelete={deleteInstallmentPlan}
-                        onUpdate={updateInstallmentPlan}
                       />
                     ))}
                     {visaMastercardPlans.length === 0 && (
@@ -433,7 +432,6 @@ function AdminDashboard() {
                         plan={plan}
                         onEdit={setEditingInstallment}
                         onDelete={deleteInstallmentPlan}
-                        onUpdate={updateInstallmentPlan}
                       />
                     ))}
                     {naranjaPlans.length === 0 && (
@@ -651,3 +649,4 @@ function AdminDashboard() {
     </div>
   )
 }
+

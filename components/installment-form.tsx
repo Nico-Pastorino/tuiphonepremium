@@ -1,19 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
+import type { InstallmentPlan } from "@/contexts/AdminContext"
+
+const CATEGORY_LABELS: Record<"visa-mastercard" | "naranja", string> = {
+  "visa-mastercard": "Visa/Mastercard",
+  naranja: "Tarjeta Naranja",
+}
 
 export interface InstallmentFormData {
-  name: string
   months: number
   interestRate: number
-  minAmount: number
-  maxAmount: number
-  description: string
   isActive: boolean
   category: "visa-mastercard" | "naranja"
 }
@@ -29,86 +30,71 @@ export function InstallmentForm({
   onSubmit: (data: InstallmentFormData) => void
   onCancel?: () => void
 }) {
-  const [data, setData] = useState<InstallmentFormData>(
-    plan ?? {
-      name: "",
-      months: 3,
-      interestRate: 0,
-      minAmount: 0,
-      maxAmount: 1000000,
-      description: "",
-      isActive: true,
-      category,
-    },
-  )
+  const [data, setData] = useState<InstallmentFormData>(() => ({
+    months: plan?.months ?? 3,
+    interestRate: plan?.interestRate ?? 0,
+    isActive: plan?.isActive ?? true,
+    category: plan?.category ?? category,
+  }))
+
+  useEffect(() => {
+    if (plan) {
+      setData({
+        months: plan?.months,
+        interestRate: plan.interestRate,
+        isActive: plan.isActive,
+        category: plan.category,
+      })
+    }
+  }, [plan])
+
+  useEffect(() => {
+    if (!plan) {
+      setData((prev) => ({
+        ...prev,
+        category,
+      }))
+    }
+  }, [category, plan])
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        onSubmit(data)
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit({ ...data, category: data.category })
       }}
       className="space-y-4"
     >
       <div>
-        <Label>Nombre</Label>
-        <Input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} required />
+        <Label>Categoria seleccionada</Label>
+        <p className="mt-1 text-sm font-medium text-gray-700">{CATEGORY_LABELS[data.category]}</p>
       </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Cuotas</Label>
           <Input
             type="number"
-            value={data.months}
             min={1}
-            onChange={(e) => setData({ ...data, months: Number(e.target.value) })}
+            value={data.months}
+            onChange={(event) => setData({ ...data, months: Number(event.target.value) })}
             required
           />
         </div>
         <div>
-          <Label>Interés (%)</Label>
+          <Label>Interes (%)</Label>
           <Input
             type="number"
             step="0.1"
             value={data.interestRate}
-            onChange={(e) => setData({ ...data, interestRate: Number(e.target.value) })}
+            onChange={(event) => setData({ ...data, interestRate: Number(event.target.value) })}
             required
           />
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>Monto mínimo</Label>
-          <Input
-            type="number"
-            value={data.minAmount}
-            onChange={(e) => setData({ ...data, minAmount: Number(e.target.value) })}
-            required
-          />
-        </div>
-        <div>
-          <Label>Monto máximo</Label>
-          <Input
-            type="number"
-            value={data.maxAmount}
-            onChange={(e) => setData({ ...data, maxAmount: Number(e.target.value) })}
-            required
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label>Descripción</Label>
-        <Textarea
-          rows={2}
-          value={data.description}
-          onChange={(e) => setData({ ...data, description: e.target.value })}
-        />
       </div>
 
       <div className="flex items-center space-x-2">
-        <Switch id="isActive" checked={data.isActive} onCheckedChange={(v) => setData({ ...data, isActive: v })} />
+        <Switch id="isActive" checked={data.isActive} onCheckedChange={(value) => setData({ ...data, isActive: value })} />
         <Label htmlFor="isActive">Plan activo</Label>
       </div>
 
@@ -123,3 +109,4 @@ export function InstallmentForm({
     </form>
   )
 }
+
