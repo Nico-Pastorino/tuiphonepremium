@@ -1,149 +1,60 @@
-$1Ver mas$3"$1Ver mas$3u$1Ver mas$3s$1Ver mas$3e$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3i$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3i$1Ver mas$3m$1Ver mas$3p$1Ver mas$3o$1Ver mas$3r$1Ver mas$3t$1Ver mas$3 $1Ver mas$3I$1Ver mas$3m$1Ver mas$3a$1Ver mas$3g$1Ver mas$3e$1Ver mas$3 $1Ver mas$3f$1Ver mas$3r$1Ver mas$3o$1Ver mas$3m$1Ver mas$3 $1Ver mas$3"$1Ver mas$3n$1Ver mas$3e$1Ver mas$3x$1Ver mas$3t$1Ver mas$3/$1Ver mas$3i$1Ver mas$3m$1Ver mas$3a$1Ver mas$3g$1Ver mas$3e$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3i$1Ver mas$3m$1Ver mas$3p$1Ver mas$3o$1Ver mas$3r$1Ver mas$3t$1Ver mas$3 $1Ver mas$3L$1Ver mas$3i$1Ver mas$3n$1Ver mas$3k$1Ver mas$3 $1Ver mas$3f$1Ver mas$3r$1Ver mas$3o$1Ver mas$3m$1Ver mas$3 $1Ver mas$3"$1Ver mas$3n$1Ver mas$3e$1Ver mas$3x$1Ver mas$3t$1Ver mas$3/$1Ver mas$3l$1Ver mas$3i$1Ver mas$3n$1Ver mas$3k$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3i$1Ver mas$3m$1Ver mas$3p$1Ver mas$3o$1Ver mas$3r$1Ver mas$3t$1Ver mas$3 $1Ver mas$3{$1Ver mas$3 $1Ver mas$3B$1Ver mas$3u$1Ver mas$3t$1Ver mas$3t$1Ver mas$3o$1Ver mas$3n$1Ver mas$3 $1Ver mas$3}$1Ver mas$3 $1Ver mas$3f$1Ver mas$3r$1Ver mas$3o$1Ver mas$3m$1Ver mas$3 $1Ver mas$3"$1Ver mas$3@$1Ver mas$3/$1Ver mas$3c$1Ver mas$3o$1Ver mas$3m$1Ver mas$3p$1Ver mas$3o$1Ver mas$3n$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3s$1Ver mas$3/$1Ver mas$3u$1Ver mas$3i$1Ver mas$3/$1Ver mas$3b$1Ver mas$3u$1Ver mas$3t$1Ver mas$3t$1Ver mas$3o$1Ver mas$3n$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3i$1Ver mas$3m$1Ver mas$3p$1Ver mas$3o$1Ver mas$3r$1Ver mas$3t$1Ver mas$3 $1Ver mas$3{$1Ver mas$3 $1Ver mas$3C$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3,$1Ver mas$3 $1Ver mas$3C$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3C$1Ver mas$3o$1Ver mas$3n$1Ver mas$3t$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3 $1Ver mas$3}$1Ver mas$3 $1Ver mas$3f$1Ver mas$3r$1Ver mas$3o$1Ver mas$3m$1Ver mas$3 $1Ver mas$3"$1Ver mas$3@$1Ver mas$3/$1Ver mas$3c$1Ver mas$3o$1Ver mas$3m$1Ver mas$3p$1Ver mas$3o$1Ver mas$3n$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3s$1Ver mas$3/$1Ver mas$3u$1Ver mas$3i$1Ver mas$3/$1Ver mas$3c$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3i$1Ver mas$3m$1Ver mas$3p$1Ver mas$3o$1Ver mas$3r$1Ver mas$3t$1Ver mas$3 $1Ver mas$3t$1Ver mas$3y$1Ver mas$3p$1Ver mas$3e$1Ver mas$3 $1Ver mas$3{$1Ver mas$3 $1Ver mas$3P$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3 $1Ver mas$3}$1Ver mas$3 $1Ver mas$3f$1Ver mas$3r$1Ver mas$3o$1Ver mas$3m$1Ver mas$3 $1Ver mas$3"$1Ver mas$3@$1Ver mas$3/$1Ver mas$3t$1Ver mas$3y$1Ver mas$3p$1Ver mas$3e$1Ver mas$3s$1Ver mas$3/$1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3i$1Ver mas$3m$1Ver mas$3p$1Ver mas$3o$1Ver mas$3r$1Ver mas$3t$1Ver mas$3 $1Ver mas$3{$1Ver mas$3 $1Ver mas$3u$1Ver mas$3s$1Ver mas$3e$1Ver mas$3D$1Ver mas$3o$1Ver mas$3l$1Ver mas$3l$1Ver mas$3a$1Ver mas$3r$1Ver mas$3R$1Ver mas$3a$1Ver mas$3t$1Ver mas$3e$1Ver mas$3 $1Ver mas$3}$1Ver mas$3 $1Ver mas$3f$1Ver mas$3r$1Ver mas$3o$1Ver mas$3m$1Ver mas$3 $1Ver mas$3"$1Ver mas$3@$1Ver mas$3/$1Ver mas$3h$1Ver mas$3o$1Ver mas$3o$1Ver mas$3k$1Ver mas$3s$1Ver mas$3/$1Ver mas$3u$1Ver mas$3s$1Ver mas$3e$1Ver mas$3-$1Ver mas$3d$1Ver mas$3o$1Ver mas$3l$1Ver mas$3l$1Ver mas$3a$1Ver mas$3r$1Ver mas$3-$1Ver mas$3r$1Ver mas$3a$1Ver mas$3t$1Ver mas$3e$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3i$1Ver mas$3n$1Ver mas$3t$1Ver mas$3e$1Ver mas$3r$1Ver mas$3f$1Ver mas$3a$1Ver mas$3c$1Ver mas$3e$1Ver mas$3 $1Ver mas$3M$1Ver mas$3o$1Ver mas$3d$1Ver mas$3e$1Ver mas$3r$1Ver mas$3n$1Ver mas$3P$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3C$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3P$1Ver mas$3r$1Ver mas$3o$1Ver mas$3p$1Ver mas$3s$1Ver mas$3 $1Ver mas$3{$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3:$1Ver mas$3 $1Ver mas$3P$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3e$1Ver mas$3x$1Ver mas$3p$1Ver mas$3o$1Ver mas$3r$1Ver mas$3t$1Ver mas$3 $1Ver mas$3f$1Ver mas$3u$1Ver mas$3n$1Ver mas$3c$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3 $1Ver mas$3M$1Ver mas$3o$1Ver mas$3d$1Ver mas$3e$1Ver mas$3r$1Ver mas$3n$1Ver mas$3P$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3C$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3($1Ver mas$3{$1Ver mas$3 $1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3 $1Ver mas$3}$1Ver mas$3:$1Ver mas$3 $1Ver mas$3M$1Ver mas$3o$1Ver mas$3d$1Ver mas$3e$1Ver mas$3r$1Ver mas$3n$1Ver mas$3P$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3C$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3P$1Ver mas$3r$1Ver mas$3o$1Ver mas$3p$1Ver mas$3s$1Ver mas$3)$1Ver mas$3 $1Ver mas$3{$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3c$1Ver mas$3o$1Ver mas$3n$1Ver mas$3s$1Ver mas$3t$1Ver mas$3 $1Ver mas$3{$1Ver mas$3 $1Ver mas$3d$1Ver mas$3o$1Ver mas$3l$1Ver mas$3l$1Ver mas$3a$1Ver mas$3r$1Ver mas$3R$1Ver mas$3a$1Ver mas$3t$1Ver mas$3e$1Ver mas$3 $1Ver mas$3}$1Ver mas$3 $1Ver mas$3=$1Ver mas$3 $1Ver mas$3u$1Ver mas$3s$1Ver mas$3e$1Ver mas$3D$1Ver mas$3o$1Ver mas$3l$1Ver mas$3l$1Ver mas$3a$1Ver mas$3r$1Ver mas$3R$1Ver mas$3a$1Ver mas$3t$1Ver mas$3e$1Ver mas$3($1Ver mas$3)$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3c$1Ver mas$3o$1Ver mas$3n$1Ver mas$3s$1Ver mas$3t$1Ver mas$3 $1Ver mas$3c$1Ver mas$3o$1Ver mas$3n$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3s$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3R$1Ver mas$3a$1Ver mas$3t$1Ver mas$3e$1Ver mas$3 $1Ver mas$3=$1Ver mas$3 $1Ver mas$3d$1Ver mas$3o$1Ver mas$3l$1Ver mas$3l$1Ver mas$3a$1Ver mas$3r$1Ver mas$3R$1Ver mas$3a$1Ver mas$3t$1Ver mas$3e$1Ver mas$3?$1Ver mas$3.$1Ver mas$3b$1Ver mas$3l$1Ver mas$3u$1Ver mas$3e$1Ver mas$3 $1Ver mas$3?$1Ver mas$3?$1Ver mas$3 $1Ver mas$30$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3c$1Ver mas$3o$1Ver mas$3n$1Ver mas$3s$1Ver mas$3t$1Ver mas$3 $1Ver mas$3p$1Ver mas$3r$1Ver mas$3i$1Ver mas$3c$1Ver mas$3e$1Ver mas$3I$1Ver mas$3n$1Ver mas$3P$1Ver mas$3e$1Ver mas$3s$1Ver mas$3o$1Ver mas$3s$1Ver mas$3 $1Ver mas$3=$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3.$1Ver mas$3p$1Ver mas$3r$1Ver mas$3i$1Ver mas$3c$1Ver mas$3e$1Ver mas$3U$1Ver mas$3S$1Ver mas$3D$1Ver mas$3 $1Ver mas$3!$1Ver mas$3=$1Ver mas$3=$1Ver mas$3 $1Ver mas$3u$1Ver mas$3n$1Ver mas$3d$1Ver mas$3e$1Ver mas$3f$1Ver mas$3i$1Ver mas$3n$1Ver mas$3e$1Ver mas$3d$1Ver mas$3 $1Ver mas$3&$1Ver mas$3&$1Ver mas$3 $1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3.$1Ver mas$3p$1Ver mas$3r$1Ver mas$3i$1Ver mas$3c$1Ver mas$3e$1Ver mas$3U$1Ver mas$3S$1Ver mas$3D$1Ver mas$3 $1Ver mas$3!$1Ver mas$3=$1Ver mas$3=$1Ver mas$3 $1Ver mas$3n$1Ver mas$3u$1Ver mas$3l$1Ver mas$3l$1Ver mas$3 $1Ver mas$3&$1Ver mas$3&$1Ver mas$3 $1Ver mas$3c$1Ver mas$3o$1Ver mas$3n$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3s$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3R$1Ver mas$3a$1Ver mas$3t$1Ver mas$3e$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3?$1Ver mas$3 $1Ver mas$3N$1Ver mas$3u$1Ver mas$3m$1Ver mas$3b$1Ver mas$3e$1Ver mas$3r$1Ver mas$3($1Ver mas$3($1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3.$1Ver mas$3p$1Ver mas$3r$1Ver mas$3i$1Ver mas$3c$1Ver mas$3e$1Ver mas$3U$1Ver mas$3S$1Ver mas$3D$1Ver mas$3 $1Ver mas$3*$1Ver mas$3 $1Ver mas$3c$1Ver mas$3o$1Ver mas$3n$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3s$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3R$1Ver mas$3a$1Ver mas$3t$1Ver mas$3e$1Ver mas$3)$1Ver mas$3.$1Ver mas$3t$1Ver mas$3o$1Ver mas$3F$1Ver mas$3i$1Ver mas$3x$1Ver mas$3e$1Ver mas$3d$1Ver mas$3($1Ver mas$32$1Ver mas$3)$1Ver mas$3)$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3:$1Ver mas$3 $1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3.$1Ver mas$3p$1Ver mas$3r$1Ver mas$3i$1Ver mas$3c$1Ver mas$3e$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3r$1Ver mas$3e$1Ver mas$3t$1Ver mas$3u$1Ver mas$3r$1Ver mas$3n$1Ver mas$3 $1Ver mas$3($1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3C$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3g$1Ver mas$3r$1Ver mas$3o$1Ver mas$3u$1Ver mas$3p$1Ver mas$3 $1Ver mas$3r$1Ver mas$3e$1Ver mas$3l$1Ver mas$3a$1Ver mas$3t$1Ver mas$3i$1Ver mas$3v$1Ver mas$3e$1Ver mas$3 $1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3f$1Ver mas$3l$1Ver mas$3o$1Ver mas$3w$1Ver mas$3-$1Ver mas$3h$1Ver mas$3i$1Ver mas$3d$1Ver mas$3d$1Ver mas$3e$1Ver mas$3n$1Ver mas$3 $1Ver mas$3b$1Ver mas$3g$1Ver mas$3-$1Ver mas$3w$1Ver mas$3h$1Ver mas$3i$1Ver mas$3t$1Ver mas$3e$1Ver mas$3 $1Ver mas$3b$1Ver mas$3o$1Ver mas$3r$1Ver mas$3d$1Ver mas$3e$1Ver mas$3r$1Ver mas$3-$1Ver mas$30$1Ver mas$3 $1Ver mas$3s$1Ver mas$3h$1Ver mas$3a$1Ver mas$3d$1Ver mas$3o$1Ver mas$3w$1Ver mas$3-$1Ver mas$3s$1Ver mas$3m$1Ver mas$3 $1Ver mas$3h$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3:$1Ver mas$3s$1Ver mas$3h$1Ver mas$3a$1Ver mas$3d$1Ver mas$3o$1Ver mas$3w$1Ver mas$3-$1Ver mas$32$1Ver mas$3x$1Ver mas$3l$1Ver mas$3 $1Ver mas$3t$1Ver mas$3r$1Ver mas$3a$1Ver mas$3n$1Ver mas$3s$1Ver mas$3i$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3-$1Ver mas$3a$1Ver mas$3l$1Ver mas$3l$1Ver mas$3 $1Ver mas$3d$1Ver mas$3u$1Ver mas$3r$1Ver mas$3a$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3-$1Ver mas$35$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3r$1Ver mas$3o$1Ver mas$3u$1Ver mas$3n$1Ver mas$3d$1Ver mas$3e$1Ver mas$3d$1Ver mas$3-$1Ver mas$33$1Ver mas$3x$1Ver mas$3l$1Ver mas$3"$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3C$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3C$1Ver mas$3o$1Ver mas$3n$1Ver mas$3t$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3p$1Ver mas$3-$1Ver mas$30$1Ver mas$3"$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3{$1Ver mas$3/$1Ver mas$3*$1Ver mas$3 $1Ver mas$3I$1Ver mas$3m$1Ver mas$3a$1Ver mas$3g$1Ver mas$3e$1Ver mas$3 $1Ver mas$3c$1Ver mas$3o$1Ver mas$3n$1Ver mas$3t$1Ver mas$3a$1Ver mas$3i$1Ver mas$3n$1Ver mas$3e$1Ver mas$3r$1Ver mas$3 $1Ver mas$3*$1Ver mas$3/$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3r$1Ver mas$3e$1Ver mas$3l$1Ver mas$3a$1Ver mas$3t$1Ver mas$3i$1Ver mas$3v$1Ver mas$3e$1Ver mas$3 $1Ver mas$3a$1Ver mas$3s$1Ver mas$3p$1Ver mas$3e$1Ver mas$3c$1Ver mas$3t$1Ver mas$3-$1Ver mas$3s$1Ver mas$3q$1Ver mas$3u$1Ver mas$3a$1Ver mas$3r$1Ver mas$3e$1Ver mas$3 $1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3f$1Ver mas$3l$1Ver mas$3o$1Ver mas$3w$1Ver mas$3-$1Ver mas$3h$1Ver mas$3i$1Ver mas$3d$1Ver mas$3d$1Ver mas$3e$1Ver mas$3n$1Ver mas$3 $1Ver mas$3b$1Ver mas$3g$1Ver mas$3-$1Ver mas$3g$1Ver mas$3r$1Ver mas$3a$1Ver mas$3d$1Ver mas$3i$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3-$1Ver mas$3t$1Ver mas$3o$1Ver mas$3-$1Ver mas$3b$1Ver mas$3r$1Ver mas$3 $1Ver mas$3f$1Ver mas$3r$1Ver mas$3o$1Ver mas$3m$1Ver mas$3-$1Ver mas$3g$1Ver mas$3r$1Ver mas$3a$1Ver mas$3y$1Ver mas$3-$1Ver mas$35$1Ver mas$30$1Ver mas$3 $1Ver mas$3t$1Ver mas$3o$1Ver mas$3-$1Ver mas$3g$1Ver mas$3r$1Ver mas$3a$1Ver mas$3y$1Ver mas$3-$1Ver mas$31$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3r$1Ver mas$3o$1Ver mas$3u$1Ver mas$3n$1Ver mas$3d$1Ver mas$3e$1Ver mas$3d$1Ver mas$3-$1Ver mas$3t$1Ver mas$3-$1Ver mas$33$1Ver mas$3x$1Ver mas$3l$1Ver mas$3"$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3I$1Ver mas$3m$1Ver mas$3a$1Ver mas$3g$1Ver mas$3e$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3s$1Ver mas$3r$1Ver mas$3c$1Ver mas$3=$1Ver mas$3{$1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3.$1Ver mas$3i$1Ver mas$3m$1Ver mas$3a$1Ver mas$3g$1Ver mas$3e$1Ver mas$3s$1Ver mas$3[$1Ver mas$30$1Ver mas$3]$1Ver mas$3 $1Ver mas$3|$1Ver mas$3|$1Ver mas$3 $1Ver mas$3"$1Ver mas$3/$1Ver mas$3p$1Ver mas$3l$1Ver mas$3a$1Ver mas$3c$1Ver mas$3e$1Ver mas$3h$1Ver mas$3o$1Ver mas$3l$1Ver mas$3d$1Ver mas$3e$1Ver mas$3r$1Ver mas$3.$1Ver mas$3s$1Ver mas$3v$1Ver mas$3g$1Ver mas$3?$1Ver mas$3h$1Ver mas$3e$1Ver mas$3i$1Ver mas$3g$1Ver mas$3h$1Ver mas$3t$1Ver mas$3=$1Ver mas$34$1Ver mas$30$1Ver mas$30$1Ver mas$3&$1Ver mas$3w$1Ver mas$3i$1Ver mas$3d$1Ver mas$3t$1Ver mas$3h$1Ver mas$3=$1Ver mas$34$1Ver mas$30$1Ver mas$30$1Ver mas$3&$1Ver mas$3q$1Ver mas$3u$1Ver mas$3e$1Ver mas$3r$1Ver mas$3y$1Ver mas$3=$1Ver mas$3i$1Ver mas$3P$1Ver mas$3h$1Ver mas$3o$1Ver mas$3n$1Ver mas$3e$1Ver mas$3"$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3a$1Ver mas$3l$1Ver mas$3t$1Ver mas$3=$1Ver mas$3{$1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3.$1Ver mas$3n$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3f$1Ver mas$3i$1Ver mas$3l$1Ver mas$3l$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3o$1Ver mas$3b$1Ver mas$3j$1Ver mas$3e$1Ver mas$3c$1Ver mas$3t$1Ver mas$3-$1Ver mas$3c$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3 $1Ver mas$3t$1Ver mas$3r$1Ver mas$3a$1Ver mas$3n$1Ver mas$3s$1Ver mas$3i$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3-$1Ver mas$3a$1Ver mas$3l$1Ver mas$3l$1Ver mas$3 $1Ver mas$3d$1Ver mas$3u$1Ver mas$3r$1Ver mas$3a$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3-$1Ver mas$37$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3g$1Ver mas$3r$1Ver mas$3o$1Ver mas$3u$1Ver mas$3p$1Ver mas$3-$1Ver mas$3h$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3:$1Ver mas$3s$1Ver mas$3c$1Ver mas$3a$1Ver mas$3l$1Ver mas$3e$1Ver mas$3-$1Ver mas$31$1Ver mas$30$1Ver mas$35$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3/$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3{$1Ver mas$3/$1Ver mas$3*$1Ver mas$3 $1Ver mas$3C$1Ver mas$3o$1Ver mas$3n$1Ver mas$3t$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3 $1Ver mas$3*$1Ver mas$3/$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3p$1Ver mas$3-$1Ver mas$36$1Ver mas$3"$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3{$1Ver mas$3/$1Ver mas$3*$1Ver mas$3 $1Ver mas$3T$1Ver mas$3i$1Ver mas$3t$1Ver mas$3l$1Ver mas$3e$1Ver mas$3 $1Ver mas$3*$1Ver mas$3/$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3h$1Ver mas$33$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3f$1Ver mas$3o$1Ver mas$3n$1Ver mas$3t$1Ver mas$3-$1Ver mas$3b$1Ver mas$3o$1Ver mas$3l$1Ver mas$3d$1Ver mas$3 $1Ver mas$3t$1Ver mas$3e$1Ver mas$3x$1Ver mas$3t$1Ver mas$3-$1Ver mas$3x$1Ver mas$3l$1Ver mas$3 $1Ver mas$3m$1Ver mas$3b$1Ver mas$3-$1Ver mas$33$1Ver mas$3 $1Ver mas$3t$1Ver mas$3e$1Ver mas$3x$1Ver mas$3t$1Ver mas$3-$1Ver mas$3g$1Ver mas$3r$1Ver mas$3a$1Ver mas$3y$1Ver mas$3-$1Ver mas$39$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3l$1Ver mas$3e$1Ver mas$3a$1Ver mas$3d$1Ver mas$3i$1Ver mas$3n$1Ver mas$3g$1Ver mas$3-$1Ver mas$3t$1Ver mas$3i$1Ver mas$3g$1Ver mas$3h$1Ver mas$3t$1Ver mas$3 $1Ver mas$3l$1Ver mas$3i$1Ver mas$3n$1Ver mas$3e$1Ver mas$3-$1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3m$1Ver mas$3p$1Ver mas$3-$1Ver mas$32$1Ver mas$3 $1Ver mas$3g$1Ver mas$3r$1Ver mas$3o$1Ver mas$3u$1Ver mas$3p$1Ver mas$3-$1Ver mas$3h$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3:$1Ver mas$3t$1Ver mas$3e$1Ver mas$3x$1Ver mas$3t$1Ver mas$3-$1Ver mas$3b$1Ver mas$3l$1Ver mas$3u$1Ver mas$3e$1Ver mas$3-$1Ver mas$36$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3t$1Ver mas$3r$1Ver mas$3a$1Ver mas$3n$1Ver mas$3s$1Ver mas$3i$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3-$1Ver mas$3c$1Ver mas$3o$1Ver mas$3l$1Ver mas$3o$1Ver mas$3r$1Ver mas$3s$1Ver mas$3"$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3{$1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3.$1Ver mas$3n$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3h$1Ver mas$33$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3{$1Ver mas$3/$1Ver mas$3*$1Ver mas$3 $1Ver mas$3P$1Ver mas$3r$1Ver mas$3i$1Ver mas$3c$1Ver mas$3e$1Ver mas$3 $1Ver mas$3s$1Ver mas$3e$1Ver mas$3c$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3 $1Ver mas$3*$1Ver mas$3/$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3s$1Ver mas$3p$1Ver mas$3a$1Ver mas$3c$1Ver mas$3e$1Ver mas$3-$1Ver mas$3y$1Ver mas$3-$1Ver mas$33$1Ver mas$3 $1Ver mas$3m$1Ver mas$3b$1Ver mas$3-$1Ver mas$36$1Ver mas$3"$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3f$1Ver mas$3l$1Ver mas$3e$1Ver mas$3x$1Ver mas$3 $1Ver mas$3i$1Ver mas$3t$1Ver mas$3e$1Ver mas$3m$1Ver mas$3s$1Ver mas$3-$1Ver mas$3b$1Ver mas$3a$1Ver mas$3s$1Ver mas$3e$1Ver mas$3l$1Ver mas$3i$1Ver mas$3n$1Ver mas$3e$1Ver mas$3 $1Ver mas$3g$1Ver mas$3a$1Ver mas$3p$1Ver mas$3-$1Ver mas$33$1Ver mas$3"$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3s$1Ver mas$3p$1Ver mas$3a$1Ver mas$3n$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3t$1Ver mas$3e$1Ver mas$3x$1Ver mas$3t$1Ver mas$3-$1Ver mas$33$1Ver mas$3x$1Ver mas$3l$1Ver mas$3 $1Ver mas$3f$1Ver mas$3o$1Ver mas$3n$1Ver mas$3t$1Ver mas$3-$1Ver mas$3b$1Ver mas$3o$1Ver mas$3l$1Ver mas$3d$1Ver mas$3 $1Ver mas$3t$1Ver mas$3e$1Ver mas$3x$1Ver mas$3t$1Ver mas$3-$1Ver mas$3g$1Ver mas$3r$1Ver mas$3a$1Ver mas$3y$1Ver mas$3-$1Ver mas$39$1Ver mas$30$1Ver mas$30$1Ver mas$3"$1Ver mas$3>$1Ver mas$3$$1Ver mas$3{$1Ver mas$3p$1Ver mas$3r$1Ver mas$3i$1Ver mas$3c$1Ver mas$3e$1Ver mas$3I$1Ver mas$3n$1Ver mas$3P$1Ver mas$3e$1Ver mas$3s$1Ver mas$3o$1Ver mas$3s$1Ver mas$3.$1Ver mas$3t$1Ver mas$3o$1Ver mas$3L$1Ver mas$3o$1Ver mas$3c$1Ver mas$3a$1Ver mas$3l$1Ver mas$3e$1Ver mas$3S$1Ver mas$3t$1Ver mas$3r$1Ver mas$3i$1Ver mas$3n$1Ver mas$3g$1Ver mas$3($1Ver mas$3"$1Ver mas$3e$1Ver mas$3s$1Ver mas$3-$1Ver mas$3A$1Ver mas$3R$1Ver mas$3"$1Ver mas$3)$1Ver mas$3}$1Ver mas$3<$1Ver mas$3/$1Ver mas$3s$1Ver mas$3p$1Ver mas$3a$1Ver mas$3n$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3{$1Ver mas$3/$1Ver mas$3*$1Ver mas$3 $1Ver mas$3A$1Ver mas$3c$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3s$1Ver mas$3 $1Ver mas$3*$1Ver mas$3/$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3f$1Ver mas$3l$1Ver mas$3e$1Ver mas$3x$1Ver mas$3 $1Ver mas$3g$1Ver mas$3a$1Ver mas$3p$1Ver mas$3-$1Ver mas$33$1Ver mas$3"$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3B$1Ver mas$3u$1Ver mas$3t$1Ver mas$3t$1Ver mas$3o$1Ver mas$3n$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3f$1Ver mas$3l$1Ver mas$3e$1Ver mas$3x$1Ver mas$3-$1Ver mas$31$1Ver mas$3 $1Ver mas$3b$1Ver mas$3g$1Ver mas$3-$1Ver mas$3g$1Ver mas$3r$1Ver mas$3a$1Ver mas$3d$1Ver mas$3i$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3-$1Ver mas$3t$1Ver mas$3o$1Ver mas$3-$1Ver mas$3r$1Ver mas$3 $1Ver mas$3f$1Ver mas$3r$1Ver mas$3o$1Ver mas$3m$1Ver mas$3-$1Ver mas$3b$1Ver mas$3l$1Ver mas$3u$1Ver mas$3e$1Ver mas$3-$1Ver mas$36$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3t$1Ver mas$3o$1Ver mas$3-$1Ver mas$3p$1Ver mas$3u$1Ver mas$3r$1Ver mas$3p$1Ver mas$3l$1Ver mas$3e$1Ver mas$3-$1Ver mas$36$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3h$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3:$1Ver mas$3f$1Ver mas$3r$1Ver mas$3o$1Ver mas$3m$1Ver mas$3-$1Ver mas$3b$1Ver mas$3l$1Ver mas$3u$1Ver mas$3e$1Ver mas$3-$1Ver mas$37$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3h$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3:$1Ver mas$3t$1Ver mas$3o$1Ver mas$3-$1Ver mas$3p$1Ver mas$3u$1Ver mas$3r$1Ver mas$3p$1Ver mas$3l$1Ver mas$3e$1Ver mas$3-$1Ver mas$37$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3t$1Ver mas$3e$1Ver mas$3x$1Ver mas$3t$1Ver mas$3-$1Ver mas$3w$1Ver mas$3h$1Ver mas$3i$1Ver mas$3t$1Ver mas$3e$1Ver mas$3 $1Ver mas$3f$1Ver mas$3o$1Ver mas$3n$1Ver mas$3t$1Ver mas$3-$1Ver mas$3s$1Ver mas$3e$1Ver mas$3m$1Ver mas$3i$1Ver mas$3b$1Ver mas$3o$1Ver mas$3l$1Ver mas$3d$1Ver mas$3 $1Ver mas$3p$1Ver mas$3y$1Ver mas$3-$1Ver mas$33$1Ver mas$3 $1Ver mas$3r$1Ver mas$3o$1Ver mas$3u$1Ver mas$3n$1Ver mas$3d$1Ver mas$3e$1Ver mas$3d$1Ver mas$3-$1Ver mas$32$1Ver mas$3x$1Ver mas$3l$1Ver mas$3 $1Ver mas$3t$1Ver mas$3r$1Ver mas$3a$1Ver mas$3n$1Ver mas$3s$1Ver mas$3i$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3-$1Ver mas$3a$1Ver mas$3l$1Ver mas$3l$1Ver mas$3 $1Ver mas$3d$1Ver mas$3u$1Ver mas$3r$1Ver mas$3a$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3-$1Ver mas$33$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3t$1Ver mas$3r$1Ver mas$3a$1Ver mas$3n$1Ver mas$3s$1Ver mas$3f$1Ver mas$3o$1Ver mas$3r$1Ver mas$3m$1Ver mas$3 $1Ver mas$3h$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3:$1Ver mas$3s$1Ver mas$3c$1Ver mas$3a$1Ver mas$3l$1Ver mas$3e$1Ver mas$3-$1Ver mas$3[$1Ver mas$31$1Ver mas$3.$1Ver mas$30$1Ver mas$32$1Ver mas$3]$1Ver mas$3 $1Ver mas$3s$1Ver mas$3h$1Ver mas$3a$1Ver mas$3d$1Ver mas$3o$1Ver mas$3w$1Ver mas$3-$1Ver mas$3l$1Ver mas$3g$1Ver mas$3 $1Ver mas$3h$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3:$1Ver mas$3s$1Ver mas$3h$1Ver mas$3a$1Ver mas$3d$1Ver mas$3o$1Ver mas$3w$1Ver mas$3-$1Ver mas$3x$1Ver mas$3l$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3d$1Ver mas$3i$1Ver mas$3s$1Ver mas$3a$1Ver mas$3b$1Ver mas$3l$1Ver mas$3e$1Ver mas$3d$1Ver mas$3=$1Ver mas$3{$1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3.$1Ver mas$3s$1Ver mas$3t$1Ver mas$3o$1Ver mas$3c$1Ver mas$3k$1Ver mas$3 $1Ver mas$3=$1Ver mas$3=$1Ver mas$3=$1Ver mas$3 $1Ver mas$30$1Ver mas$3}$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3a$1Ver mas$3s$1Ver mas$3C$1Ver mas$3h$1Ver mas$3i$1Ver mas$3l$1Ver mas$3d$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3a$1Ver mas$3 $1Ver mas$3h$1Ver mas$3r$1Ver mas$3e$1Ver mas$3f$1Ver mas$3=$1Ver mas$3"$1Ver mas$3h$1Ver mas$3t$1Ver mas$3t$1Ver mas$3p$1Ver mas$3s$1Ver mas$3:$1Ver mas$3/$1Ver mas$3/$1Ver mas$3w$1Ver mas$3a$1Ver mas$3.$1Ver mas$3m$1Ver mas$3e$1Ver mas$3/$1Ver mas$35$1Ver mas$34$1Ver mas$39$1Ver mas$31$1Ver mas$31$1Ver mas$31$1Ver mas$32$1Ver mas$33$1Ver mas$34$1Ver mas$35$1Ver mas$36$1Ver mas$37$1Ver mas$38$1Ver mas$3"$1Ver mas$3 $1Ver mas$3t$1Ver mas$3a$1Ver mas$3r$1Ver mas$3g$1Ver mas$3e$1Ver mas$3t$1Ver mas$3=$1Ver mas$3"$1Ver mas$3_$1Ver mas$3b$1Ver mas$3l$1Ver mas$3a$1Ver mas$3n$1Ver mas$3k$1Ver mas$3"$1Ver mas$3 $1Ver mas$3r$1Ver mas$3e$1Ver mas$3l$1Ver mas$3=$1Ver mas$3"$1Ver mas$3n$1Ver mas$3o$1Ver mas$3o$1Ver mas$3p$1Ver mas$3e$1Ver mas$3n$1Ver mas$3e$1Ver mas$3r$1Ver mas$3 $1Ver mas$3n$1Ver mas$3o$1Ver mas$3r$1Ver mas$3e$1Ver mas$3f$1Ver mas$3e$1Ver mas$3r$1Ver mas$3r$1Ver mas$3e$1Ver mas$3r$1Ver mas$3"$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3C$1Ver mas$3o$1Ver mas$3n$1Ver mas$3s$1Ver mas$3u$1Ver mas$3l$1Ver mas$3t$1Ver mas$3a$1Ver mas$3r$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3a$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3B$1Ver mas$3u$1Ver mas$3t$1Ver mas$3t$1Ver mas$3o$1Ver mas$3n$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3B$1Ver mas$3u$1Ver mas$3t$1Ver mas$3t$1Ver mas$3o$1Ver mas$3n$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3v$1Ver mas$3a$1Ver mas$3r$1Ver mas$3i$1Ver mas$3a$1Ver mas$3n$1Ver mas$3t$1Ver mas$3=$1Ver mas$3"$1Ver mas$3o$1Ver mas$3u$1Ver mas$3t$1Ver mas$3l$1Ver mas$3i$1Ver mas$3n$1Ver mas$3e$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3c$1Ver mas$3l$1Ver mas$3a$1Ver mas$3s$1Ver mas$3s$1Ver mas$3N$1Ver mas$3a$1Ver mas$3m$1Ver mas$3e$1Ver mas$3=$1Ver mas$3"$1Ver mas$3p$1Ver mas$3x$1Ver mas$3-$1Ver mas$34$1Ver mas$3 $1Ver mas$3p$1Ver mas$3y$1Ver mas$3-$1Ver mas$33$1Ver mas$3 $1Ver mas$3r$1Ver mas$3o$1Ver mas$3u$1Ver mas$3n$1Ver mas$3d$1Ver mas$3e$1Ver mas$3d$1Ver mas$3-$1Ver mas$32$1Ver mas$3x$1Ver mas$3l$1Ver mas$3 $1Ver mas$3b$1Ver mas$3o$1Ver mas$3r$1Ver mas$3d$1Ver mas$3e$1Ver mas$3r$1Ver mas$3-$1Ver mas$32$1Ver mas$3 $1Ver mas$3b$1Ver mas$3o$1Ver mas$3r$1Ver mas$3d$1Ver mas$3e$1Ver mas$3r$1Ver mas$3-$1Ver mas$3g$1Ver mas$3r$1Ver mas$3a$1Ver mas$3y$1Ver mas$3-$1Ver mas$32$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3h$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3:$1Ver mas$3b$1Ver mas$3o$1Ver mas$3r$1Ver mas$3d$1Ver mas$3e$1Ver mas$3r$1Ver mas$3-$1Ver mas$3b$1Ver mas$3l$1Ver mas$3u$1Ver mas$3e$1Ver mas$3-$1Ver mas$33$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3h$1Ver mas$3o$1Ver mas$3v$1Ver mas$3e$1Ver mas$3r$1Ver mas$3:$1Ver mas$3b$1Ver mas$3g$1Ver mas$3-$1Ver mas$3b$1Ver mas$3l$1Ver mas$3u$1Ver mas$3e$1Ver mas$3-$1Ver mas$35$1Ver mas$30$1Ver mas$3 $1Ver mas$3t$1Ver mas$3r$1Ver mas$3a$1Ver mas$3n$1Ver mas$3s$1Ver mas$3i$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3-$1Ver mas$3a$1Ver mas$3l$1Ver mas$3l$1Ver mas$3 $1Ver mas$3d$1Ver mas$3u$1Ver mas$3r$1Ver mas$3a$1Ver mas$3t$1Ver mas$3i$1Ver mas$3o$1Ver mas$3n$1Ver mas$3-$1Ver mas$33$1Ver mas$30$1Ver mas$30$1Ver mas$3 $1Ver mas$3b$1Ver mas$3g$1Ver mas$3-$1Ver mas$3t$1Ver mas$3r$1Ver mas$3a$1Ver mas$3n$1Ver mas$3s$1Ver mas$3p$1Ver mas$3a$1Ver mas$3r$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3"$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3a$1Ver mas$3s$1Ver mas$3C$1Ver mas$3h$1Ver mas$3i$1Ver mas$3l$1Ver mas$3d$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3L$1Ver mas$3i$1Ver mas$3n$1Ver mas$3k$1Ver mas$3 $1Ver mas$3h$1Ver mas$3r$1Ver mas$3e$1Ver mas$3f$1Ver mas$3=$1Ver mas$3{$1Ver mas$3`$1Ver mas$3/$1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3o$1Ver mas$3s$1Ver mas$3/$1Ver mas$3$$1Ver mas$3{$1Ver mas$3p$1Ver mas$3r$1Ver mas$3o$1Ver mas$3d$1Ver mas$3u$1Ver mas$3c$1Ver mas$3t$1Ver mas$3.$1Ver mas$3i$1Ver mas$3d$1Ver mas$3}$1Ver mas$3`$1Ver mas$3}$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3V$1Ver mas$3e$1Ver mas$3r$1Ver mas$3 $1Ver mas$3m$1Ver mas$3Ãƒ$1Ver mas$3Æ’$1Ver mas$3Ã†$1Ver mas$3â€™$1Ver mas$3Ãƒ$1Ver mas$3â€š$1Ver mas$3Ã‚$1Ver mas$3Â¡$1Ver mas$3s$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3L$1Ver mas$3i$1Ver mas$3n$1Ver mas$3k$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3B$1Ver mas$3u$1Ver mas$3t$1Ver mas$3t$1Ver mas$3o$1Ver mas$3n$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3d$1Ver mas$3i$1Ver mas$3v$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3C$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3C$1Ver mas$3o$1Ver mas$3n$1Ver mas$3t$1Ver mas$3e$1Ver mas$3n$1Ver mas$3t$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3 $1Ver mas$3<$1Ver mas$3/$1Ver mas$3C$1Ver mas$3a$1Ver mas$3r$1Ver mas$3d$1Ver mas$3>$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3 $1Ver mas$3 $1Ver mas$3)$1Ver mas$3
-$1Ver mas$3
-$1Ver mas$3}$1Ver mas$3
+﻿"use client"
+
+import { useMemo } from "react"
+import Image from "next/image"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import type { Product } from "@/types/product"
+import { useDollarRate } from "@/hooks/use-dollar-rate"
+
+interface ModernProductCardProps {
+  product: Product
+}
+
+export function ModernProductCard({ product }: ModernProductCardProps) {
+  const { dollarRate } = useDollarRate()
+
+  const priceInPesos = useMemo(() => {
+    if (product.priceUSD !== undefined && product.priceUSD !== null && dollarRate?.blue) {
+      return Math.round(product.priceUSD * dollarRate.blue)
+    }
+    return product.price
+  }, [product.price, product.priceUSD, dollarRate?.blue])
+
+  return (
+    <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-xl transition-all rounded-3xl">
+      <CardContent className="p-0">
+        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-100 to-white">
+          <Image
+            src={product.images[0] || "/placeholder.svg?height=400&width=400"}
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        </div>
+        <div className="p-6 space-y-4">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+              {product.name}
+            </h3>
+            <p className="text-sm text-gray-600 capitalize">{product.category}</p>
+          </div>
+          <div className="text-3xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</div>
+          <div className="flex gap-3">
+            <Button className="flex-1" asChild>
+              <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+                Consultar
+              </a>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href={`/productos/${product.id}`}>
+                Ver mas
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
