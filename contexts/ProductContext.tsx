@@ -58,7 +58,7 @@ const fallbackProducts: Product[] = [
   {
     id: "00000000-0000-0000-0000-000000000001",
     name: "iPhone 15 Pro Max",
-    description: "El iPhone m·s avanzado con chip A17 Pro y c·mara de 48MP",
+    description: "El iPhone m√°s avanzado con chip A17 Pro y c√°mara de 48MP",
     price: 1_500_000,
     originalPrice: 1_600_000,
     priceUSD: 1299,
@@ -77,7 +77,7 @@ const fallbackProducts: Product[] = [
   {
     id: "00000000-0000-0000-0000-000000000002",
     name: "MacBook Air M2",
-    description: "Ultraport·til con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
+    description: "Ultraport√°til con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
     price: 1_200_000,
     originalPrice: 1_350_000,
     priceUSD: 1199,
@@ -176,7 +176,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       setError(err instanceof Error ? err.message : "Error desconocido")
       setProducts(fallbackProducts)
       setSupabaseConnected(false)
-      showToast("Usando datos de ejemplo. Verific· la configuraciÛn de Supabase.", "warning")
+      showToast("Usando datos de ejemplo. Verific√° la configuraci√≥n de Supabase.", "warning")
     } finally {
       setLoading(false)
     }

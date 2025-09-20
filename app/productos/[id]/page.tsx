@@ -187,120 +187,209 @@ export default function ProductDetailPage() {
             </AnimatedSection>
 
             {/* Product Info */}
+
             <AnimatedSection animation="fadeRight">
+
               <div className="space-y-6">
+
                 {/* Category */}
+
                 <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 px-3 py-1">
+
                   {product.category.toUpperCase()}
+
                 </Badge>
 
+
+
                 {/* Title */}
+
                 <h1 className="text-4xl font-bold text-gray-900 leading-tight">{product.name}</h1>
 
-                {/* Rating */}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <span className="text-gray-600">(4.8) • 127 reseñas</span>
-                </div>
+
 
                 {/* Price */}
+
                 <div className="space-y-3">
+
                   <div className="flex items-baseline gap-4">
+
                     <span className="text-4xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</span>
+
                     {originalPrice && (
+
                       <span className="text-2xl text-gray-500 line-through">
+
                         ${originalPrice.toLocaleString("es-AR")}
+
                       </span>
+
                     )}
+
                   </div>
 
-                  {dollarRate && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      {product.priceUSD !== undefined && product.priceUSD !== null && (
-                        <span className="bg-gray-100 px-3 py-1 rounded-lg font-medium">USD ${product.priceUSD}</span>
-                      )}
-                      <span className="text-gray-400">•</span>
-                      <span>Dólar Blue: ${dollarRate.blue}</span>
-                    </div>
-                  )}
+
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-blue-700 font-medium">💳 Hasta 12 cuotas sin interés disponibles</p>
+
+                    <p className="text-blue-700 font-medium">Opciones de financiaciÃ³n disponibles</p>
+
+                    {installmentOptions.length > 0 ? (
+
+                      <div className="mt-2 space-y-1 text-sm text-blue-700">
+
+                        {installmentOptions.map((option) => (
+
+                          <p key={option.months} className="flex flex-wrap items-baseline justify-between gap-2">
+
+                            <span>{option.months} cuotas de</span>
+
+                            <span className="font-semibold">
+
+                              ${option.monthlyAmount.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+
+                            </span>
+
+                            <span className="text-blue-600/70">
+
+                              Total ${option.totalAmount.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+
+                            </span>
+
+                          </p>
+
+                        ))}
+
+                      </div>
+
+                    ) : (
+
+                      <p className="mt-2 text-sm text-blue-700">
+
+                        ConsultÃ¡ por financiaciÃ³n personalizada para este producto.
+
+                      </p>
+
+                    )}
+
                   </div>
+
                 </div>
 
-                {/* Stock */}
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${product.stock > 0 ? "bg-green-500" : "bg-red-500"}`} />
-                  <span className={`font-medium ${product.stock > 0 ? "text-green-700" : "text-red-700"}`}>
-                    {product.stock > 0 ? `${product.stock} disponibles` : "Sin stock"}
-                  </span>
-                </div>
+
 
                 {/* Actions */}
+
                 <div className="flex gap-4">
+
                   <Button
+
                     className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 rounded-xl text-lg"
-                    disabled={product.stock === 0}
+
                     asChild
+
                   >
+
                     <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+
                       <MessageCircle className="w-5 h-5 mr-2" />
+
                       Consultar por WhatsApp
+
                     </a>
+
                   </Button>
+
+
 
                   <Button
+
                     variant="outline"
+
                     size="lg"
+
                     className="px-4 py-4 rounded-xl border-2 bg-transparent"
-                    onClick={() => setIsLiked(!isLiked)}
+
+                    onClick={handleShare}
+
                   >
-                    <Heart className={`w-5 h-5 ${isLiked ? "fill-red-500 text-red-500" : ""}`} />
+
+                    <Share2 className="w-5 h-5" />
+
                   </Button>
 
-                  <Button variant="outline" size="lg" className="px-4 py-4 rounded-xl border-2 bg-transparent">
-                    <Share2 className="w-5 h-5" />
-                  </Button>
                 </div>
+
+
 
                 {/* Benefits */}
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+
                       <Shield className="w-5 h-5 text-green-600" />
+
                     </div>
+
                     <div>
-                      <p className="font-medium text-sm">Garantía</p>
+
+                      <p className="font-medium text-sm">GarantÃ­a</p>
+
                       <p className="text-xs text-gray-600">12 meses</p>
+
                     </div>
+
                   </div>
 
+
+
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+
                       <Truck className="w-5 h-5 text-blue-600" />
+
                     </div>
+
                     <div>
-                      <p className="font-medium text-sm">Envío gratis</p>
+
+                      <p className="font-medium text-sm">EnvÃ­o gratis</p>
+
                       <p className="text-xs text-gray-600">CABA y GBA</p>
+
                     </div>
+
                   </div>
 
+
+
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+
                       <CreditCard className="w-5 h-5 text-purple-600" />
+
                     </div>
+
                     <div>
-                      <p className="font-medium text-sm">Financiación</p>
+
+                      <p className="font-medium text-sm">FinanciaciÃ³n</p>
+
                       <p className="text-xs text-gray-600">Hasta 12 cuotas</p>
+
                     </div>
+
                   </div>
+
                 </div>
+
               </div>
+
+
+
             </AnimatedSection>
           </div>
 
@@ -310,9 +399,9 @@ export default function ProductDetailPage() {
               <CardContent className="p-8">
                 <Tabs defaultValue="description" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="description">Descripción</TabsTrigger>
+                    <TabsTrigger value="description">DescripciÃƒÆ’Ã‚Â³n</TabsTrigger>
                     <TabsTrigger value="specifications">Especificaciones</TabsTrigger>
-                    <TabsTrigger value="reviews">Reseñas</TabsTrigger>
+                    <TabsTrigger value="reviews">ReseÃƒÆ’Ã‚Â±as</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="description" className="mt-6">
@@ -334,7 +423,7 @@ export default function ProductDetailPage() {
 
                   <TabsContent value="reviews" className="mt-6">
                     <div className="text-center py-8">
-                      <p className="text-gray-600">Las reseñas estarán disponibles próximamente.</p>
+                      <p className="text-gray-600">Las reseÃƒÆ’Ã‚Â±as estarÃƒÆ’Ã‚Â¡n disponibles prÃƒÆ’Ã‚Â³ximamente.</p>
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -347,7 +436,7 @@ export default function ProductDetailPage() {
             <AnimatedSection animation="fadeUp">
               <div className="mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Productos relacionados</h2>
-                <p className="text-gray-600">Otros productos que podrían interesarte</p>
+                <p className="text-gray-600">Otros productos que podrÃƒÆ’Ã‚Â­an interesarte</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
