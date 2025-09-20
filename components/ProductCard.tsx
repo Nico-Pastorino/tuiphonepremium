@@ -20,7 +20,12 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const priceInPesos = product.price
+  const { dollarRate } = useDollarRate()
+  const conversionRate = dollarRate?.blue ?? 0
+  const priceInPesos =
+    product.priceUSD !== undefined && product.priceUSD !== null && conversionRate
+      ? Number((product.priceUSD * conversionRate).toFixed(2))
+      : product.price
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
@@ -63,7 +68,7 @@ export function ProductCard({ product }: ProductCardProps) {
           asChild
         >
           <Link href={`/productos/${product.id}`}>
-            Ver más
+            Ver mas
           </Link>
         </Button>
       </div>

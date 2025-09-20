@@ -66,6 +66,7 @@ function AdminDashboard() {
     updateHomeSection,
     logout,
   } = useAdmin()
+  const effectiveAdminRate = getEffectiveDollarRate()
   const { dollarRate, refresh: refreshDollarRate, loading, error } = useDollarRate()
 
   const [isAddProductOpen, setIsAddProductOpen] = useState(false)
@@ -83,7 +84,14 @@ function AdminDashboard() {
     setHomeForm(cloneHomeConfig(homeConfig))
   }, [homeConfig])
 
-  // Obtener planes por categoría
+  const computeDisplayPrice = (product: Product) => {
+    if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveAdminRate) {
+      return Number((product.priceUSD * effectiveAdminRate).toFixed(2))
+    }
+    return product.price
+  }
+
+  // Obtener planes por categorÃ­a
   const visaMastercardPlans = getInstallmentPlansByCategory("visa-mastercard")
   const naranjaPlans = getInstallmentPlansByCategory("naranja")
 
@@ -138,7 +146,7 @@ function AdminDashboard() {
         promoMessage: homeForm.promoMessage,
         whatsappNumber: homeForm.whatsappNumber,
       })
-      console.log("Configuración de la portada actualizada")
+      console.log("ConfiguraciÃ³n de la portada actualizada")
     } finally {
       setSavingHomeConfig(false)
     }
@@ -155,7 +163,7 @@ function AdminDashboard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Panel de AdministraciÃ³n</h1>
               <p className="text-gray-600">Gestiona tu tienda Apple de manera eficiente</p>
             </div>
             <Button
@@ -163,7 +171,7 @@ function AdminDashboard() {
               onClick={logout}
               className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
             >
-              Cerrar Sesión
+              Cerrar SesiÃ³n
             </Button>
           </div>
 
@@ -179,11 +187,11 @@ function AdminDashboard() {
               </TabsTrigger>
               <TabsTrigger value="dollar" className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
-                Dólar
+                DÃ³lar
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
-                Configuración
+                ConfiguraciÃ³n
               </TabsTrigger>
             </TabsList>
 
@@ -251,7 +259,7 @@ function AdminDashboard() {
                           <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
                           <p className="text-sm text-gray-600 capitalize">{product.category}</p>
                           <div className="flex justify-between items-center">
-                            <span className="text-xl font-bold">${product.price.toLocaleString("es-AR")}</span>
+                            <span className="text-xl font-bold">${computeDisplayPrice(product).toLocaleString("es-AR")}</span>
                             <span className="text-sm text-gray-600">Stock: {product.stock}</span>
                           </div>
                         </div>
@@ -294,9 +302,9 @@ function AdminDashboard() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+                                <AlertDialogTitle>Â¿Eliminar producto?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta acción no se puede deshacer. El producto “{product.name}” será eliminado
+                                  Esta acciÃ³n no se puede deshacer. El producto â€œ{product.name}â€ serÃ¡ eliminado
                                   permanentemente de la base de datos.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
@@ -323,7 +331,7 @@ function AdminDashboard() {
                   <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No se encontraron productos</h3>
                   <p className="text-gray-600 mb-6">
-                    {searchTerm ? "Intenta con otros términos de búsqueda" : "Agrega tu primer producto para comenzar"}
+                    {searchTerm ? "Intenta con otros tÃ©rminos de bÃºsqueda" : "Agrega tu primer producto para comenzar"}
                   </p>
                   {!searchTerm && (
                     <Button
@@ -342,8 +350,8 @@ function AdminDashboard() {
             <TabsContent value="installments" className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Gestión de Cuotas</h2>
-                  <p className="text-gray-600">Configura los planes de financiación disponibles</p>
+                  <h2 className="text-2xl font-bold text-gray-900">GestiÃ³n de Cuotas</h2>
+                  <p className="text-gray-600">Configura los planes de financiaciÃ³n disponibles</p>
                 </div>
                 <Dialog open={isAddInstallmentOpen} onOpenChange={setIsAddInstallmentOpen}>
                   <DialogTrigger asChild>
@@ -465,18 +473,18 @@ function AdminDashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <DollarSign className="w-6 h-6 text-green-600" />
-                    Configuración del Dólar
+                    ConfiguraciÃ³n del DÃ³lar
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col gap-4 rounded-xl border border-green-100 bg-green-50 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-medium text-green-900">Cotización actual (API)</p>
+                      <p className="text-sm font-medium text-green-900">CotizaciÃ³n actual (API)</p>
                       <p className="text-2xl font-bold text-green-700">
                         ${dollarRate ? dollarRate.blue.toLocaleString("es-AR") : "---"}
                       </p>
                       <p className="text-xs text-green-700 mt-1">
-                        Última actualización: {dollarRate?.lastUpdate ? new Date(dollarRate.lastUpdate).toLocaleString("es-AR") : "sin datos"}
+                        Ãšltima actualizaciÃ³n: {dollarRate?.lastUpdate ? new Date(dollarRate.lastUpdate).toLocaleString("es-AR") : "sin datos"}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -493,7 +501,7 @@ function AdminDashboard() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Dólar Blue Base</label>
+                      <label className="text-sm font-medium">DÃ³lar Blue Base</label>
                       <Input
                         type="number"
                         value={dollarConfig.blueRate}
@@ -511,7 +519,7 @@ function AdminDashboard() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Dólar Final</label>
+                      <label className="text-sm font-medium">DÃ³lar Final</label>
                       <Input
                         type="number"
                         value={(dollarConfig.blueRate + dollarConfig.markup).toFixed(2)}
@@ -522,10 +530,10 @@ function AdminDashboard() {
                   </div>
 
                   <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">Información</h4>
+                    <h4 className="font-semibold text-blue-900 mb-2">InformaciÃ³n</h4>
                     <p className="text-sm text-blue-800">
-                      El dólar final es el precio que se usará para convertir los precios en USD a pesos argentinos. Se
-                      calcula como: Dólar Blue Base + Markup en Pesos
+                      El dÃ³lar final es el precio que se usarÃ¡ para convertir los precios en USD a pesos argentinos. Se
+                      calcula como: DÃ³lar Blue Base + Markup en Pesos
                     </p>
                   </div>
                 </CardContent>
@@ -538,14 +546,14 @@ function AdminDashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="w-6 h-6 text-gray-600" />
-                    Configuración de la portada
+                    ConfiguraciÃ³n de la portada
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Título principal</label>
+                        <label className="text-sm font-medium text-gray-700">TÃ­tulo principal</label>
                         <Input
                           value={homeForm.heroHeadline}
                           onChange={(event) =>
@@ -555,7 +563,7 @@ function AdminDashboard() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Subtítulo</label>
+                        <label className="text-sm font-medium text-gray-700">SubtÃ­tulo</label>
                         <Textarea
                           value={homeForm.heroSubheadline}
                           onChange={(event) =>
@@ -572,7 +580,7 @@ function AdminDashboard() {
                           onChange={(event) =>
                             setHomeForm((prev) => ({ ...prev, promoMessage: event.target.value }))
                           }
-                          placeholder="Ej: Envíos rápidos y garantía incluida"
+                          placeholder="Ej: EnvÃ­os rÃ¡pidos y garantÃ­a incluida"
                         />
                       </div>
                       <div className="space-y-2">
@@ -586,11 +594,11 @@ function AdminDashboard() {
                         />
                         <p className="text-xs text-gray-500">
                           Usa rutas internas (comenzando con /) o una URL completa. La imagen se muestra con
-                          optimización desactivada.
+                          optimizaciÃ³n desactivada.
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">WhatsApp (solo números)</label>
+                        <label className="text-sm font-medium text-gray-700">WhatsApp (solo nÃºmeros)</label>
                         <Input
                           value={homeForm.whatsappNumber}
                           onChange={(event) =>

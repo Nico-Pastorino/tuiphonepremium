@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { X, Plus } from "lucide-react"
+import { useAdmin } from "@/contexts/AdminContext"
 import type { ProductFormData } from "@/types/product"
 
 interface ProductFormProps {
@@ -21,17 +22,34 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ onSubmit, initialData, isLoading = false }: ProductFormProps) {
+  const { getEffectiveDollarRate } = useAdmin()
+  const effectiveDollarRate = getEffectiveDollarRate()
+
+  const derivePriceFromUSD = (usd?: number) => {
+    if (usd === undefined || Number.isNaN(usd)) {
+      return 0
+    }
+    return Number((usd * effectiveDollarRate).toFixed(2))
+  }
+
+  const initialPriceUSD =
+    initialData?.priceUSD !== undefined
+      ? initialData.priceUSD
+      : initialData?.price !== undefined
+        ? Number((initialData.price / effectiveDollarRate).toFixed(2))
+        : undefined
+
   const [formData, setFormData] = useState<ProductFormData>({
     name: initialData?.name || "",
     description: initialData?.description || "",
-    price: initialData?.price || 0,
-    originalPrice: initialData?.originalPrice || undefined,
-    priceUSD: initialData?.priceUSD || undefined,
+    price: initialData?.price ?? derivePriceFromUSD(initialPriceUSD),
+    originalPrice: initialData?.originalPrice ?? undefined,
+    priceUSD: initialPriceUSD,
     category: initialData?.category || "",
     condition: initialData?.condition || "nuevo",
     images: initialData?.images || [],
     specifications: initialData?.specifications || {},
-    stock: initialData?.stock || 0,
+    stock: initialData?.stock ?? 0,
     featured: initialData?.featured || false,
   })
 
@@ -41,24 +59,29 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const success = await onSubmit(formData)
-    if (success) {
-      // Reset form if it's a new product (no initialData)
-      if (!initialData) {
-        setFormData({
-          name: "",
-          description: "",
-          price: 0,
-          originalPrice: undefined,
-          priceUSD: undefined,
-          category: "",
-          condition: "nuevo",
-          images: [],
-          specifications: {},
-          stock: 0,
-          featured: false,
-        })
-      }
+
+    const submissionData: ProductFormData = {
+      ...formData,
+      price: derivePriceFromUSD(formData.priceUSD),
+      originalPrice: formData.originalPrice ?? undefined,
+      stock: formData.stock ?? 0,
+    }
+
+    const success = await onSubmit(submissionData)
+    if (success && !initialData) {
+      setFormData({
+        name: "",
+        description: "",
+        price: 0,
+        originalPrice: undefined,
+        priceUSD: undefined,
+        category: "",
+        condition: "nuevo",
+        images: [],
+        specifications: {},
+        stock: 0,
+        featured: false,
+      })
     }
   }
 
@@ -111,7 +134,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Información básica */}
+          {/* Informacion basica */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre del producto *</Label>
@@ -125,13 +148,13 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">Categoría *</Label>
+              <Label htmlFor="category">Categoria *</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar categoría" />
+                  <SelectValue placeholder="Seleccionar categoria" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="iphone">iPhone</SelectItem>
@@ -146,114 +169,72 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="description">Descripcion</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Descripción detallada del producto..."
+              placeholder="Descripcion detallada del producto..."
               rows={3}
             />
           </div>
 
-          {/* Precios y condición */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Precio y condicion */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Precio en pesos *</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => setFormData((prev) => ({ ...prev, price: Number.parseFloat(e.target.value) || 0 }))}
-                placeholder="999999"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="priceUSD">Precio en USD</Label>
+              <Label htmlFor="priceUSD">Precio en USD *</Label>
               <Input
                 id="priceUSD"
                 type="number"
                 step="0.01"
                 min="0"
-                value={formData.priceUSD || ""}
-                onChange={(e) =>
+                value={formData.priceUSD ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value ? Number.parseFloat(e.target.value) : undefined
                   setFormData((prev) => ({
                     ...prev,
-                    priceUSD: e.target.value ? Number.parseFloat(e.target.value) : undefined,
+                    priceUSD: value,
+                    price: derivePriceFromUSD(value),
                   }))
-                }
+                }}
                 placeholder="999.99"
+                required
               />
+              <p className="text-sm text-muted-foreground">
+                Precio estimado en pesos: ${formData.price.toLocaleString("es-AR")}
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="originalPrice">Precio original (opcional)</Label>
-              <Input
-                id="originalPrice"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.originalPrice || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    originalPrice: e.target.value ? Number.parseFloat(e.target.value) : undefined,
-                  }))
-                }
-                placeholder="1199999"
-              />
+              <Label htmlFor="condition">Condicion *</Label>
+              <Select
+                value={formData.condition}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, condition: value as any }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar condicion" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nuevo">Nuevo</SelectItem>
+                  <SelectItem value="seminuevo">Seminuevo</SelectItem>
+                  <SelectItem value="usado">Usado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Condición */}
-          <div className="space-y-2">
-            <Label htmlFor="condition">Condición *</Label>
-            <Select
-              value={formData.condition}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, condition: value as any }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar condición" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="nuevo">Nuevo</SelectItem>
-                <SelectItem value="seminuevo">Seminuevo</SelectItem>
-                <SelectItem value="usado">Usado</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="featured"
+              checked={formData.featured}
+              onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, featured: checked }))}
+            />
+            <Label htmlFor="featured">Producto destacado</Label>
           </div>
 
-          {/* Stock y destacado */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stock">Stock disponible</Label>
-              <Input
-                id="stock"
-                type="number"
-                min="0"
-                value={formData.stock}
-                onChange={(e) => setFormData((prev) => ({ ...prev, stock: Number.parseInt(e.target.value) || 0 }))}
-                placeholder="10"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2 pt-6">
-              <Switch
-                id="featured"
-                checked={formData.featured}
-                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, featured: checked }))}
-              />
-              <Label htmlFor="featured">Producto destacado</Label>
-            </div>
-          </div>
-
-          {/* Imágenes */}
+          {/* Imagenes */}
           <div className="space-y-4">
-            <Label>Imágenes del producto</Label>
+            <Label>Imagenes del producto</Label>
             <div className="flex gap-2">
               <Input
                 value={newImage}
@@ -285,12 +266,12 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
 
           {/* Especificaciones */}
           <div className="space-y-4">
-            <Label>Especificaciones técnicas</Label>
+            <Label>Especificaciones tecnicas</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <Input
                 value={newSpecKey}
                 onChange={(e) => setNewSpecKey(e.target.value)}
-                placeholder="Nombre de la especificación"
+                placeholder="Nombre de la especificacion"
               />
               <div className="flex gap-2">
                 <Input

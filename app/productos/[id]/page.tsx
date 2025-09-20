@@ -11,16 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   ArrowLeft,
   MessageCircle,
-  Heart,
   Share2,
   Shield,
   Truck,
   CreditCard,
-  Star,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
 import { useProducts } from "@/contexts/ProductContext"
+import { useAdmin } from "@/contexts/AdminContext"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import Image from "next/image"
 import Link from "next/link"
@@ -30,11 +29,10 @@ export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { getProductById, products } = useProducts()
+  const { installmentPlans } = useAdmin()
   const { dollarRate } = useDollarRate()
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const [isLiked, setIsLiked] = useState(false)
-
   useEffect(() => {
     if (params.id) {
       const foundProduct = getProductById(params.id as string)
@@ -67,6 +65,40 @@ export default function ProductDetailPage() {
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
 
+  const validInstallmentAmount = Number.isFinite(priceInPesos) ? Math.max(priceInPesos, 0) : null
+  const categoryLabels = {
+    "visa-mastercard": "Visa / Mastercard",
+    naranja: "Tarjeta Naranja",
+  } as const
+  type InstallmentCategory = keyof typeof categoryLabels
+
+  const installmentGroups =
+    validInstallmentAmount === null
+      ? []
+      : (Object.entries(categoryLabels) as Array<[InstallmentCategory, string]>).map(([category, label]) => {
+          const options = installmentPlans
+            .filter((plan) => plan.category === category && plan.isActive)
+            .filter((plan) => {
+              if (validInstallmentAmount < plan.minAmount) return false
+              if (plan.maxAmount > 0 && validInstallmentAmount > plan.maxAmount) return false
+              return true
+            })
+            .map((plan) => {
+              const totalAmount = validInstallmentAmount * (1 + plan.interestRate / 100)
+              const monthlyAmount = plan.months > 0 ? totalAmount / plan.months : totalAmount
+              return {
+                id: plan.id,
+                months: plan.months,
+                monthlyAmount,
+              }
+            })
+            .sort((a, b) => a.months - b.months)
+
+          return { category, label, options }
+        })
+
+  const hasInstallmentOptions = installmentGroups.some((group) => group.options.length > 0)
+
   // Productos relacionados
   const relatedProducts = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4)
 
@@ -76,6 +108,43 @@ export default function ProductDetailPage() {
 
   const prevImage = () => {
     setSelectedImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1))
+  }
+
+  const handleShare = async () => {
+    if (typeof window === "undefined" || !product) {
+      return
+    }
+
+    const shareUrl = `${window.location.origin}/productos/${product.id}`
+    const shareData = {
+      title: product.name,
+      text: product.description || "Descubri este producto en TuIphonepremium",
+      url: shareUrl,
+    }
+
+    if (window.navigator.share) {
+      try {
+        await window.navigator.share(shareData)
+        return
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return
+        }
+        console.warn("Compartir no disponible", error)
+      }
+    }
+
+    try {
+      if (window.navigator.clipboard) {
+        await window.navigator.clipboard.writeText(shareUrl)
+        window.alert("Enlace copiado al portapapeles")
+      } else {
+        window.prompt("Copia este enlace para compartirlo", shareUrl)
+      }
+    } catch (error) {
+      console.error("No se pudo copiar el enlace", error)
+      window.prompt("Copia este enlace para compartirlo", shareUrl)
+    }
   }
 
   return (
@@ -228,56 +297,44 @@ export default function ProductDetailPage() {
 
                   </div>
 
-
-
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-blue-700 font-medium">Opciones de financiacion disponibles</p>
 
-                    <p className="text-blue-700 font-medium">Opciones de financiaciÃ³n disponibles</p>
-
-                    {installmentOptions.length > 0 ? (
-
-                      <div className="mt-2 space-y-1 text-sm text-blue-700">
-
-                        {installmentOptions.map((option) => (
-
-                          <p key={option.months} className="flex flex-wrap items-baseline justify-between gap-2">
-
-                            <span>{option.months} cuotas de</span>
-
-                            <span className="font-semibold">
-
-                              ${option.monthlyAmount.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-
-                            </span>
-
-                            <span className="text-blue-600/70">
-
-                              Total ${option.totalAmount.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
-
-                            </span>
-
-                          </p>
-
+                    {hasInstallmentOptions ? (
+                      <div className="mt-3 space-y-3 text-sm text-blue-700">
+                        {installmentGroups.map((group) => (
+                          <div key={group.category} className="rounded-md bg-white/60 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                              {group.label}
+                            </p>
+                            {group.options.length > 0 ? (
+                              <div className="mt-2 space-y-1">
+                                {group.options.map((option) => (
+                                  <div
+                                    key={`${group.category}-${option.months}`}
+                                    className="flex items-baseline justify-between gap-2"
+                                  >
+                                    <span>
+                                      {option.months} {option.months === 1 ? "cuota" : "cuotas"}
+                                    </span>
+                                    <span className="font-semibold">
+                                      ${option.monthlyAmount.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="mt-2 text-xs text-blue-600/70">No hay planes disponibles para este monto.</p>
+                            )}
+                          </div>
                         ))}
-
                       </div>
-
                     ) : (
-
-                      <p className="mt-2 text-sm text-blue-700">
-
-                        ConsultÃ¡ por financiaciÃ³n personalizada para este producto.
-
-                      </p>
-
+                      <p className="mt-2 text-sm text-blue-700">Consulta por financiacion personalizada para este producto.</p>
                     )}
-
                   </div>
 
                 </div>
-
-
-
                 {/* Actions */}
 
                 <div className="flex gap-4">
@@ -336,7 +393,7 @@ export default function ProductDetailPage() {
 
                     <div>
 
-                      <p className="font-medium text-sm">GarantÃ­a</p>
+                      <p className="font-medium text-sm">Garantia</p>
 
                       <p className="text-xs text-gray-600">12 meses</p>
 
@@ -356,7 +413,7 @@ export default function ProductDetailPage() {
 
                     <div>
 
-                      <p className="font-medium text-sm">EnvÃ­o gratis</p>
+                      <p className="font-medium text-sm">Envio gratis</p>
 
                       <p className="text-xs text-gray-600">CABA y GBA</p>
 
@@ -376,7 +433,7 @@ export default function ProductDetailPage() {
 
                     <div>
 
-                      <p className="font-medium text-sm">FinanciaciÃ³n</p>
+                      <p className="font-medium text-sm">Financiacion</p>
 
                       <p className="text-xs text-gray-600">Hasta 12 cuotas</p>
 
@@ -399,9 +456,9 @@ export default function ProductDetailPage() {
               <CardContent className="p-8">
                 <Tabs defaultValue="description" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="description">DescripciÃƒÆ’Ã‚Â³n</TabsTrigger>
+                    <TabsTrigger value="description">Descripcion</TabsTrigger>
                     <TabsTrigger value="specifications">Especificaciones</TabsTrigger>
-                    <TabsTrigger value="reviews">ReseÃƒÆ’Ã‚Â±as</TabsTrigger>
+                    <TabsTrigger value="reviews">Resenas</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="description" className="mt-6">
@@ -423,7 +480,7 @@ export default function ProductDetailPage() {
 
                   <TabsContent value="reviews" className="mt-6">
                     <div className="text-center py-8">
-                      <p className="text-gray-600">Las reseÃƒÆ’Ã‚Â±as estarÃƒÆ’Ã‚Â¡n disponibles prÃƒÆ’Ã‚Â³ximamente.</p>
+                      <p className="text-gray-600">Las resenas estaran disponibles proximamente.</p>
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -436,7 +493,7 @@ export default function ProductDetailPage() {
             <AnimatedSection animation="fadeUp">
               <div className="mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Productos relacionados</h2>
-                <p className="text-gray-600">Otros productos que podrÃƒÆ’Ã‚Â­an interesarte</p>
+                <p className="text-gray-600">Otros productos que podrian interesarte</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
