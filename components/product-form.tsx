@@ -51,9 +51,10 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     images: initialData?.images || [],
     specifications: initialData?.specifications || {},
     stock: initialData?.stock ?? 0,
-  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
     featured: initialData?.featured || false,
   })
+
+  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
 
   useEffect(() => {
     if (formData.category && formData.category !== libraryCategoryFilter) {
@@ -415,3 +416,5 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     </Card>
   )
 }
+
+
