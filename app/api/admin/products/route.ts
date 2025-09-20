@@ -37,11 +37,31 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as Record<string, unknown>
 
-    if (!body.name || !body.price || !body.category) {
-      return NextResponse.json({ error: "Faltan campos requeridos: name, price, category" }, { status: 400 })
+    const name = typeof body.name === "string" ? body.name.trim() : ""
+    const category = typeof body.category === "string" ? body.category.trim() : ""
+    const price =
+      typeof body.price === "number"
+        ? body.price
+        : typeof body.price === "string" && body.price.trim() !== ""
+          ? Number(body.price)
+          : Number.NaN
+
+    const missingFields: string[] = []
+    if (!name) missingFields.push("name")
+    if (!Number.isFinite(price)) missingFields.push("price")
+    if (!category) missingFields.push("category")
+
+    if (missingFields.length > 0) {
+      const message = `Faltan campos requeridos: ${missingFields.join(", ")}`
+      return NextResponse.json({ error: message }, { status: 400 })
     }
 
-    const productData = buildProductInsert(body)
+    const productData = buildProductInsert({
+      ...body,
+      name,
+      category,
+      price,
+    })
     const { data, error } = await ProductAdminService.createProduct(productData)
 
     if (error) {
