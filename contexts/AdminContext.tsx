@@ -307,7 +307,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }
 
   const getEffectiveDollarRate = () => {
-    return Number((dollarConfig.blueRate * (1 + dollarConfig.markup / 100)).toFixed(2))
+    return Number((dollarConfig.blueRate + dollarConfig.markup).toFixed(2))
   }
 
   const updateHomeConfig = (configData: Partial<Omit<HomeConfig, "sections">>) => {
@@ -397,3 +397,4 @@ export function getProductPriceWithDollar(priceUSD: number | null | undefined, d
   const effective = Number((priceUSD * dollarRate).toFixed(2))
   return effective
 }
+

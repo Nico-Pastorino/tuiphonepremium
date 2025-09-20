@@ -1,25 +1,26 @@
-﻿"use client"
+"use client"
 
 import { useMemo } from "react"
 import { Product } from "@/types/product"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { useDollarRate } from "@/hooks/use-dollar-rate"
+import { useAdmin } from "@/contexts/AdminContext"
 
 interface ProductDetailsProps {
   product: Product
 }
 
 export function ProductDetails({ product }: ProductDetailsProps) {
-  const { dollarRate } = useDollarRate()
+  const { getEffectiveDollarRate } = useAdmin()
+  const effectiveDollarRate = getEffectiveDollarRate()
 
   const priceInPesos = useMemo(() => {
-    if (product.priceUSD !== undefined && product.priceUSD !== null && dollarRate?.blue) {
-      return Math.round(product.priceUSD * dollarRate.blue)
+    if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveDollarRate) {
+      return Math.round(product.priceUSD * effectiveDollarRate)
     }
     return product.price
-  }, [product.price, product.priceUSD, dollarRate?.blue])
+  }, [product.price, product.priceUSD, effectiveDollarRate])
 
   return (
     <div className="p-6 space-y-6">
@@ -54,3 +55,4 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     </div>
   )
 }
+

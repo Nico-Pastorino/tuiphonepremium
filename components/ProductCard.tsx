@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useMemo } from "react"
 import Image from "next/image"
@@ -6,21 +6,22 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Product } from "@/types/product"
-import { useDollarRate } from "@/hooks/use-dollar-rate"
+import { useAdmin } from "@/contexts/AdminContext"
 
 interface ProductCardProps {
   product: Product
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { dollarRate } = useDollarRate()
+  const { getEffectiveDollarRate } = useAdmin()
+  const effectiveDollarRate = getEffectiveDollarRate()
 
   const priceInPesos = useMemo(() => {
-    if (product.priceUSD !== undefined && product.priceUSD !== null && dollarRate?.blue) {
-      return Math.round(product.priceUSD * dollarRate.blue)
+    if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveDollarRate) {
+      return Math.round(product.priceUSD * effectiveDollarRate)
     }
     return product.price
-  }, [product.price, product.priceUSD, dollarRate?.blue])
+  }, [product.price, product.priceUSD, effectiveDollarRate])
 
   return (
     <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-lg transition-shadow">
@@ -56,3 +57,4 @@ export function ProductCard({ product }: ProductCardProps) {
     </Card>
   )
 }
+

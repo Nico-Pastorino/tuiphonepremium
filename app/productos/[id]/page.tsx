@@ -20,7 +20,6 @@ import {
 } from "lucide-react"
 import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
-import { useDollarRate } from "@/hooks/use-dollar-rate"
 import Image from "next/image"
 import Link from "next/link"
 import type { Product } from "@/types/product"
@@ -29,8 +28,8 @@ export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { getProductById, products } = useProducts()
-  const { installmentPlans } = useAdmin()
-  const { dollarRate } = useDollarRate()
+  const { installmentPlans, getEffectiveDollarRate } = useAdmin()
+  const effectiveDollarRate = getEffectiveDollarRate()
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   useEffect(() => {
@@ -59,8 +58,8 @@ export default function ProductDetailPage() {
   }
 
   const priceInPesos =
-    dollarRate && product.priceUSD !== undefined && product.priceUSD !== null
-      ? product.priceUSD * dollarRate.blue
+    product.priceUSD !== undefined && product.priceUSD !== null
+      ? product.priceUSD * effectiveDollarRate
       : product.price
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
@@ -529,3 +528,4 @@ export default function ProductDetailPage() {
     </div>
   )
 }
+
