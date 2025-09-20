@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,7 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { X, Plus } from "lucide-react"
-import { useAdmin } from "@/contexts/AdminContext"
+import { useAdmin, type ProductImageItem } from "@/contexts/AdminContext"
 import type { ProductFormData } from "@/types/product"
 
 interface ProductFormProps {
@@ -22,7 +23,7 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ onSubmit, initialData, isLoading = false }: ProductFormProps) {
-  const { getEffectiveDollarRate } = useAdmin()
+  const { getEffectiveDollarRate, imageLibrary } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
 
   const derivePriceFromUSD = (usd?: number) => {
@@ -50,13 +51,44 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     images: initialData?.images || [],
     specifications: initialData?.specifications || {},
     stock: initialData?.stock ?? 0,
+  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
     featured: initialData?.featured || false,
   })
 
+  useEffect(() => {
+    if (formData.category && formData.category !== libraryCategoryFilter) {
+      setLibraryCategoryFilter(formData.category)
+    }
+  }, [formData.category, libraryCategoryFilter])
+ 
+  const libraryCategories = useMemo(() => {
+    const categories = new Set(imageLibrary.map((item) => item.category || "general"))
+    return Array.from(categories).sort((a, b) => a.localeCompare(b))
+  }, [imageLibrary])
+ 
+  const filteredLibraryImages = useMemo(() => {
+    if (libraryCategoryFilter === "todos") {
+      return imageLibrary
+    }
+    return imageLibrary.filter((item) => item.category === libraryCategoryFilter)
+  }, [imageLibrary, libraryCategoryFilter])
+ 
   const [newImage, setNewImage] = useState("")
   const [newSpecKey, setNewSpecKey] = useState("")
   const [newSpecValue, setNewSpecValue] = useState("")
 
+  const handleAddImageFromLibrary = (image: ProductImageItem) => {
+    setFormData((prev) => {
+      if (prev.images.includes(image.url)) {
+        return prev
+      }
+      return {
+        ...prev,
+        images: [...prev.images, image.url],
+      }
+    })
+  }
+ 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -261,6 +293,74 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                   </Button>
                 </Badge>
               ))}
+            </div>
+            <div className="space-y-2">
+              <Label>Biblioteca de imagenes</Label>
+              {imageLibrary.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Gestiona la biblioteca desde la seccion de configuracion para tener imagenes listas para tus productos.
+                </p>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={libraryCategoryFilter}
+                        onValueChange={(value) => setLibraryCategoryFilter(value)}
+                      >
+                        <SelectTrigger className="w-[220px]">
+                          <SelectValue placeholder="Filtrar por categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todas las categorias</SelectItem>
+                          {libraryCategories.map((category) => (
+                            <SelectItem key={category} value={category} className="capitalize">
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setLibraryCategoryFilter("todos")}
+                      >
+                        Ver todas
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Haz clic en una imagen para agregarla al producto.</p>
+                  </div>
+                  {filteredLibraryImages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No hay imagenes para esta categoria.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                      {filteredLibraryImages.map((image) => (
+                        <button
+                          key={image.id}
+                          type="button"
+                          onClick={() => handleAddImageFromLibrary(image)}
+                          className="group overflow-hidden rounded-lg border border-gray-200 bg-white text-left shadow-sm transition hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <div className="relative h-24 w-full bg-gray-100">
+                            <Image
+                              src={image.url}
+                              alt={image.label}
+                              fill
+                              className="object-cover" unoptimized
+                              sizes="200px"
+                            />
+                          </div>
+                          <div className="p-2 space-y-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
+                            <p className="text-xs text-gray-500 capitalize">{image.category}</p>
+                            <p className="text-xs text-blue-600/80 group-hover:text-blue-600">Agregar al producto</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 

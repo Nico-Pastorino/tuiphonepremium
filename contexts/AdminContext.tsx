@@ -37,6 +37,14 @@ export interface HomeConfig {
   sections: HomeSectionConfig[]
 }
 
+export interface ProductImageItem {
+  id: string
+  label: string
+  category: string
+  url: string
+  createdAt: string
+}
+
 interface AdminContextType {
   installmentPlans: InstallmentPlan[]
   addInstallmentPlan: (plan: Omit<InstallmentPlan, "id" | "createdAt">) => void
@@ -44,6 +52,11 @@ interface AdminContextType {
   deleteInstallmentPlan: (id: string) => void
   getActiveInstallmentPlans: () => InstallmentPlan[]
   getInstallmentPlansByCategory: (category: InstallmentPlan["category"]) => InstallmentPlan[]
+
+  imageLibrary: ProductImageItem[]
+  addImageToLibrary: (image: Omit<ProductImageItem, "id" | "createdAt">) => void
+  updateImageInLibrary: (id: string, updates: Partial<Omit<ProductImageItem, "id" | "createdAt">>) => void
+  removeImageFromLibrary: (id: string) => void
 
   dollarConfig: DollarConfig
   updateDollarConfig: (config: Partial<DollarConfig>) => void
@@ -77,6 +90,24 @@ function sanitizeInstallmentPlan(raw: any, fallbackIndex: number): InstallmentPl
     isActive: raw?.isActive !== undefined ? Boolean(raw.isActive) : true,
     createdAt: typeof raw?.createdAt === "string" ? (raw.createdAt as string) : new Date().toISOString(),
     category,
+  }
+}
+
+function sanitizeProductImage(raw: any, fallbackIndex: number): ProductImageItem | null {
+  const url = typeof raw?.url === "string" ? raw.url.trim() : ""
+  if (!url) {
+    return null
+  }
+  const label = typeof raw?.label === "string" && raw.label.trim().length > 0 ? raw.label.trim() : "Imagen"
+  const category = typeof raw?.category === "string" && raw.category.trim().length > 0 ? raw.category.trim() : "general"
+  const hasValidId = typeof raw?.id === "string" && raw.id.trim().length > 0
+  const id = hasValidId ? (raw.id as string) : `${category}-${Date.now()}-${fallbackIndex}`
+  return {
+    id,
+    label,
+    category,
+    url,
+    createdAt: typeof raw?.createdAt === "string" ? (raw.createdAt as string) : new Date().toISOString(),
   }
 }
 
@@ -152,6 +183,8 @@ const initialDollarConfig: DollarConfig = {
   autoUpdate: true,
 }
 
+const defaultImageLibrary: ProductImageItem[] = []
+
 const defaultHomeConfig: HomeConfig = {
   heroImage: "/hero-iphone-orange.jpg",
   heroHeadline: "Los mejores productos Apple de Argentina",
@@ -167,6 +200,7 @@ const defaultHomeConfig: HomeConfig = {
 }
 
 const INSTALLMENT_STORAGE_KEY = "admin-installment-plans"
+const IMAGE_LIBRARY_STORAGE_KEY = "admin-image-library"
 const DOLLAR_STORAGE_KEY = "admin-dollar-config"
 const AUTH_STORAGE_KEY = "admin-authenticated"
 const HOME_STORAGE_KEY = "admin-home-config"
@@ -189,16 +223,18 @@ function mergeHomeSections(sections: HomeSectionConfig[] | undefined): HomeSecti
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [installmentPlans, setInstallmentPlans] = useState<InstallmentPlan[]>([])
   const [dollarConfig, setDollarConfig] = useState<DollarConfig>(initialDollarConfig)
+  const [imageLibrary, setImageLibrary] = useState<ProductImageItem[]>(defaultImageLibrary)
   const [homeConfig, setHomeConfig] = useState<HomeConfig>(defaultHomeConfig)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [dollarConfigInitialized, setDollarConfigInitialized] = useState(false)
   const [homeConfigInitialized, setHomeConfigInitialized] = useState(false)
-
+  const [imageLibraryInitialized, setImageLibraryInitialized] = useState(false)
   useEffect(() => {
     const savedPlans = typeof window === "undefined" ? null : localStorage.getItem(INSTALLMENT_STORAGE_KEY)
     const savedDollarConfig = typeof window === "undefined" ? null : localStorage.getItem(DOLLAR_STORAGE_KEY)
     const savedAuth = typeof window === "undefined" ? null : localStorage.getItem(AUTH_STORAGE_KEY)
     const savedHomeConfig = typeof window === "undefined" ? null : localStorage.getItem(HOME_STORAGE_KEY)
+    const savedImageLibrary = typeof window === "undefined" ? null : localStorage.getItem(IMAGE_LIBRARY_STORAGE_KEY)
 
     if (savedPlans) {
       try {
@@ -251,8 +287,33 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         console.error("Failed to parse saved home config", error)
       }
     }
+
+    if (savedImageLibrary) {
+      try {
+        const parsed = JSON.parse(savedImageLibrary) as unknown
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const sanitized = parsed
+            .map((item, index) => sanitizeProductImage(item, index))
+            .filter((item): item is ProductImageItem => item !== null)
+          if (sanitized.length > 0) {
+            setImageLibrary(sanitized)
+          } else {
+            setImageLibrary(defaultImageLibrary)
+          }
+        } else {
+          setImageLibrary(defaultImageLibrary)
+        }
+      } catch (error) {
+        console.error("Failed to parse saved image library", error)
+        setImageLibrary(defaultImageLibrary)
+      }
+    } else {
+      setImageLibrary(defaultImageLibrary)
+    }
+
     setDollarConfigInitialized(true)
     setHomeConfigInitialized(true)
+    setImageLibraryInitialized(true)
   }, [])
 
   useEffect(() => {
@@ -277,6 +338,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     )
   }, [homeConfig, homeConfigInitialized])
 
+  useEffect(() => {
+    if (!imageLibraryInitialized) return
+    localStorage.setItem(IMAGE_LIBRARY_STORAGE_KEY, JSON.stringify(imageLibrary))
+  }, [imageLibrary, imageLibraryInitialized])
+
   const addInstallmentPlan = (planData: Omit<InstallmentPlan, "id" | "createdAt">) => {
     const newPlan: InstallmentPlan = {
       ...planData,
@@ -292,6 +358,34 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const deleteInstallmentPlan = (id: string) => {
     setInstallmentPlans((prev) => prev.filter((plan) => plan.id !== id))
+  }
+
+  const addImageToLibrary = (imageData: Omit<ProductImageItem, "id" | "createdAt">) => {
+    setImageLibrary((prev) => {
+      if (prev.some((item) => item.url === imageData.url)) {
+        return prev
+      }
+      const id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${imageData.category}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const newItem: ProductImageItem = {
+        id,
+        label: imageData.label.trim() || "Imagen",
+        category: imageData.category.trim() || "general",
+        url: imageData.url.trim(),
+        createdAt: new Date().toISOString(),
+      }
+      return [...prev, newItem]
+    })
+  }
+ 
+  const updateImageInLibrary = (id: string, updates: Partial<Omit<ProductImageItem, "id" | "createdAt">>) => {
+    setImageLibrary((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+    )
+  }
+ 
+  const removeImageFromLibrary = (id: string) => {
+    setImageLibrary((prev) => prev.filter((item) => item.id !== id))
   }
 
   const getActiveInstallmentPlans = () => installmentPlans.filter((plan) => plan.isActive)
@@ -358,11 +452,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       installmentPlans,
+      imageLibrary,
       addInstallmentPlan,
       updateInstallmentPlan,
       deleteInstallmentPlan,
       getActiveInstallmentPlans,
       getInstallmentPlansByCategory,
+      addImageToLibrary,
+      updateImageInLibrary,
+      removeImageFromLibrary,
       dollarConfig,
       updateDollarConfig,
       getEffectiveDollarRate,
@@ -376,6 +474,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }),
     [
       installmentPlans,
+      imageLibrary,
       dollarConfig,
       homeConfig,
       isAuthenticated,
@@ -398,6 +497,7 @@ export function getProductPriceWithDollar(priceUSD: number | null | undefined, d
   const effective = Number((priceUSD * dollarRate).toFixed(2))
   return effective
 }
+
 
 
 

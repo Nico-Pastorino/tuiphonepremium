@@ -1,12 +1,14 @@
 "use client"
+import type { FormEvent } from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { AdminLogin } from "@/components/AdminLogin"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -61,6 +63,9 @@ function AdminDashboard() {
     updateDollarConfig,
     getEffectiveDollarRate,
     getInstallmentPlansByCategory,
+    imageLibrary,
+    addImageToLibrary,
+    removeImageFromLibrary,
     homeConfig,
     updateHomeConfig,
     updateHomeSection,
@@ -74,6 +79,8 @@ function AdminDashboard() {
   const [installmentCategory, setInstallmentCategory] = useState<"visa-mastercard" | "naranja">("visa-mastercard")
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editingInstallment, setEditingInstallment] = useState<any>(null)
+  const [newLibraryImage, setNewLibraryImage] = useState({ label: "", category: "", url: "" })
+  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
   const [searchTerm, setSearchTerm] = useState("")
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
 
@@ -124,6 +131,39 @@ function AdminDashboard() {
     } finally {
       setDeletingProductId(null)
     }
+  }
+
+  const imageLibraryCategories = useMemo(() => {
+    const categories = new Set(imageLibrary.map((item) => item.category || "general"))
+    return Array.from(categories).sort((a, b) => a.localeCompare(b))
+  }, [imageLibrary])
+ 
+  const filteredLibraryImages = useMemo(() => {
+    if (libraryCategoryFilter === "todos") {
+      return imageLibrary
+    }
+    return imageLibrary.filter((item) => item.category === libraryCategoryFilter)
+  }, [imageLibrary, libraryCategoryFilter])
+ 
+  const handleAddLibraryImage = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const label = newLibraryImage.label.trim()
+    const category = newLibraryImage.category.trim() || "general"
+    const url = newLibraryImage.url.trim()
+    if (!url) {
+      return
+    }
+    addImageToLibrary({
+      label: label || "Imagen",
+      category,
+      url,
+    })
+    setNewLibraryImage({ label: "", category, url: "" })
+    setLibraryCategoryFilter(category)
+  }
+ 
+  const handleRemoveLibraryImage = (id: string) => {
+    removeImageFromLibrary(id)
   }
 
   const handleSectionToggle = (id: (typeof homeConfig.sections)[number]["id"], enabled: boolean) => {
@@ -344,6 +384,114 @@ function AdminDashboard() {
                   )}
                 </div>
               )}
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-6 h-6 text-gray-600" />
+                  Biblioteca de imagenes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <form className="grid gap-4 md:grid-cols-4" onSubmit={handleAddLibraryImage}>
+                  <div className="md:col-span-1 space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Categoria</label>
+                    <Input
+                      value={newLibraryImage.category}
+                      onChange={(event) => setNewLibraryImage((prev) => ({ ...prev, category: event.target.value }))}
+                      placeholder="Ej: iphone"
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-1 space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Titulo</label>
+                    <Input
+                      value={newLibraryImage.label}
+                      onChange={(event) => setNewLibraryImage((prev) => ({ ...prev, label: event.target.value }))}
+                      placeholder="Ej: iPhone 14 Pro Negro"
+                    />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-sm font-medium text-gray-700">URL de la imagen</label>
+                    <Input
+                      value={newLibraryImage.url}
+                      onChange={(event) => setNewLibraryImage((prev) => ({ ...prev, url: event.target.value }))}
+                      placeholder="https://..."
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-4 flex justify-end">
+                    <Button type="submit" className="self-end">Agregar imagen</Button>
+                  </div>
+                </form>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Imagenes disponibles</p>
+                      <p className="text-xs text-gray-500">Elige una imagen para los productos desde el formulario de carga.</p>
+                    </div>
+                    {imageLibrary.length > 0 && (
+                      <Select
+                        value={libraryCategoryFilter}
+                        onValueChange={(value) => setLibraryCategoryFilter(value)}
+                      >
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Filtrar por categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todas las categorias</SelectItem>
+                          {imageLibraryCategories.map((category) => (
+                            <SelectItem key={category} value={category} className="capitalize">
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  {imageLibrary.length === 0 ? (
+                    <p className="text-sm text-gray-500">Todavia no cargaste imagenes. Usa el formulario superior para agregar la primera.</p>
+                  ) : filteredLibraryImages.length === 0 ? (
+                    <p className="text-sm text-gray-500">No hay imagenes para la categoria seleccionada.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {filteredLibraryImages.map((image) => (
+                        <div
+                          key={image.id}
+                          className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm flex flex-col gap-2"
+                        >
+                          <div className="relative h-28 w-full overflow-hidden rounded-md bg-gray-100">
+                            <Image
+                              src={image.url}
+                              alt={image.label}
+                              fill
+                              className="object-cover"
+                              sizes="200px"
+                              unoptimized
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
+                            <p className="text-xs text-gray-500 capitalize">{image.category}</p>
+                          </div>
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveLibraryImage(image.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             </TabsContent>
 
             {/* Installments Tab */}
