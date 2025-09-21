@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { X, Plus } from "lucide-react"
 import { useAdmin, type ProductImageItem } from "@/contexts/AdminContext"
 import type { ProductFormData } from "@/types/product"
@@ -60,36 +59,37 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     if (formData.category && formData.category !== libraryCategoryFilter) {
       setLibraryCategoryFilter(formData.category)
     }
-  }, [formData.category, libraryCategoryFilter])
- 
+  }, [formData.category]) // Remover libraryCategoryFilter de las dependencias
+
   const libraryCategories = useMemo(() => {
     const categories = new Set(imageLibrary.map((item) => item.category || "general"))
     return Array.from(categories).sort((a, b) => a.localeCompare(b))
   }, [imageLibrary])
- 
+
   const filteredLibraryImages = useMemo(() => {
     if (libraryCategoryFilter === "todos") {
       return imageLibrary
     }
     return imageLibrary.filter((item) => item.category === libraryCategoryFilter)
   }, [imageLibrary, libraryCategoryFilter])
- 
+
   const [newImage, setNewImage] = useState("")
   const [newSpecKey, setNewSpecKey] = useState("")
   const [newSpecValue, setNewSpecValue] = useState("")
 
   const handleAddImageFromLibrary = (image: ProductImageItem) => {
-    setFormData((prev) => {
-      if (prev.images.includes(image.url)) {
-        return prev
-      }
-      return {
-        ...prev,
-        images: [...prev.images, image.url],
-      }
-    })
+    if (formData.images.includes(image.url)) {
+      // Mostrar mensaje si la imagen ya está agregada
+      alert("Esta imagen ya está agregada al producto")
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      images: [...prev.images, image.url],
+    }))
   }
- 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -268,6 +268,36 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
           {/* Imagenes */}
           <div className="space-y-4">
             <Label>Imagenes del producto</Label>
+            {formData.images.length > 0 && (
+              <div className="space-y-2">
+                <Label>Imágenes del producto ({formData.images.length})</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {formData.images.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <div className="relative h-24 w-full bg-gray-100 rounded-lg overflow-hidden border">
+                        <Image
+                          src={image || "/placeholder.svg"}
+                          alt={`Imagen ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                          sizes="150px"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex gap-2">
               <Input
                 value={newImage}
@@ -279,36 +309,18 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.images.map((image, index) => (
-                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                  <span className="truncate max-w-[200px]">{image}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeImage(index)}
-                    className="h-auto p-0 hover:bg-transparent"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
             <div className="space-y-2">
               <Label>Biblioteca de imagenes</Label>
               {imageLibrary.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Gestiona la biblioteca desde la seccion de configuracion para tener imagenes listas para tus productos.
+                  Gestiona la biblioteca desde la seccion de configuracion para tener imagenes listas para tus
+                  productos.
                 </p>
               ) : (
                 <>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                     <div className="flex items-center gap-2">
-                      <Select
-                        value={libraryCategoryFilter}
-                        onValueChange={(value) => setLibraryCategoryFilter(value)}
-                      >
+                      <Select value={libraryCategoryFilter} onValueChange={(value) => setLibraryCategoryFilter(value)}>
                         <SelectTrigger className="w-[220px]">
                           <SelectValue placeholder="Filtrar por categoria" />
                         </SelectTrigger>
@@ -321,11 +333,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setLibraryCategoryFilter("todos")}
-                      >
+                      <Button type="button" variant="outline" onClick={() => setLibraryCategoryFilter("todos")}>
                         Ver todas
                       </Button>
                     </div>
@@ -340,21 +348,30 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                           key={image.id}
                           type="button"
                           onClick={() => handleAddImageFromLibrary(image)}
-                          className="group overflow-hidden rounded-lg border border-gray-200 bg-white text-left shadow-sm transition hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white text-left shadow-sm transition-all hover:border-blue-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
-                          <div className="relative h-24 w-full bg-gray-100">
+                          <div className="relative h-32 w-full bg-gray-100">
                             <Image
-                              src={image.url}
+                              src={image.url || "/placeholder.svg"}
                               alt={image.label}
                               fill
-                              className="object-cover" unoptimized
+                              className="object-cover transition-transform group-hover:scale-105"
+                              unoptimized
                               sizes="200px"
                             />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="bg-blue-600 text-white rounded-full p-1">
+                                <Plus className="w-4 h-4" />
+                              </div>
+                            </div>
                           </div>
-                          <div className="p-2 space-y-1">
+                          <div className="p-3 space-y-1">
                             <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
                             <p className="text-xs text-gray-500 capitalize">{image.category}</p>
-                            <p className="text-xs text-blue-600/80 group-hover:text-blue-600">Agregar al producto</p>
+                            <p className="text-xs text-blue-600 font-medium group-hover:text-blue-700">
+                              Hacer clic para agregar
+                            </p>
                           </div>
                         </button>
                       ))}
@@ -416,5 +433,3 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     </Card>
   )
 }
-
-

@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 
 path = Path(r"app/productos/[id]/page.tsx")
 text = path.read_text(encoding="utf-8")

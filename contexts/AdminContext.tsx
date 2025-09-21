@@ -497,7 +497,3 @@ export function getProductPriceWithDollar(priceUSD: number | null | undefined, d
   const effective = Number((priceUSD * dollarRate).toFixed(2))
   return effective
 }
-
-
-
-

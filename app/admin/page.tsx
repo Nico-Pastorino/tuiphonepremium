@@ -1,7 +1,8 @@
 "use client"
 import type { FormEvent } from "react"
+import type React from "react"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { AdminLogin } from "@/components/AdminLogin"
 import { Button } from "@/components/ui/button"
@@ -83,13 +84,15 @@ function AdminDashboard() {
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
   const [searchTerm, setSearchTerm] = useState("")
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string>("")
 
-    const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
+  const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
   const [savingHomeConfig, setSavingHomeConfig] = useState(false)
 
   useEffect(() => {
     setHomeForm(cloneHomeConfig(homeConfig))
-  }, [homeConfig])
+  }, [homeConfig]) // Dependencias específicas en lugar del objeto completo
 
   const computeDisplayPrice = (product: Product) => {
     if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveAdminRate) {
@@ -137,31 +140,35 @@ function AdminDashboard() {
     const categories = new Set(imageLibrary.map((item) => item.category || "general"))
     return Array.from(categories).sort((a, b) => a.localeCompare(b))
   }, [imageLibrary])
- 
+
   const filteredLibraryImages = useMemo(() => {
     if (libraryCategoryFilter === "todos") {
       return imageLibrary
     }
     return imageLibrary.filter((item) => item.category === libraryCategoryFilter)
   }, [imageLibrary, libraryCategoryFilter])
- 
-  const handleAddLibraryImage = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const label = newLibraryImage.label.trim()
-    const category = newLibraryImage.category.trim() || "general"
-    const url = newLibraryImage.url.trim()
-    if (!url) {
-      return
-    }
-    addImageToLibrary({
-      label: label || "Imagen",
-      category,
-      url,
-    })
-    setNewLibraryImage({ label: "", category, url: "" })
-    setLibraryCategoryFilter(category)
-  }
- 
+
+  const handleAddLibraryImage = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      const label = newLibraryImage.label.trim()
+      const category = newLibraryImage.category.trim() || "general"
+      const url = newLibraryImage.url.trim()
+      if (!url) {
+        return
+      }
+      addImageToLibrary({
+        label: label || "Imagen",
+        category,
+        url,
+      })
+      setNewLibraryImage({ label: "", category, url: "" })
+      setImagePreview("")
+      setLibraryCategoryFilter(category)
+    },
+    [newLibraryImage, addImageToLibrary],
+  )
+
   const handleRemoveLibraryImage = (id: string) => {
     removeImageFromLibrary(id)
   }
@@ -169,9 +176,7 @@ function AdminDashboard() {
   const handleSectionToggle = (id: (typeof homeConfig.sections)[number]["id"], enabled: boolean) => {
     setHomeForm((prev) => ({
       ...prev,
-      sections: prev.sections.map((section) =>
-        section.id === id ? { ...section, enabled } : section,
-      ),
+      sections: prev.sections.map((section) => (section.id === id ? { ...section, enabled } : section)),
     }))
     updateHomeSection(id, { enabled })
   }
@@ -193,6 +198,44 @@ function AdminDashboard() {
   }
 
   const heroPreview = homeForm.heroImage?.trim() ? homeForm.heroImage : "/hero-iphone-orange.jpg"
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith("image/")) {
+      alert("Por favor selecciona un archivo de imagen válido (JPG, PNG)")
+      return
+    }
+
+    // Validar tamaño (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("El archivo es demasiado grande. Máximo 5MB permitido.")
+      return
+    }
+
+    setUploadingImage(true)
+
+    try {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        setImagePreview(result)
+        setNewLibraryImage((prev) => ({ ...prev, url: result }))
+        setUploadingImage(false)
+      }
+      reader.onerror = () => {
+        alert("Error al cargar la imagen")
+        setUploadingImage(false)
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("Error al procesar la imagen:", error)
+      alert("Error al procesar la imagen")
+      setUploadingImage(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -280,12 +323,13 @@ function AdminDashboard() {
                       key={product.id}
                       className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-sm"
                     >
-                      <div className="relative aspect-square">
+                      <div className="relative aspect-square overflow-hidden">
                         <Image
                           src={product.images[0] || "/placeholder.svg?height=300&width=300"}
                           alt={product.name}
                           fill
                           className="object-cover"
+                          unoptimized
                         />
                         <div className="absolute top-2 left-2 flex gap-2">
                           {product.featured && <Badge className="bg-gray-900 text-white">Destacado</Badge>}
@@ -299,7 +343,9 @@ function AdminDashboard() {
                           <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
                           <p className="text-sm text-gray-600 capitalize">{product.category}</p>
                           <div className="flex justify-between items-center">
-                            <span className="text-xl font-bold">${computeDisplayPrice(product).toLocaleString("es-AR")}</span>
+                            <span className="text-xl font-bold">
+                              ${computeDisplayPrice(product).toLocaleString("es-AR")}
+                            </span>
                             <span className="text-sm text-gray-600">Stock: {product.stock}</span>
                           </div>
                         </div>
@@ -384,114 +430,134 @@ function AdminDashboard() {
                   )}
                 </div>
               )}
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-gray-600" />
-                  Biblioteca de imagenes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <form className="grid gap-4 md:grid-cols-4" onSubmit={handleAddLibraryImage}>
-                  <div className="md:col-span-1 space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Categoria</label>
-                    <Input
-                      value={newLibraryImage.category}
-                      onChange={(event) => setNewLibraryImage((prev) => ({ ...prev, category: event.target.value }))}
-                      placeholder="Ej: iphone"
-                      required
-                    />
-                  </div>
-                  <div className="md:col-span-1 space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Titulo</label>
-                    <Input
-                      value={newLibraryImage.label}
-                      onChange={(event) => setNewLibraryImage((prev) => ({ ...prev, label: event.target.value }))}
-                      placeholder="Ej: iPhone 14 Pro Negro"
-                    />
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-sm font-medium text-gray-700">URL de la imagen</label>
-                    <Input
-                      value={newLibraryImage.url}
-                      onChange={(event) => setNewLibraryImage((prev) => ({ ...prev, url: event.target.value }))}
-                      placeholder="https://..."
-                      required
-                    />
-                  </div>
-                  <div className="md:col-span-4 flex justify-end">
-                    <Button type="submit" className="self-end">Agregar imagen</Button>
-                  </div>
-                </form>
-
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Imagenes disponibles</p>
-                      <p className="text-xs text-gray-500">Elige una imagen para los productos desde el formulario de carga.</p>
+              <Card className="border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="w-6 h-6 text-gray-600" />
+                    Biblioteca de imagenes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <form className="grid gap-4 md:grid-cols-4" onSubmit={handleAddLibraryImage}>
+                    <div className="md:col-span-1 space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Categoria</label>
+                      <Input
+                        value={newLibraryImage.category}
+                        onChange={(event) => setNewLibraryImage((prev) => ({ ...prev, category: event.target.value }))}
+                        placeholder="Ej: iphone"
+                        required
+                      />
                     </div>
-                    {imageLibrary.length > 0 && (
-                      <Select
-                        value={libraryCategoryFilter}
-                        onValueChange={(value) => setLibraryCategoryFilter(value)}
-                      >
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Filtrar por categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos">Todas las categorias</SelectItem>
-                          {imageLibraryCategories.map((category) => (
-                            <SelectItem key={category} value={category} className="capitalize">
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                  {imageLibrary.length === 0 ? (
-                    <p className="text-sm text-gray-500">Todavia no cargaste imagenes. Usa el formulario superior para agregar la primera.</p>
-                  ) : filteredLibraryImages.length === 0 ? (
-                    <p className="text-sm text-gray-500">No hay imagenes para la categoria seleccionada.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {filteredLibraryImages.map((image) => (
-                        <div
-                          key={image.id}
-                          className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm flex flex-col gap-2"
-                        >
-                          <div className="relative h-28 w-full overflow-hidden rounded-md bg-gray-100">
+                    <div className="md:col-span-1 space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Titulo</label>
+                      <Input
+                        value={newLibraryImage.label}
+                        onChange={(event) => setNewLibraryImage((prev) => ({ ...prev, label: event.target.value }))}
+                        placeholder="Ej: iPhone 14 Pro Negro"
+                      />
+                    </div>
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Seleccionar imagen</label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png"
+                          onChange={handleFileUpload}
+                          disabled={uploadingImage}
+                          className="flex-1"
+                        />
+                        {imagePreview && (
+                          <div className="relative w-12 h-12 rounded border overflow-hidden">
                             <Image
-                              src={image.url}
-                              alt={image.label}
+                              src={imagePreview || "/placeholder.svg"}
+                              alt="Preview"
                               fill
                               className="object-cover"
-                              sizes="200px"
                               unoptimized
                             />
                           </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
-                            <p className="text-xs text-gray-500 capitalize">{image.category}</p>
-                          </div>
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveLibraryImage(image.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                      {uploadingImage && <p className="text-sm text-blue-600">Procesando imagen...</p>}
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="md:col-span-4 flex justify-end">
+                      <Button type="submit" disabled={!newLibraryImage.url || uploadingImage} className="self-end">
+                        {uploadingImage ? "Procesando..." : "Agregar imagen"}
+                      </Button>
+                    </div>
+                  </form>
 
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Imagenes disponibles</p>
+                        <p className="text-xs text-gray-500">
+                          Elige una imagen para los productos desde el formulario de carga.
+                        </p>
+                      </div>
+                      {imageLibrary.length > 0 && (
+                        <Select
+                          value={libraryCategoryFilter}
+                          onValueChange={(value) => setLibraryCategoryFilter(value)}
+                        >
+                          <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Filtrar por categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todas las categorias</SelectItem>
+                            {imageLibraryCategories.map((category) => (
+                              <SelectItem key={category} value={category} className="capitalize">
+                                {category}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                    {imageLibrary.length === 0 ? (
+                      <p className="text-sm text-gray-500">
+                        Todavia no cargaste imagenes. Usa el formulario superior para agregar la primera.
+                      </p>
+                    ) : filteredLibraryImages.length === 0 ? (
+                      <p className="text-sm text-gray-500">No hay imagenes para la categoria seleccionada.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {filteredLibraryImages.map((image) => (
+                          <div
+                            key={image.id}
+                            className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm flex flex-col gap-2"
+                          >
+                            <div className="relative h-28 w-full overflow-hidden rounded-md bg-gray-100">
+                              <Image
+                                src={image.url || "/placeholder.svg"}
+                                alt={image.label}
+                                fill
+                                className="object-cover"
+                                sizes="200px"
+                                unoptimized
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
+                              <p className="text-xs text-gray-500 capitalize">{image.category}</p>
+                            </div>
+                            <div className="flex justify-end">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveLibraryImage(image.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Installments Tab */}
@@ -630,7 +696,8 @@ function AdminDashboard() {
                         ${dollarRate ? dollarRate.blue.toLocaleString("es-AR") : "---"}
                       </p>
                       <p className="text-xs text-green-700 mt-1">
-                        Ultima actualizacion: {dollarRate?.lastUpdate ? new Date(dollarRate.lastUpdate).toLocaleString("es-AR") : "sin datos"}
+                        Ultima actualizacion:{" "}
+                        {dollarRate?.lastUpdate ? new Date(dollarRate.lastUpdate).toLocaleString("es-AR") : "sin datos"}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -702,9 +769,7 @@ function AdminDashboard() {
                         <label className="text-sm font-medium text-gray-700">Titulo principal</label>
                         <Input
                           value={homeForm.heroHeadline}
-                          onChange={(event) =>
-                            setHomeForm((prev) => ({ ...prev, heroHeadline: event.target.value }))
-                          }
+                          onChange={(event) => setHomeForm((prev) => ({ ...prev, heroHeadline: event.target.value }))}
                           placeholder="Ej: Productos Apple premium en Argentina"
                         />
                       </div>
@@ -723,9 +788,7 @@ function AdminDashboard() {
                         <label className="text-sm font-medium text-gray-700">Mensaje promocional</label>
                         <Input
                           value={homeForm.promoMessage}
-                          onChange={(event) =>
-                            setHomeForm((prev) => ({ ...prev, promoMessage: event.target.value }))
-                          }
+                          onChange={(event) => setHomeForm((prev) => ({ ...prev, promoMessage: event.target.value }))}
                           placeholder="Ej: Envios rapidos y garantia incluida"
                         />
                       </div>
@@ -733,9 +796,7 @@ function AdminDashboard() {
                         <label className="text-sm font-medium text-gray-700">Imagen de portada (URL)</label>
                         <Input
                           value={homeForm.heroImage}
-                          onChange={(event) =>
-                            setHomeForm((prev) => ({ ...prev, heroImage: event.target.value }))
-                          }
+                          onChange={(event) => setHomeForm((prev) => ({ ...prev, heroImage: event.target.value }))}
                           placeholder="/hero-iphone-orange.jpg"
                         />
                         <p className="text-xs text-gray-500">
@@ -747,9 +808,7 @@ function AdminDashboard() {
                         <label className="text-sm font-medium text-gray-700">WhatsApp (solo numeros)</label>
                         <Input
                           value={homeForm.whatsappNumber}
-                          onChange={(event) =>
-                            setHomeForm((prev) => ({ ...prev, whatsappNumber: event.target.value }))
-                          }
+                          onChange={(event) => setHomeForm((prev) => ({ ...prev, whatsappNumber: event.target.value }))}
                           placeholder="54911..."
                         />
                       </div>
@@ -762,7 +821,13 @@ function AdminDashboard() {
                     </div>
                     <div className="space-y-4">
                       <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-                        <Image src={heroPreview} alt="Vista previa de la portada" fill className="object-cover" sizes="100vw" />
+                        <Image
+                          src={heroPreview || "/placeholder.svg"}
+                          alt="Vista previa de la portada"
+                          fill
+                          className="object-cover"
+                          sizes="100vw"
+                        />
                       </div>
                       <div className="space-y-3">
                         <h4 className="text-sm font-semibold text-gray-800">Secciones visibles</h4>
@@ -797,4 +862,3 @@ function AdminDashboard() {
     </div>
   )
 }
-

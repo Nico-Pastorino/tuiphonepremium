@@ -31,7 +31,7 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
             src={product.images[0] || "/placeholder.svg?height=400&width=400"}
             alt={product.name}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-contain transition-transform duration-500 group-hover:scale-105"
           />
         </div>
         <div className="p-6 space-y-4">
@@ -49,9 +49,7 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
               </a>
             </Button>
             <Button variant="outline" asChild>
-              <Link href={`/productos/${product.id}`}>
-                Ver mas
-              </Link>
+              <Link href={`/productos/${product.id}`}>Ver mas</Link>
             </Button>
           </div>
         </div>
@@ -59,4 +57,3 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
     </Card>
   )
 }
-

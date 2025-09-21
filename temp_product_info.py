@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 
 text = Path(r"app/productos/[id]/page.tsx").read_text()
 start = text.index('            {/* Product Info */}')
