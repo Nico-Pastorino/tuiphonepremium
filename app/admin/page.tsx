@@ -86,6 +86,8 @@ function AdminDashboard() {
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string>("")
+  const [heroImagePreview, setHeroImagePreview] = useState<string>("")
+  const [uploadingHeroImage, setUploadingHeroImage] = useState(false)
 
   const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
   const [savingHomeConfig, setSavingHomeConfig] = useState(false)
@@ -234,6 +236,44 @@ function AdminDashboard() {
       console.error("Error al procesar la imagen:", error)
       alert("Error al procesar la imagen")
       setUploadingImage(false)
+    }
+  }
+
+  const handleHeroImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith("image/")) {
+      alert("Por favor selecciona un archivo de imagen válido (JPG, PNG)")
+      return
+    }
+
+    // Validar tamaño (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("El archivo es demasiado grande. Máximo 5MB permitido.")
+      return
+    }
+
+    setUploadingHeroImage(true)
+
+    try {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        setHeroImagePreview(result)
+        setHomeForm((prev) => ({ ...prev, heroImage: result }))
+        setUploadingHeroImage(false)
+      }
+      reader.onerror = () => {
+        alert("Error al cargar la imagen")
+        setUploadingHeroImage(false)
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("Error al procesar la imagen:", error)
+      alert("Error al procesar la imagen")
+      setUploadingHeroImage(false)
     }
   }
 
@@ -793,16 +833,43 @@ function AdminDashboard() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Imagen de portada (URL)</label>
-                        <Input
-                          value={homeForm.heroImage}
-                          onChange={(event) => setHomeForm((prev) => ({ ...prev, heroImage: event.target.value }))}
-                          placeholder="/hero-iphone-orange.jpg"
-                        />
-                        <p className="text-xs text-gray-500">
-                          Usa rutas internas (comenzando con /) o una URL completa. La imagen se muestra con
-                          optimizacion desactivada.
-                        </p>
+                        <label className="text-sm font-medium text-gray-700">Imagen de portada</label>
+                        <div className="space-y-3">
+                          <div className="flex gap-2">
+                            <Input
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png"
+                              onChange={handleHeroImageUpload}
+                              disabled={uploadingHeroImage}
+                              className="flex-1"
+                            />
+                            {(heroImagePreview || homeForm.heroImage) && (
+                              <div className="relative w-16 h-16 rounded border overflow-hidden">
+                                <Image
+                                  src={heroImagePreview || homeForm.heroImage || "/placeholder.svg"}
+                                  alt="Preview portada"
+                                  fill
+                                  className="object-cover"
+                                  unoptimized
+                                />
+                              </div>
+                            )}
+                          </div>
+                          {uploadingHeroImage && <p className="text-sm text-blue-600">Procesando imagen...</p>}
+                          <div className="text-xs text-gray-500">
+                            <p>Sube una imagen desde tu dispositivo (JPG, PNG - máx. 5MB)</p>
+                            <p>O usa una URL: </p>
+                            <Input
+                              value={homeForm.heroImage.startsWith("data:") ? "" : homeForm.heroImage}
+                              onChange={(event) => {
+                                setHomeForm((prev) => ({ ...prev, heroImage: event.target.value }))
+                                setHeroImagePreview("")
+                              }}
+                              placeholder="/hero-iphone-orange.jpg o https://..."
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">WhatsApp (solo numeros)</label>
