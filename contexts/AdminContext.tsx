@@ -111,7 +111,6 @@ function sanitizeProductImage(raw: any, fallbackIndex: number): ProductImageItem
   }
 }
 
-
 const initialVisaMastercardPlans: InstallmentPlan[] = [
   {
     id: "visa-1",
@@ -333,7 +332,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       HOME_STORAGE_KEY,
       JSON.stringify({
         ...homeConfig,
-        sections: homeConfig.sections.map((section) => ({ id: section.id, label: section.label, enabled: section.enabled })),
+        sections: homeConfig.sections.map((section) => ({
+          id: section.id,
+          label: section.label,
+          enabled: section.enabled,
+        })),
       }),
     )
   }, [homeConfig, homeConfigInitialized])
@@ -366,7 +369,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         return prev
       }
       const id =
-        typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${imageData.category}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${imageData.category}-${Date.now()}-${Math.random().toString(16).slice(2)}`
       const newItem: ProductImageItem = {
         id,
         label: imageData.label.trim() || "Imagen",
@@ -377,13 +382,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       return [...prev, newItem]
     })
   }
- 
+
   const updateImageInLibrary = (id: string, updates: Partial<Omit<ProductImageItem, "id" | "createdAt">>) => {
-    setImageLibrary((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
-    )
+    setImageLibrary((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)))
   }
- 
+
   const removeImageFromLibrary = (id: string) => {
     setImageLibrary((prev) => prev.filter((item) => item.id !== id))
   }
@@ -429,14 +432,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       if (swapIndex < 0 || swapIndex >= sections.length) {
         return prev
       }
-
       ;[sections[index], sections[swapIndex]] = [sections[swapIndex], sections[index]]
       return { ...prev, sections }
     })
   }
 
   const login = (password: string) => {
-    if (password === "admin123") {
+    if (password === "complejo.avesten") {
       setIsAuthenticated(true)
       localStorage.setItem(AUTH_STORAGE_KEY, "true")
       return true
@@ -472,13 +474,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       login,
       logout,
     }),
-    [
-      installmentPlans,
-      imageLibrary,
-      dollarConfig,
-      homeConfig,
-      isAuthenticated,
-    ],
+    [installmentPlans, imageLibrary, dollarConfig, homeConfig, isAuthenticated],
   )
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>

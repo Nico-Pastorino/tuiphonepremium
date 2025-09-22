@@ -81,12 +81,6 @@ export function AdminLogin() {
               {isLoading ? "Verificando..." : "Ingresar"}
             </Button>
           </form>
-
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Demo:</strong> Contraseña: <code className="bg-blue-200 px-2 py-1 rounded">admin123</code>
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
