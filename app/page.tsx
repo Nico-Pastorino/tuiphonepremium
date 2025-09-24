@@ -159,9 +159,7 @@ export default function HomePage() {
                 <AlertCircle className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-gray-400" />
               </div>
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Usando datos de ejemplo</h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">
-                Para ver datos reales, configura Supabase
-              </p>
+              <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">Para ver datos reales, configura Supabase</p>
               <Button onClick={refreshProducts} variant="outline" className="border-gray-300 bg-transparent">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Reintentar conexión
@@ -252,7 +250,10 @@ export default function HomePage() {
                     </div>
                     <div className="space-y-2">
                       {benefit.features.map((feature) => (
-                        <div key={feature} className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-600">
+                        <div
+                          key={feature}
+                          className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-600"
+                        >
                           <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
                           {feature}
                         </div>
@@ -310,7 +311,7 @@ export default function HomePage() {
         <div className="relative w-full h-screen min-h-[600px] max-h-[900px] sm:min-h-[700px] md:min-h-[800px]">
           <div className="absolute inset-0">
             <Image
-              src={heroImage}
+              src={heroImage || "/placeholder.svg"}
               alt="Colección premium de productos Apple: iPhone, iPad, Mac, Apple Watch y AirPods"
               fill
               className="object-cover hero-image"

@@ -41,7 +41,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
         {/* Categories */}
         <div className="mb-8">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Categorías</h4>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-4">
             {categories.map((category) => (
               <Button
                 key={category.id}
@@ -58,7 +58,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
                 }}
               >
                 <div
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center p-1 ${
                     activeCategory === category.id ? "bg-white/20" : `bg-gradient-to-br ${category.color}`
                   }`}
                 >
@@ -73,7 +73,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
         {/* Conditions */}
         <div className="mb-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Estado</h4>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-4">
             {conditions.map((condition) => (
               <Button
                 key={condition.id}

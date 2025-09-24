@@ -8,16 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  ArrowLeft,
-  MessageCircle,
-  Share2,
-  Shield,
-  Truck,
-  CreditCard,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react"
+import { ArrowLeft, MessageCircle, Share2, Shield, Truck, CreditCard, ChevronLeft, ChevronRight } from "lucide-react"
 import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
 import Image from "next/image"
@@ -58,9 +49,7 @@ export default function ProductDetailPage() {
   }
 
   const priceInPesos =
-    product.priceUSD !== undefined && product.priceUSD !== null
-      ? product.priceUSD * effectiveDollarRate
-      : product.price
+    product.priceUSD !== undefined && product.priceUSD !== null ? product.priceUSD * effectiveDollarRate : product.price
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
 
@@ -251,43 +240,28 @@ export default function ProductDetailPage() {
             {/* Product Info */}
 
             <AnimatedSection animation="fadeRight">
-
               <div className="space-y-6">
-
                 {/* Category */}
 
                 <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 px-3 py-1">
-
                   {product.category.toUpperCase()}
-
                 </Badge>
-
-
 
                 {/* Title */}
 
                 <h1 className="text-4xl font-bold text-gray-900 leading-tight">{product.name}</h1>
 
-
-
                 {/* Price */}
 
                 <div className="space-y-3">
-
                   <div className="flex items-baseline gap-4">
-
                     <span className="text-4xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</span>
 
                     {originalPrice && (
-
                       <span className="text-2xl text-gray-500 line-through">
-
                         ${originalPrice.toLocaleString("es-AR")}
-
                       </span>
-
                     )}
-
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -296,10 +270,11 @@ export default function ProductDetailPage() {
                     {hasInstallmentOptions ? (
                       <div className="mt-3 space-y-3 text-sm text-blue-700">
                         {installmentGroups.map((group) => (
-                          <div key={group.category} className="rounded-md bg-white/60 p-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-                              {group.label}
-                            </p>
+                          <div
+                            key={group.category}
+                            className={`rounded-md p-3 ${group.category === "naranja" ? "bg-orange-100/80" : "bg-white/60"}`}
+                          >
+                            <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">{group.label}</p>
                             {group.options.length > 0 ? (
                               <div className="mt-2 space-y-1">
                                 {group.options.map((option) => (
@@ -317,129 +292,83 @@ export default function ProductDetailPage() {
                                 ))}
                               </div>
                             ) : (
-                              <p className="mt-2 text-xs text-blue-600/70">No hay planes disponibles en este momento.</p>
+                              <p className="mt-2 text-xs text-blue-600/70">
+                                No hay planes disponibles en este momento.
+                              </p>
                             )}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="mt-2 text-sm text-blue-700">Consulta por financiacion personalizada para este producto.</p>
+                      <p className="mt-2 text-sm text-blue-700">
+                        Consulta por financiacion personalizada para este producto.
+                      </p>
                     )}
                   </div>
-
                 </div>
                 {/* Actions */}
 
                 <div className="flex gap-4">
-
                   <Button
-
                     className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 rounded-xl text-lg"
-
                     asChild
-
                   >
-
                     <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
-
                       <MessageCircle className="w-5 h-5 mr-2" />
-
                       Consultar por WhatsApp
-
                     </a>
-
                   </Button>
-
-
 
                   <Button
-
                     variant="outline"
-
                     size="lg"
-
                     className="px-4 py-4 rounded-xl border-2 bg-transparent"
-
                     onClick={handleShare}
-
                   >
-
                     <Share2 className="w-5 h-5" />
-
                   </Button>
-
                 </div>
-
-
 
                 {/* Benefits */}
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-
                       <Shield className="w-5 h-5 text-green-600" />
-
                     </div>
 
                     <div>
-
                       <p className="font-medium text-sm">Garantia</p>
 
                       <p className="text-xs text-gray-600">12 meses</p>
-
                     </div>
-
                   </div>
 
-
-
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-
                       <Truck className="w-5 h-5 text-blue-600" />
-
                     </div>
 
                     <div>
-
                       <p className="font-medium text-sm">Envio gratis</p>
 
                       <p className="text-xs text-gray-600">CABA y GBA</p>
-
                     </div>
-
                   </div>
 
-
-
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-
                     <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-
                       <CreditCard className="w-5 h-5 text-purple-600" />
-
                     </div>
 
                     <div>
-
                       <p className="font-medium text-sm">Financiacion</p>
 
                       <p className="text-xs text-gray-600">Hasta 12 cuotas</p>
-
                     </div>
-
                   </div>
-
                 </div>
-
               </div>
-
-
-
             </AnimatedSection>
           </div>
 
