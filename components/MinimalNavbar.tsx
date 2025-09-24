@@ -55,10 +55,10 @@ export function MinimalNavbar() {
   return (
     <>
       {/* Navbar - Logo y texto más grandes en móvil */}
-      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-5xl flex items-center justify-between px-6 py-4 rounded-3xl shadow-lg z-50 bg-gradient-to-r from-blue-500 to-purple-600">
+      <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] sm:w-[95%] max-w-6xl flex items-center justify-between px-6 py-4 rounded-3xl shadow-lg z-50 bg-gradient-to-r from-blue-500 to-purple-600">
         <div className="flex items-center gap-4">
           <Image src="/logo-final.png" alt="TuiPhonepremium Logo" width={40} height={40} className="object-contain" />
-          <span className="text-2xl font-bold text-white">TuiPhonepremium</span>
+          <span className="text-xl sm:text-2xl font-bold text-white">TuiPhonepremium</span>
         </div>
         <Button
           variant="ghost"
@@ -87,11 +87,20 @@ export function MinimalNavbar() {
 
         {/* Menu panel - Gradiente, logo alineado y botón cerrar */}
         <div
-          className={`absolute right-0 top-0 h-full w-full sm:w-80 md:w-96 bg-gradient-to-r from-blue-500 to-purple-600 shadow-2xl transform transition-transform duration-300 z-50 rounded-l-3xl flex flex-col` + (isMenuOpen ? " translate-x-0" : " translate-x-full")}
+          className={
+            `absolute right-0 top-0 h-full w-full sm:w-80 md:w-96 bg-gradient-to-r from-blue-500 to-purple-600 shadow-2xl transform transition-transform duration-300 z-50 rounded-l-3xl flex flex-col` +
+            (isMenuOpen ? " translate-x-0" : " translate-x-full")
+          }
         >
           <div className="flex items-center justify-between p-6 border-b border-white/10">
             <div className="flex items-center gap-4">
-              <Image src="/logo-final.png" alt="TuiPhonepremium Logo" width={40} height={40} className="object-contain" />
+              <Image
+                src="/logo-final.png"
+                alt="TuiPhonepremium Logo"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
               <span className="text-xl font-bold text-white">TuiPhonepremium</span>
             </div>
             <Button

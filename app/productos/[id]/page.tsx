@@ -228,7 +228,7 @@ export default function ProductDetailPage() {
                           src={image || "/placeholder.svg"}
                           alt={`${product.name} ${index + 1}`}
                           fill
-                          className="object-cover"
+                          className="object-contain" // Updated class here
                         />
                       </button>
                     ))}
