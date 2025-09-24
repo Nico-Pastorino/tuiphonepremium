@@ -27,12 +27,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-lg transition-shadow">
       <CardContent className="p-0">
         <div className="relative aspect-square bg-gray-50">
-          <Image
-            src={product.images[0] || "/placeholder.svg"}
-            alt={product.name}
-            fill
-            className="object-cover"
-          />
+          <Image src={product.images[0] || "/placeholder.svg"} alt={product.name} fill className="object-contain" />
         </div>
         <div className="p-4 space-y-3">
           <div>
@@ -47,9 +42,7 @@ export function ProductCard({ product }: ProductCardProps) {
               </a>
             </Button>
             <Button variant="outline" asChild>
-              <Link href={`/productos/${product.id}`}>
-                Ver mas
-              </Link>
+              <Link href={`/productos/${product.id}`}>Ver mas</Link>
             </Button>
           </div>
         </div>

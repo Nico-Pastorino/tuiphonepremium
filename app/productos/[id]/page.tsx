@@ -377,10 +377,9 @@ export default function ProductDetailPage() {
             <Card className="mb-16 border-0 shadow-sm">
               <CardContent className="p-8">
                 <Tabs defaultValue="description" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="description">Descripcion</TabsTrigger>
                     <TabsTrigger value="specifications">Especificaciones</TabsTrigger>
-                    <TabsTrigger value="reviews">Resenas</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="description" className="mt-6">
@@ -397,12 +396,6 @@ export default function ProductDetailPage() {
                           <span className="text-gray-700">{value}</span>
                         </div>
                       ))}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="reviews" className="mt-6">
-                    <div className="text-center py-8">
-                      <p className="text-gray-600">Las resenas estaran disponibles proximamente.</p>
                     </div>
                   </TabsContent>
                 </Tabs>
