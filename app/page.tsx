@@ -45,7 +45,7 @@ export default function HomePage() {
   const enabledSections = homeConfig.sections.filter((section) => section.enabled)
   const firstSectionId = enabledSections[0]?.id
 
-  const heroImage = homeConfig.heroImage || "/hero-iphone-orange.jpg"
+  const heroImage = homeConfig.heroImage || "/hero-iphone-lineup.jpg"
   const whatsappLink = `https://wa.me/${homeConfig.whatsappNumber}`
 
   const scrollToFirstSection = () => {
@@ -312,7 +312,7 @@ export default function HomePage() {
           <div className="absolute inset-0">
             <Image
               src={heroImage || "/placeholder.svg"}
-              alt="Colección premium de productos Apple: iPhone, iPad, Mac, Apple Watch y AirPods"
+              alt="Lineup de iPhone sobre fondo espacial oscuro"
               fill
               className="object-cover hero-image"
               priority

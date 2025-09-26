@@ -223,7 +223,7 @@ function AdminDashboard() {
     }
   }
 
-  const heroPreview = homeForm.heroImage?.trim() ? homeForm.heroImage : "/hero-iphone-orange.jpg"
+  const heroPreview = homeForm.heroImage?.trim() ? homeForm.heroImage : "/hero-iphone-lineup.jpg"
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -881,7 +881,7 @@ function AdminDashboard() {
                                 setHomeForm((prev) => ({ ...prev, heroImage: event.target.value }))
                                 setHeroImagePreview("")
                               }}
-                              placeholder="/hero-iphone-orange.jpg o https://..."
+                              placeholder="/hero-iphone-lineup.jpg o https://..."
                               className="mt-1"
                             />
                           </div>

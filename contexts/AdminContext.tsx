@@ -185,7 +185,7 @@ const initialDollarConfig: DollarConfig = {
 const defaultImageLibrary: ProductImageItem[] = []
 
 const defaultHomeConfig: HomeConfig = {
-  heroImage: "/hero-iphone-orange.jpg",
+  heroImage: "/hero-iphone-lineup.jpg",
   heroHeadline: "Los mejores productos Apple de Argentina",
   heroSubheadline: "Descubrí nuestra selección premium de iPhone, iPad, Mac y accesorios con garantía oficial.",
   promoMessage: "Productos nuevos y seminuevos con garantía y entrega inmediata.",
