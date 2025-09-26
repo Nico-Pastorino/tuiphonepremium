@@ -159,7 +159,7 @@ export function useDollarRate() {
 
   useEffect(() => {
     fetchDollarRate()
-    const interval = setInterval(fetchDollarRate, 5 * 60 * 1000)
+    const interval = setInterval(fetchDollarRate, 60 * 1000)
 
     return () => clearInterval(interval)
   }, [fetchDollarRate])

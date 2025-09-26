@@ -1,6 +1,5 @@
 "use client"
-import type { FormEvent } from "react"
-import type React from "react"
+import type { ChangeEvent, FormEvent } from "react"
 
 import { useEffect, useMemo, useState, useCallback } from "react"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
@@ -80,7 +79,9 @@ function AdminDashboard() {
   const [installmentCategory, setInstallmentCategory] = useState<"visa-mastercard" | "naranja">("visa-mastercard")
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editingInstallment, setEditingInstallment] = useState<any>(null)
-  const [newLibraryImage, setNewLibraryImage] = useState({ label: "", category: "", url: "" })
+  const [newLibraryImage, setNewLibraryImage] = useState<{ label: string; category: string }>({ label: "", category: "" })
+  const [newLibraryImageFile, setNewLibraryImageFile] = useState<File | null>(null)
+  const [newLibraryImagePreview, setNewLibraryImagePreview] = useState<string | null>(null)
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
   const [searchTerm, setSearchTerm] = useState("")
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
@@ -114,13 +115,36 @@ function AdminDashboard() {
       product.category.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleUpdateDollarRate = async () => {
-    if (dollarRate) {
-      updateDollarConfig({
-        blueRate: dollarRate.blue,
-        lastUpdated: new Date().toISOString(),
-      })
+  const baseDollarRate = dollarRate?.blue ?? dollarConfig.blueRate
+  const finalDollarValue = (baseDollarRate + dollarConfig.markup).toFixed(2)
+
+  useEffect(() => {
+    if (!dollarRate) {
+      return
     }
+
+    const apiBlue = Number.isFinite(dollarRate.blue) ? dollarRate.blue : null
+    const apiOfficial = Number.isFinite(dollarRate.official) ? dollarRate.official : null
+
+    if (apiBlue === null) {
+      return
+    }
+
+    const hasBlueChanged = Math.abs(dollarConfig.blueRate - apiBlue) > 0.01
+    const hasOfficialChanged =
+      apiOfficial !== null && Math.abs(dollarConfig.officialRate - apiOfficial) > 0.01
+
+    if (!hasBlueChanged && !hasOfficialChanged) {
+      return
+    }
+
+    updateDollarConfig({
+      blueRate: apiBlue,
+      officialRate: apiOfficial ?? dollarConfig.officialRate,
+    })
+  }, [dollarRate, dollarConfig.blueRate, dollarConfig.officialRate, updateDollarConfig])
+
+  const handleUpdateDollarRate = async () => {
     await refreshDollarRate()
   }
 
@@ -201,7 +225,7 @@ function AdminDashboard() {
 
   const heroPreview = homeForm.heroImage?.trim() ? homeForm.heroImage : "/hero-iphone-orange.jpg"
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -239,7 +263,7 @@ function AdminDashboard() {
     }
   }
 
-  const handleHeroImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHeroImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -752,15 +776,7 @@ function AdminDashboard() {
                       </Button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Dolar Blue Base</label>
-                      <Input
-                        type="number"
-                        value={dollarConfig.blueRate}
-                        onChange={(e) => updateDollarConfig({ blueRate: Number(e.target.value) })}
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Markup (Pesos)</label>
                       <Input
@@ -775,7 +791,7 @@ function AdminDashboard() {
                       <label className="text-sm font-medium">Dolar Final</label>
                       <Input
                         type="number"
-                        value={(dollarConfig.blueRate + dollarConfig.markup).toFixed(2)}
+                        value={finalDollarValue}
                         disabled
                         className="bg-gray-50"
                       />
@@ -786,7 +802,7 @@ function AdminDashboard() {
                     <h4 className="font-semibold text-blue-900 mb-2">Informacion</h4>
                     <p className="text-sm text-blue-800">
                       El dolar final es el precio que se usara para convertir los precios en USD a pesos argentinos. Se
-                      calcula como: Dolar Blue Base + Markup en Pesos
+                      calcula como: Cotizacion de la API + Markup en Pesos
                     </p>
                   </div>
                 </CardContent>
@@ -929,3 +945,4 @@ function AdminDashboard() {
     </div>
   )
 }
+
