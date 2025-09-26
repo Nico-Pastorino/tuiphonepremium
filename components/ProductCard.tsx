@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 
 interface ProductCardProps {
@@ -8,7 +6,7 @@ interface ProductCardProps {
   price: number
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ imageUrl, title, price }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ imageUrl, title, price }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <img src={imageUrl || "/placeholder.svg"} alt={title} className="w-full h-48 object-contain" />

@@ -12,7 +12,7 @@ interface ModernProductCardProps {
   product: Product
 }
 
-export const ModernProductCard = ({ product }: ModernProductCardProps) => {
+export function ModernProductCard({ product }: ModernProductCardProps) {
   const { getEffectiveDollarRate } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
 
@@ -57,5 +57,3 @@ export const ModernProductCard = ({ product }: ModernProductCardProps) => {
     </Card>
   )
 }
-
-export default ModernProductCard
