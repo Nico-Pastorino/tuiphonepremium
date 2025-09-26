@@ -172,7 +172,7 @@ export default function ProductDetailPage() {
                     src={product.images[selectedImageIndex] || "/placeholder.svg?height=600&width=600"}
                     alt={product.name}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                   />
 
                   {/* Navigation Arrows */}
