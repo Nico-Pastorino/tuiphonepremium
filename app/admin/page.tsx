@@ -28,6 +28,7 @@ import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
 import type { HomeConfig } from "@/contexts/AdminContext"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
+import { cloneHomeConfig } from "@/lib/home-config"
 import Image from "next/image"
 import type { Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
@@ -43,13 +44,6 @@ export default function AdminPage() {
   }
 
   return <AdminDashboard />
-}
-
-function cloneHomeConfig(config: HomeConfig) {
-  return {
-    ...config,
-    sections: config.sections.map((section) => ({ ...section })),
-  }
 }
 
 function AdminDashboard() {
@@ -199,18 +193,25 @@ function AdminDashboard() {
     removeImageFromLibrary(id)
   }
 
-  const handleSectionToggle = (id: (typeof homeConfig.sections)[number]["id"], enabled: boolean) => {
+  const handleSectionToggle = async (id: (typeof homeConfig.sections)[number]["id"], enabled: boolean) => {
+    const previousSections = homeForm.sections.map((section) => ({ ...section }))
     setHomeForm((prev) => ({
       ...prev,
       sections: prev.sections.map((section) => (section.id === id ? { ...section, enabled } : section)),
     }))
-    updateHomeSection(id, { enabled })
+    try {
+      await updateHomeSection(id, { enabled })
+    } catch (error) {
+      console.error("No se pudo actualizar la visibilidad de la seccion", error)
+      setHomeForm((prev) => ({ ...prev, sections: previousSections }))
+      alert("No se pudo guardar el cambio de visibilidad. Intenta nuevamente.")
+    }
   }
 
-  const handleSaveHomeConfig = () => {
+  const handleSaveHomeConfig = async () => {
     setSavingHomeConfig(true)
     try {
-      updateHomeConfig({
+      await updateHomeConfig({
         heroImage: homeForm.heroImage,
         heroHeadline: homeForm.heroHeadline,
         heroSubheadline: homeForm.heroSubheadline,
@@ -218,6 +219,9 @@ function AdminDashboard() {
         whatsappNumber: homeForm.whatsappNumber,
       })
       console.log("Configuracion de la portada actualizada")
+    } catch (error) {
+      console.error("No se pudo guardar la configuracion de la portada", error)
+      alert("No se pudo guardar la portada. Revisa tu conexion e intenta nuevamente.")
     } finally {
       setSavingHomeConfig(false)
     }

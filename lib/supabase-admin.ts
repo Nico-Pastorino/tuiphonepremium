@@ -1,5 +1,5 @@
 import { createClient, type PostgrestError } from "@supabase/supabase-js"
-import type { Database, ProductInsert, ProductRow, ProductUpdate } from "@/types/database"
+import type { Database, ProductInsert, ProductRow, ProductUpdate, SiteConfigInsert, SiteConfigRow, Json } from "@/types/database"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -157,6 +157,61 @@ export class ProductAdminService {
     } catch (error) {
       const normalized = normalizeError(error)
       console.error("Get all products error:", normalized)
+      return { data: null, error: normalized }
+    }
+  }
+}
+export class SiteConfigService {
+  static async getConfigByKey(key: string): Promise<AdminResult<SiteConfigRow | null>> {
+    if (!supabaseAdmin) {
+      return { data: null, error: new Error("Admin client not configured") }
+    }
+
+    try {
+      const client = getAdminClient()
+      const { data, error } = await client.from("site_config").select("*").eq("key", key).maybeSingle()
+
+      if (error) {
+        throw error
+      }
+
+      const typedData = data as SiteConfigRow | null
+      return { data: typedData, error: null }
+    } catch (error) {
+      const normalized = normalizeError(error)
+      console.error("Get site config error:", normalized)
+      return { data: null, error: normalized }
+    }
+  }
+
+  static async upsertConfig(key: string, value: Json): Promise<AdminResult<SiteConfigRow>> {
+    if (!supabaseAdmin) {
+      return { data: null, error: new Error("Admin client not configured") }
+    }
+
+    try {
+      const client = getAdminClient()
+      const payload: SiteConfigInsert = {
+        key,
+        value,
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data, error } = await client
+        .from("site_config")
+        .upsert(payload, { onConflict: "key" })
+        .select("*")
+        .single()
+
+      if (error) {
+        throw error
+      }
+
+      const typedData = data as SiteConfigRow
+      return { data: typedData, error: null }
+    } catch (error) {
+      const normalized = normalizeError(error)
+      console.error("Upsert site config error:", normalized)
       return { data: null, error: normalized }
     }
   }

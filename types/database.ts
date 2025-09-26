@@ -15,6 +15,12 @@ export type Database = {
         Update: ProductUpdate
         Relationships: []
       }
+      site_config: {
+        Row: SiteConfigRow
+        Insert: SiteConfigInsert
+        Update: SiteConfigUpdate
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -71,5 +77,22 @@ export type ProductUpdate = {
   stock?: number
   featured?: boolean
   created_at?: string
+  updated_at?: string | null
+}
+export type SiteConfigRow = {
+  key: string
+  value: Json | null
+  updated_at: string | null
+}
+
+export type SiteConfigInsert = {
+  key: string
+  value?: Json | null
+  updated_at?: string | null
+}
+
+export type SiteConfigUpdate = {
+  key?: string
+  value?: Json | null
   updated_at?: string | null
 }

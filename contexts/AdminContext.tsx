@@ -1,6 +1,11 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+
+import type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
+import { DEFAULT_HOME_CONFIG, mergeHomeConfig } from "@/lib/home-config"
+
+export type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 
 export interface InstallmentPlan {
   id: string
@@ -18,23 +23,6 @@ export interface DollarConfig {
   markup: number
   lastUpdated: string
   autoUpdate: boolean
-}
-
-export type HomeSectionId = "categories" | "featured" | "benefits" | "cta"
-
-export interface HomeSectionConfig {
-  id: HomeSectionId
-  label: string
-  enabled: boolean
-}
-
-export interface HomeConfig {
-  heroImage: string
-  heroHeadline: string
-  heroSubheadline: string
-  promoMessage: string
-  whatsappNumber: string
-  sections: HomeSectionConfig[]
 }
 
 export interface ProductImageItem {
@@ -63,9 +51,9 @@ interface AdminContextType {
   getEffectiveDollarRate: () => number
 
   homeConfig: HomeConfig
-  updateHomeConfig: (config: Partial<Omit<HomeConfig, "sections">>) => void
-  updateHomeSection: (id: HomeSectionId, updates: Partial<HomeSectionConfig>) => void
-  reorderHomeSection: (id: HomeSectionId, direction: "up" | "down") => void
+  updateHomeConfig: (config: Partial<Omit<HomeConfig, "sections">>) => Promise<void>
+  updateHomeSection: (id: HomeSectionId, updates: Partial<HomeSectionConfig>) => Promise<void>
+  reorderHomeSection: (id: HomeSectionId, direction: "up" | "down") => Promise<void>
 
   isAuthenticated: boolean
   login: (password: string) => boolean
@@ -184,50 +172,22 @@ const initialDollarConfig: DollarConfig = {
 
 const defaultImageLibrary: ProductImageItem[] = []
 
-const defaultHomeConfig: HomeConfig = {
-  heroImage: "/hero-iphone-lineup.jpg",
-  heroHeadline: "Los mejores productos Apple de Argentina",
-  heroSubheadline: "Descubrí nuestra selección premium de iPhone, iPad, Mac y accesorios con garantía oficial.",
-  promoMessage: "Productos nuevos y seminuevos con garantía y entrega inmediata.",
-  whatsappNumber: "5491112345678",
-  sections: [
-    { id: "categories", label: "Explorar por categoría", enabled: true },
-    { id: "featured", label: "Productos destacados", enabled: true },
-    { id: "benefits", label: "Beneficios", enabled: true },
-    { id: "cta", label: "Llamado a la acción", enabled: true },
-  ],
-}
-
 const INSTALLMENT_STORAGE_KEY = "admin-installment-plans"
 const IMAGE_LIBRARY_STORAGE_KEY = "admin-image-library"
 const DOLLAR_STORAGE_KEY = "admin-dollar-config"
 const AUTH_STORAGE_KEY = "admin-authenticated"
 const HOME_STORAGE_KEY = "admin-home-config"
 
-function mergeHomeSections(sections: HomeSectionConfig[] | undefined): HomeSectionConfig[] {
-  const base = defaultHomeConfig.sections
-  if (!sections || sections.length === 0) {
-    return base
-  }
-
-  const merged = base.map((section) => {
-    const saved = sections.find((item) => item.id === section.id)
-    return saved ? { ...section, ...saved } : section
-  })
-
-  const extra = sections.filter((section) => !base.some((baseSection) => baseSection.id === section.id))
-  return [...merged, ...extra]
-}
-
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [installmentPlans, setInstallmentPlans] = useState<InstallmentPlan[]>([])
   const [dollarConfig, setDollarConfig] = useState<DollarConfig>(initialDollarConfig)
   const [imageLibrary, setImageLibrary] = useState<ProductImageItem[]>(defaultImageLibrary)
-  const [homeConfig, setHomeConfig] = useState<HomeConfig>(defaultHomeConfig)
+  const [homeConfig, setHomeConfig] = useState<HomeConfig>(DEFAULT_HOME_CONFIG)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [dollarConfigInitialized, setDollarConfigInitialized] = useState(false)
   const [homeConfigInitialized, setHomeConfigInitialized] = useState(false)
   const [imageLibraryInitialized, setImageLibraryInitialized] = useState(false)
+  const homeConfigHasLocalUpdates = useRef(false)
   useEffect(() => {
     const savedPlans = typeof window === "undefined" ? null : localStorage.getItem(INSTALLMENT_STORAGE_KEY)
     const savedDollarConfig = typeof window === "undefined" ? null : localStorage.getItem(DOLLAR_STORAGE_KEY)
@@ -274,18 +234,31 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (savedHomeConfig) {
       try {
         const parsed = JSON.parse(savedHomeConfig) as Partial<HomeConfig>
-        setHomeConfig((prev) => ({
-          heroImage: parsed.heroImage || prev.heroImage,
-          heroHeadline: parsed.heroHeadline || prev.heroHeadline,
-          heroSubheadline: parsed.heroSubheadline || prev.heroSubheadline,
-          promoMessage: parsed.promoMessage || prev.promoMessage,
-          whatsappNumber: parsed.whatsappNumber || prev.whatsappNumber,
-          sections: mergeHomeSections(parsed.sections),
-        }))
+        setHomeConfig((prev) => mergeHomeConfig(prev, parsed))
       } catch (error) {
         console.error("Failed to parse saved home config", error)
       }
     }
+
+    const loadRemoteHomeConfig = async () => {
+      try {
+        const response = await fetch("/api/admin/home-config")
+        if (!response.ok) {
+          const message = await response.text()
+          throw new Error(message || "Unable to fetch home config")
+        }
+        const result = (await response.json()) as { data?: Partial<HomeConfig> }
+        if (result?.data && !homeConfigHasLocalUpdates.current) {
+          setHomeConfig((prev) => mergeHomeConfig(prev, result.data))
+        }
+      } catch (error) {
+        console.error("Failed to fetch home config from API", error)
+      } finally {
+        setHomeConfigInitialized(true)
+      }
+    }
+
+    void loadRemoteHomeConfig()
 
     if (savedImageLibrary) {
       try {
@@ -311,7 +284,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
 
     setDollarConfigInitialized(true)
-    setHomeConfigInitialized(true)
     setImageLibraryInitialized(true)
   }, [])
 
@@ -408,33 +380,63 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     return Number((dollarConfig.blueRate + dollarConfig.markup).toFixed(2))
   }
 
-  const updateHomeConfig = (configData: Partial<Omit<HomeConfig, "sections">>) => {
-    setHomeConfig((prev) => ({
-      ...prev,
-      ...configData,
-    }))
-  }
+  const persistHomeConfig = async (partial: Partial<HomeConfig>): Promise<HomeConfig> => {
+    let updatedConfig: HomeConfig = homeConfig
+    try {
+      const response = await fetch("/api/admin/home-config", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(partial),
+      })
 
-  const updateHomeSection = (id: HomeSectionId, updates: Partial<HomeSectionConfig>) => {
-    setHomeConfig((prev) => ({
-      ...prev,
-      sections: prev.sections.map((section) => (section.id === id ? { ...section, ...updates } : section)),
-    }))
-  }
-
-  const reorderHomeSection = (id: HomeSectionId, direction: "up" | "down") => {
-    setHomeConfig((prev) => {
-      const sections = [...prev.sections]
-      const index = sections.findIndex((section) => section.id === id)
-      if (index === -1) return prev
-
-      const swapIndex = direction === "up" ? index - 1 : index + 1
-      if (swapIndex < 0 || swapIndex >= sections.length) {
-        return prev
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || "No se pudo actualizar la configuracion de la portada")
       }
-      ;[sections[index], sections[swapIndex]] = [sections[swapIndex], sections[index]]
-      return { ...prev, sections }
-    })
+
+      const result = (await response.json()) as { data?: Partial<HomeConfig> }
+
+      setHomeConfig((prev) => {
+        const merged = mergeHomeConfig(prev, result?.data ?? partial)
+        updatedConfig = merged
+        return merged
+      })
+
+      homeConfigHasLocalUpdates.current = true
+      return updatedConfig
+    } catch (error) {
+      console.error("Failed to persist home config", error)
+      throw error instanceof Error ? error : new Error("Failed to persist home config")
+    }
+  }
+
+  const updateHomeConfig = async (configData: Partial<Omit<HomeConfig, "sections">>) => {
+    await persistHomeConfig(configData)
+  }
+
+  const updateHomeSection = async (id: HomeSectionId, updates: Partial<HomeSectionConfig>) => {
+    const nextSections = homeConfig.sections.map((section) =>
+      section.id === id ? { ...section, ...updates } : section,
+    )
+    await persistHomeConfig({ sections: nextSections })
+  }
+
+  const reorderHomeSection = async (id: HomeSectionId, direction: "up" | "down") => {
+    const sections = [...homeConfig.sections]
+    const index = sections.findIndex((section) => section.id === id)
+    if (index === -1) {
+      return
+    }
+
+    const swapIndex = direction === "up" ? index - 1 : index + 1
+    if (swapIndex < 0 || swapIndex >= sections.length) {
+      return
+    }
+
+    ;[sections[index], sections[swapIndex]] = [sections[swapIndex], sections[index]]
+    await persistHomeConfig({ sections })
   }
 
   const login = (password: string) => {
