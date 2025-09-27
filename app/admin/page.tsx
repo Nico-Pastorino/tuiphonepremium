@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import type { ChangeEvent, FormEvent } from "react"
 
 import { useEffect, useMemo, useState, useCallback } from "react"
@@ -35,6 +35,9 @@ import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
 import { InstallmentPlanCard } from "@/components/installment-plan-card"
 import { Trash2, Edit, Plus, RefreshCw, DollarSign, Settings, Package, CreditCard } from "lucide-react"
+
+type NewLibraryImageForm = { label: string; category: string; url: string }
+
 
 export default function AdminPage() {
   const { isAuthenticated } = useAdmin()
@@ -73,23 +76,23 @@ function AdminDashboard() {
   const [installmentCategory, setInstallmentCategory] = useState<"visa-mastercard" | "naranja">("visa-mastercard")
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editingInstallment, setEditingInstallment] = useState<any>(null)
-  const [newLibraryImage, setNewLibraryImage] = useState<{ label: string; category: string }>({ label: "", category: "" })
-  const [newLibraryImageFile, setNewLibraryImageFile] = useState<File | null>(null)
-  const [newLibraryImagePreview, setNewLibraryImagePreview] = useState<string | null>(null)
+  const [newLibraryImage, setNewLibraryImage] = useState<NewLibraryImageForm>({
+    label: "",
+    category: "",
+    url: "",
+  })
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
   const [searchTerm, setSearchTerm] = useState("")
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string>("")
-  const [heroImagePreview, setHeroImagePreview] = useState<string>("")
-  const [uploadingHeroImage, setUploadingHeroImage] = useState(false)
 
   const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
   const [savingHomeConfig, setSavingHomeConfig] = useState(false)
 
   useEffect(() => {
     setHomeForm(cloneHomeConfig(homeConfig))
-  }, [homeConfig]) // Dependencias específicas en lugar del objeto completo
+  }, [homeConfig]) // Dependencias especÃ­ficas en lugar del objeto completo
 
   const computeDisplayPrice = (product: Product) => {
     if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveAdminRate) {
@@ -227,7 +230,6 @@ function AdminDashboard() {
     }
   }
 
-  const heroPreview = homeForm.heroImage?.trim() ? homeForm.heroImage : "/hero-iphone-lineup.jpg"
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -235,13 +237,13 @@ function AdminDashboard() {
 
     // Validar tipo de archivo
     if (!file.type.startsWith("image/")) {
-      alert("Por favor selecciona un archivo de imagen válido (JPG, PNG)")
+      alert("Por favor selecciona un archivo de imagen vÃ¡lido (JPG, PNG)")
       return
     }
 
-    // Validar tamaño (máximo 5MB)
+    // Validar tamaÃ±o (mÃ¡ximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("El archivo es demasiado grande. Máximo 5MB permitido.")
+      alert("El archivo es demasiado grande. MÃ¡ximo 5MB permitido.")
       return
     }
 
@@ -267,43 +269,7 @@ function AdminDashboard() {
     }
   }
 
-  const handleHeroImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
 
-    // Validar tipo de archivo
-    if (!file.type.startsWith("image/")) {
-      alert("Por favor selecciona un archivo de imagen válido (JPG, PNG)")
-      return
-    }
-
-    // Validar tamaño (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("El archivo es demasiado grande. Máximo 5MB permitido.")
-      return
-    }
-
-    setUploadingHeroImage(true)
-
-    try {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        setHeroImagePreview(result)
-        setHomeForm((prev) => ({ ...prev, heroImage: result }))
-        setUploadingHeroImage(false)
-      }
-      reader.onerror = () => {
-        alert("Error al cargar la imagen")
-        setUploadingHeroImage(false)
-      }
-      reader.readAsDataURL(file)
-    } catch (error) {
-      console.error("Error al procesar la imagen:", error)
-      alert("Error al procesar la imagen")
-      setUploadingHeroImage(false)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -456,7 +422,7 @@ function AdminDashboard() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Â¿Eliminar producto?</AlertDialogTitle>
+                                <AlertDialogTitle>Ã‚Â¿Eliminar producto?</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   Esta accion no se puede deshacer. El producto "{product.name}" sera eliminado
                                   permanentemente de la base de datos.
@@ -823,8 +789,8 @@ function AdminDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    <div className="space-y-4">
+                  <div className="grid gap-6 xl:grid-cols-[3fr,2fr]">
+                    <div className="space-y-5">
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Titulo principal</label>
                         <Input
@@ -853,45 +819,6 @@ function AdminDashboard() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Imagen de portada</label>
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Input
-                              type="file"
-                              accept="image/jpeg,image/jpg,image/png"
-                              onChange={handleHeroImageUpload}
-                              disabled={uploadingHeroImage}
-                              className="flex-1"
-                            />
-                            {(heroImagePreview || homeForm.heroImage) && (
-                              <div className="relative w-16 h-16 rounded border overflow-hidden">
-                                <Image
-                                  src={heroImagePreview || homeForm.heroImage || "/placeholder.svg"}
-                                  alt="Preview portada"
-                                  fill
-                                  className="object-cover"
-                                  unoptimized
-                                />
-                              </div>
-                            )}
-                          </div>
-                          {uploadingHeroImage && <p className="text-sm text-blue-600">Procesando imagen...</p>}
-                          <div className="text-xs text-gray-500">
-                            <p>Sube una imagen desde tu dispositivo (JPG, PNG - máx. 5MB)</p>
-                            <p>O usa una URL: </p>
-                            <Input
-                              value={homeForm.heroImage.startsWith("data:") ? "" : homeForm.heroImage}
-                              onChange={(event) => {
-                                setHomeForm((prev) => ({ ...prev, heroImage: event.target.value }))
-                                setHeroImagePreview("")
-                              }}
-                              placeholder="/hero-iphone-lineup.jpg o https://..."
-                              className="mt-1"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">WhatsApp (solo numeros)</label>
                         <Input
                           value={homeForm.whatsappNumber}
@@ -906,24 +833,18 @@ function AdminDashboard() {
                         <p className="text-xs text-gray-500">Los cambios se aplican de inmediato en la portada.</p>
                       </div>
                     </div>
-                    <div className="space-y-4">
-                      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-                        <Image
-                          src={heroPreview || "/placeholder.svg"}
-                          alt="Vista previa de la portada"
-                          fill
-                          className="object-cover"
-                          sizes="100vw"
-                        />
-                      </div>
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-gray-800">Secciones visibles</h4>
-                        <div className="space-y-3">
+                    <div className="space-y-5">
+                      
+                      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <div className="border-b border-gray-200 px-4 py-3">
+                          <h4 className="text-sm font-semibold text-gray-800">Secciones visibles</h4>
+                          <p className="mt-1 text-xs text-gray-500">
+                            Activa o desactiva los bloques que aparecen en la portada principal.
+                          </p>
+                        </div>
+                        <div className="divide-y divide-gray-100">
                           {homeForm.sections.map((section) => (
-                            <div
-                              key={section.id}
-                              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3"
-                            >
+                            <div key={section.id} className="flex items-center justify-between px-4 py-3">
                               <div>
                                 <p className="text-sm font-medium text-gray-900">{section.label}</p>
                                 <p className="text-xs text-gray-500">
@@ -941,6 +862,7 @@ function AdminDashboard() {
                     </div>
                   </div>
                 </CardContent>
+
               </Card>
             </TabsContent>
           </Tabs>
@@ -949,4 +871,7 @@ function AdminDashboard() {
     </div>
   )
 }
+
+
+
 
