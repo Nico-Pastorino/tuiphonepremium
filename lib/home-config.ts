@@ -3,9 +3,11 @@
 export const HOME_SECTIONS_ORDER: HomeSectionId[] = ["categories", "featured", "benefits", "cta"]
 
 export const DEFAULT_HOME_CONFIG: HomeConfig = {
-  heroImage: "/hero-iphone-lineup.jpg",
+  
+  heroImage: "/portada.jpg",
   heroHeadline: "Los mejores productos Apple de Argentina",
   heroSubheadline: "Descubrí nuestra selección premium de iPhone, iPad, Mac y accesorios con garantía oficial.",
+  
   promoMessage: "Productos nuevos y seminuevos con garantía y entrega inmediata.",
   whatsappNumber: "5491112345678",
   sections: [
@@ -58,13 +60,8 @@ export function mergeHomeConfig(base: HomeConfig, partial?: Partial<HomeConfig> 
     }
   }
 
-  const rawHeroImage = partial.heroImage?.trim()
-  const heroImageValue = rawHeroImage && rawHeroImage.includes("hero-iphone-orange")
-    ? "/hero-iphone-lineup.jpg"
-    : trimOrFallback(rawHeroImage, base.heroImage)
-
   return {
-    heroImage: heroImageValue,
+    heroImage: trimOrFallback(partial.heroImage, base.heroImage),
     heroHeadline: trimOrFallback(partial.heroHeadline, base.heroHeadline),
     heroSubheadline: trimOrFallback(partial.heroSubheadline, base.heroSubheadline),
     promoMessage: trimOrFallback(partial.promoMessage, base.promoMessage),
