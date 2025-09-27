@@ -31,30 +31,9 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
 CardDescription.displayName = "CardDescription"
 
 const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => {
-    // Guardar cambios en localStorage y sincronizar con todos los dispositivos
-    React.useEffect(() => {
-      const saveToGlobal = async () => {
-        try {
-          // Guardar en localStorage
-          localStorage.setItem("cardContent_changes", JSON.stringify({ className, timestamp: Date.now() }))
-
-          // Sincronizar con base de datos para todos los dispositivos
-          const response = await fetch("/api/sync-card-changes", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ className, timestamp: Date.now() }),
-          })
-        } catch (error) {
-          console.error("Error syncing card changes:", error)
-        }
-      }
-
-      saveToGlobal()
-    }, [className])
-
-    return <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
-  },
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+  ),
 )
 CardContent.displayName = "CardContent"
 

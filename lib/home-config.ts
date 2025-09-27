@@ -58,8 +58,13 @@ export function mergeHomeConfig(base: HomeConfig, partial?: Partial<HomeConfig> 
     }
   }
 
+  const rawHeroImage = partial.heroImage?.trim()
+  const heroImageValue = rawHeroImage && rawHeroImage.includes("hero-iphone-orange")
+    ? "/hero-iphone-lineup.jpg"
+    : trimOrFallback(rawHeroImage, base.heroImage)
+
   return {
-    heroImage: trimOrFallback(partial.heroImage, base.heroImage),
+    heroImage: heroImageValue,
     heroHeadline: trimOrFallback(partial.heroHeadline, base.heroHeadline),
     heroSubheadline: trimOrFallback(partial.heroSubheadline, base.heroSubheadline),
     promoMessage: trimOrFallback(partial.promoMessage, base.promoMessage),

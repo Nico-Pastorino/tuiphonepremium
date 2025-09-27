@@ -1,11 +1,14 @@
 ﻿import { type NextRequest, NextResponse } from "next/server"
 
-import { SiteConfigService } from "@/lib/supabase-admin"
+import { SiteConfigService, SITE_CONFIG_TABLE_NOT_FOUND } from "@/lib/supabase-admin"
 import { DEFAULT_HOME_CONFIG, mergeHomeConfig } from "@/lib/home-config"
 import type { HomeConfig } from "@/types/home"
 import type { Json } from "@/types/database"
 
 const HOME_CONFIG_KEY = "home"
+
+const isRemoteConfigUnavailable = (error: Error) =>
+  error.message === "Admin client not configured" || error.message === SITE_CONFIG_TABLE_NOT_FOUND
 
 const buildErrorResponse = (message: string, status = 500) =>
   NextResponse.json({ error: message }, { status })
@@ -17,9 +20,12 @@ const normalizeHomeConfigValue = (value: unknown): HomeConfig => {
   return mergeHomeConfig(DEFAULT_HOME_CONFIG, value as Partial<HomeConfig>)
 }
 
-const handleAdminClientError = (error: Error) => {
-  if (error.message === "Admin client not configured") {
-    return NextResponse.json({ data: DEFAULT_HOME_CONFIG, error: error.message }, { status: 503 })
+const handleAdminClientError = (error: Error, operation: "get" | "update") => {
+  if (isRemoteConfigUnavailable(error)) {
+    if (operation === "get") {
+      return NextResponse.json({ data: DEFAULT_HOME_CONFIG, fallback: true }, { status: 200 })
+    }
+    return buildErrorResponse("La configuracion remota no esta disponible", 503)
   }
   return buildErrorResponse(error.message)
 }
@@ -30,7 +36,7 @@ export async function GET() {
 
     if (error) {
       if (error instanceof Error) {
-        return handleAdminClientError(error)
+        return handleAdminClientError(error, "get")
       }
       return buildErrorResponse("Error al obtener la configuracion de la portada")
     }
@@ -50,7 +56,7 @@ export async function PUT(request: NextRequest) {
     const currentResult = await SiteConfigService.getConfigByKey(HOME_CONFIG_KEY)
     if (currentResult.error) {
       if (currentResult.error instanceof Error) {
-        return handleAdminClientError(currentResult.error)
+        return handleAdminClientError(currentResult.error, "get")
       }
       return buildErrorResponse("Error al leer la configuracion actual")
     }
@@ -64,7 +70,7 @@ export async function PUT(request: NextRequest) {
     const upsertResult = await SiteConfigService.upsertConfig(HOME_CONFIG_KEY, mergedConfig as Json)
     if (upsertResult.error) {
       if (upsertResult.error instanceof Error) {
-        return handleAdminClientError(upsertResult.error)
+        return handleAdminClientError(upsertResult.error, "update")
       }
       return buildErrorResponse("No se pudo guardar la configuracion de la portada")
     }

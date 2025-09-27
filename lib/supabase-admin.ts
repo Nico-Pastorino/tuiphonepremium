@@ -17,6 +17,15 @@ export const supabaseAdmin =
       })
     : null
 
+export const SITE_CONFIG_TABLE_NOT_FOUND = "SITE_CONFIG_TABLE_NOT_FOUND"
+
+const isMissingSiteConfigTableError = (error: PostgrestError | Error): boolean => {
+  const message = ("message" in error && typeof error.message === "string" ? error.message : "")
+    .toLowerCase()
+  const code = "code" in error && typeof (error as PostgrestError).code === "string" ? (error as PostgrestError).code : ""
+  return code === "42P01" || message.includes("site_config")
+}
+
 const getAdminClient = () => {
   if (!supabaseAdmin) {
     throw new Error("Missing Supabase environment variables for admin operations")
@@ -172,6 +181,9 @@ export class SiteConfigService {
       const { data, error } = await client.from("site_config").select("*").eq("key", key).maybeSingle()
 
       if (error) {
+        if (isMissingSiteConfigTableError(error)) {
+          return { data: null, error: new Error(SITE_CONFIG_TABLE_NOT_FOUND) }
+        }
         throw error
       }
 
@@ -179,7 +191,9 @@ export class SiteConfigService {
       return { data: typedData, error: null }
     } catch (error) {
       const normalized = normalizeError(error)
-      console.error("Get site config error:", normalized)
+      if (!isMissingSiteConfigTableError(normalized)) {
+        console.error("Get site config error:", normalized)
+      }
       return { data: null, error: normalized }
     }
   }
@@ -204,6 +218,9 @@ export class SiteConfigService {
         .single()
 
       if (error) {
+        if (isMissingSiteConfigTableError(error)) {
+          return { data: null, error: new Error(SITE_CONFIG_TABLE_NOT_FOUND) }
+        }
         throw error
       }
 
@@ -211,7 +228,9 @@ export class SiteConfigService {
       return { data: typedData, error: null }
     } catch (error) {
       const normalized = normalizeError(error)
-      console.error("Upsert site config error:", normalized)
+      if (!isMissingSiteConfigTableError(normalized)) {
+        console.error("Upsert site config error:", normalized)
+      }
       return { data: null, error: normalized }
     }
   }
