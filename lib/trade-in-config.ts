@@ -49,7 +49,7 @@ const createRow = (
 
 const BATTERIES_SECTION: TradeInSection = {
   id: "batteries",
-  title: "Baterias",
+  title: "Equipos",
   storageColumns: [STORAGE_COLUMNS["64gb"], STORAGE_COLUMNS["128gb"], STORAGE_COLUMNS["256gb"]],
   rows: [
     createRow("iphone-11", "11", {
