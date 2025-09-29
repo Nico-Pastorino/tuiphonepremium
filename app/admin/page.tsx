@@ -330,6 +330,7 @@ function AdminDashboard() {
     }
 
     const previousSections = homeForm.sections.map((section) => ({ ...section }))
+    let updatedSections = previousSections
 
     setHomeForm((prev) => {
       const nextSections = prev.sections.map((section) => ({ ...section }))
@@ -337,6 +338,7 @@ function AdminDashboard() {
         nextSections[swapIndex],
         nextSections[currentIndex],
       ]
+      updatedSections = nextSections
       return {
         ...prev,
         sections: nextSections,
@@ -344,7 +346,7 @@ function AdminDashboard() {
     })
 
     try {
-      await updateHomeConfig({ sections: nextSections })
+      await updateHomeConfig({ sections: updatedSections })
     } catch (error) {
       console.error("No se pudo reordenar la sección", error)
       setHomeForm((prev) => ({ ...prev, sections: previousSections }))
