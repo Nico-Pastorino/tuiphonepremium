@@ -29,12 +29,14 @@ import { useAdmin } from "@/contexts/AdminContext"
 import type { HomeConfig } from "@/contexts/AdminContext"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { cloneHomeConfig } from "@/lib/home-config"
+import { cloneTradeInConfig } from "@/lib/trade-in-config"
 import Image from "next/image"
 import type { Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
 import { InstallmentPlanCard } from "@/components/installment-plan-card"
-import { Trash2, Edit, Plus, RefreshCw, DollarSign, Settings, Package, CreditCard } from "lucide-react"
+import { Trash2, Edit, Plus, RefreshCw, DollarSign, Settings, Package, CreditCard, ArrowLeftRight } from "lucide-react"
+import type { TradeInConditionId, TradeInStorageId } from "@/types/trade-in"
 
 type NewLibraryImageForm = { label: string; category: string; url: string }
 
@@ -66,6 +68,8 @@ function AdminDashboard() {
     homeConfig,
     updateHomeConfig,
     updateHomeSection,
+    tradeInConfig,
+    updateTradeInConfig,
     logout,
   } = useAdmin()
   const effectiveAdminRate = getEffectiveDollarRate()
@@ -89,10 +93,16 @@ function AdminDashboard() {
 
   const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
   const [savingHomeConfig, setSavingHomeConfig] = useState(false)
+  const [tradeInForm, setTradeInForm] = useState(() => cloneTradeInConfig(tradeInConfig))
+  const [savingTradeInConfig, setSavingTradeInConfig] = useState(false)
 
   useEffect(() => {
     setHomeForm(cloneHomeConfig(homeConfig))
   }, [homeConfig]) // Dependencias especÃ­ficas en lugar del objeto completo
+
+  useEffect(() => {
+    setTradeInForm(cloneTradeInConfig(tradeInConfig))
+  }, [tradeInConfig])
 
   const computeDisplayPrice = (product: Product) => {
     if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveAdminRate) {
@@ -114,6 +124,16 @@ function AdminDashboard() {
 
   const baseDollarRate = dollarRate?.blue ?? dollarConfig.blueRate
   const finalDollarValue = (baseDollarRate + dollarConfig.markup).toFixed(2)
+  const formattedTradeInUpdatedAt = useMemo(() => {
+    if (!tradeInConfig.updatedAt) {
+      return "sin datos"
+    }
+    const parsedDate = new Date(tradeInConfig.updatedAt)
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "sin datos"
+    }
+    return parsedDate.toLocaleString("es-AR")
+  }, [tradeInConfig.updatedAt])
 
   useEffect(() => {
     if (!dollarRate) {
@@ -211,6 +231,49 @@ function AdminDashboard() {
     }
   }
 
+  const handleTradeInValueChange = (
+    sectionId: string,
+    rowId: string,
+    storageId: TradeInStorageId,
+    conditionId: TradeInConditionId,
+    rawValue: string,
+  ) => {
+    setTradeInForm((prev) => {
+      const next = cloneTradeInConfig(prev)
+      const section = next.sections.find((item) => item.id === sectionId)
+      if (!section) {
+        return prev
+      }
+      const row = section.rows.find((item) => item.id === rowId)
+      if (!row) {
+        return prev
+      }
+
+      const cleaned = rawValue.trim()
+      if (cleaned.length === 0) {
+        row.values[storageId][conditionId] = null
+        return next
+      }
+
+      const parsed = Number(cleaned.replace(/,/g, "."))
+      row.values[storageId][conditionId] = Number.isNaN(parsed) ? null : parsed
+      return next
+    })
+  }
+
+  const handleSaveTradeInConfig = async () => {
+    setSavingTradeInConfig(true)
+    try {
+      await updateTradeInConfig(tradeInForm)
+    } catch (error) {
+      console.error("Failed to save trade-in config", error)
+      alert("No se pudo guardar la tabla de canje")
+    } finally {
+      setSavingTradeInConfig(false)
+    }
+  }
+
+
   const handleSaveHomeConfig = async () => {
     setSavingHomeConfig(true)
     try {
@@ -293,7 +356,7 @@ function AdminDashboard() {
           </div>
 
           <Tabs defaultValue="products" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="products" className="flex items-center gap-2">
                 <Package className="w-4 h-4" />
                 Productos
@@ -305,6 +368,10 @@ function AdminDashboard() {
               <TabsTrigger value="dollar" className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
                 Dolar
+              </TabsTrigger>
+              <TabsTrigger value="trade-in" className="flex items-center gap-2">
+                <ArrowLeftRight className="w-4 h-4" />
+                Canje
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="w-4 h-4" />
@@ -424,7 +491,8 @@ function AdminDashboard() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Ã‚Â¿Eliminar producto?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta accion no se puede deshacer. El producto "{product.name}" sera eliminado
+                                  Esta accion no se puede deshacer. El producto{" "}
+                                  <span className="font-semibold text-gray-900">{product.name}</span> sera eliminado
                                   permanentemente de la base de datos.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
@@ -773,6 +841,121 @@ function AdminDashboard() {
                     <p className="text-sm text-blue-800">
                       El dolar final es el precio que se usara para convertir los precios en USD a pesos argentinos. Se
                       calcula como: Cotizacion de la API + Markup en Pesos
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Trade-in Tab */}
+            <TabsContent value="trade-in" className="space-y-6">
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="space-y-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <ArrowLeftRight className="w-6 h-6 text-gray-600" />
+                    Tabla de canje
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Actualiza los valores de toma en USD segun capacidad y estado.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  {tradeInForm.sections.map((section) => (
+                    <div key={section.id} className="rounded-xl border border-gray-200 bg-white shadow-sm">
+                      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 px-4 py-3">
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900">{section.title}</h3>
+                          <p className="text-xs text-gray-500">
+                            Define los montos estimados para cada capacidad y estado.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full border border-gray-200 text-sm">
+                          <thead>
+                            <tr className="bg-emerald-100 text-gray-900">
+                              <th
+                                rowSpan={2}
+                                className="border border-gray-200 px-3 py-2 text-left font-semibold"
+                              >
+                                Modelo
+                              </th>
+                              {section.storageColumns.map((column) => (
+                                <th
+                                  key={`${section.id}-${column.id}`}
+                                  colSpan={column.conditions.length}
+                                  className="border border-gray-200 px-3 py-2 text-center font-semibold uppercase"
+                                >
+                                  {column.label}
+                                </th>
+                              ))}
+                            </tr>
+                            <tr className="bg-amber-100 text-gray-800">
+                              {section.storageColumns.flatMap((column) =>
+                                column.conditions.map((condition) => (
+                                  <th
+                                    key={`${section.id}-${column.id}-${condition.id}`}
+                                    className="border border-gray-200 px-2 py-1 text-center text-xs font-semibold uppercase"
+                                  >
+                                    {condition.label}
+                                  </th>
+                                )),
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {section.rows.map((row, rowIndex) => (
+                              <tr
+                                key={row.id}
+                                className={rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                              >
+                                <td className="border border-gray-200 px-3 py-2 text-sm font-medium text-gray-900">
+                                  {row.label}
+                                </td>
+                                {section.storageColumns.flatMap((column) => {
+                                  const storageId = column.id as TradeInStorageId
+                                  return column.conditions.map((condition) => {
+                                    const conditionId = condition.id as TradeInConditionId
+                                    const currentValue = row.values[storageId][conditionId]
+                                    return (
+                                      <td
+                                        key={`${row.id}-${storageId}-${conditionId}`}
+                                        className="border border-gray-200 px-2 py-2"
+                                      >
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          step="10"
+                                          placeholder="---"
+                                          value={currentValue ?? ""}
+                                          onChange={(event) =>
+                                            handleTradeInValueChange(
+                                              section.id,
+                                              row.id,
+                                              storageId,
+                                              conditionId,
+                                              event.target.value,
+                                            )
+                                          }
+                                          className="h-9 text-center text-sm"
+                                        />
+                                      </td>
+                                    )
+                                  })
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <Button onClick={handleSaveTradeInConfig} disabled={savingTradeInConfig} className="sm:w-auto">
+                      {savingTradeInConfig ? "Guardando..." : "Guardar valores"}
+                    </Button>
+                    <p className="text-xs text-gray-500">
+                      Ultima actualizacion: {formattedTradeInUpdatedAt}
                     </p>
                   </div>
                 </CardContent>

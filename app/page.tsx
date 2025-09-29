@@ -45,7 +45,7 @@ export default function HomePage() {
   const enabledSections = homeConfig.sections.filter((section) => section.enabled)
   const firstSectionId = enabledSections[0]?.id
 
-  const heroImage = homeConfig.heroImage || "/hero-iphone-lineup.jpg"
+  const heroImage = homeConfig.heroImage || "/portada.jpg"
   const whatsappLink = `https://wa.me/${homeConfig.whatsappNumber}`
 
   const scrollToFirstSection = () => {

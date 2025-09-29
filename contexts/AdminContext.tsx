@@ -4,8 +4,11 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 
 import type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 import { DEFAULT_HOME_CONFIG, mergeHomeConfig } from "@/lib/home-config"
+import type { TradeInConfig } from "@/types/trade-in"
+import { DEFAULT_TRADE_IN_CONFIG, mergeTradeInConfig } from "@/lib/trade-in-config"
 
 export type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
+export type { TradeInConfig } from "@/types/trade-in"
 
 export interface InstallmentPlan {
   id: string
@@ -54,6 +57,9 @@ interface AdminContextType {
   updateHomeConfig: (config: Partial<Omit<HomeConfig, "sections">>) => Promise<void>
   updateHomeSection: (id: HomeSectionId, updates: Partial<HomeSectionConfig>) => Promise<void>
   reorderHomeSection: (id: HomeSectionId, direction: "up" | "down") => Promise<void>
+
+  tradeInConfig: TradeInConfig
+  updateTradeInConfig: (config: TradeInConfig) => Promise<void>
 
   isAuthenticated: boolean
   login: (password: string) => boolean
@@ -177,22 +183,27 @@ const IMAGE_LIBRARY_STORAGE_KEY = "admin-image-library"
 const DOLLAR_STORAGE_KEY = "admin-dollar-config"
 const AUTH_STORAGE_KEY = "admin-authenticated"
 const HOME_STORAGE_KEY = "admin-home-config"
+const TRADE_IN_STORAGE_KEY = "admin-trade-in-config"
 
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [installmentPlans, setInstallmentPlans] = useState<InstallmentPlan[]>([])
   const [dollarConfig, setDollarConfig] = useState<DollarConfig>(initialDollarConfig)
   const [imageLibrary, setImageLibrary] = useState<ProductImageItem[]>(defaultImageLibrary)
   const [homeConfig, setHomeConfig] = useState<HomeConfig>(DEFAULT_HOME_CONFIG)
+  const [tradeInConfig, setTradeInConfig] = useState<TradeInConfig>(DEFAULT_TRADE_IN_CONFIG)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [dollarConfigInitialized, setDollarConfigInitialized] = useState(false)
   const [homeConfigInitialized, setHomeConfigInitialized] = useState(false)
   const [imageLibraryInitialized, setImageLibraryInitialized] = useState(false)
+  const [tradeInConfigInitialized, setTradeInConfigInitialized] = useState(false)
   const homeConfigHasLocalUpdates = useRef(false)
+  const tradeInConfigHasLocalUpdates = useRef(false)
   useEffect(() => {
     const savedPlans = typeof window === "undefined" ? null : localStorage.getItem(INSTALLMENT_STORAGE_KEY)
     const savedDollarConfig = typeof window === "undefined" ? null : localStorage.getItem(DOLLAR_STORAGE_KEY)
     const savedAuth = typeof window === "undefined" ? null : localStorage.getItem(AUTH_STORAGE_KEY)
     const savedHomeConfig = typeof window === "undefined" ? null : localStorage.getItem(HOME_STORAGE_KEY)
+    const savedTradeInConfig = typeof window === "undefined" ? null : localStorage.getItem(TRADE_IN_STORAGE_KEY)
     const savedImageLibrary = typeof window === "undefined" ? null : localStorage.getItem(IMAGE_LIBRARY_STORAGE_KEY)
 
     if (savedPlans) {
@@ -260,6 +271,35 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     void loadRemoteHomeConfig()
 
+    if (savedTradeInConfig) {
+      try {
+        const parsed = JSON.parse(savedTradeInConfig) as Partial<TradeInConfig>
+        setTradeInConfig((prev) => mergeTradeInConfig(prev, parsed))
+      } catch (error) {
+        console.error("Failed to parse saved trade-in config", error)
+      }
+    }
+
+    const loadRemoteTradeInConfig = async () => {
+      try {
+        const response = await fetch("/api/admin/trade-in")
+        if (!response.ok) {
+          const message = await response.text()
+          throw new Error(message || "Unable to fetch trade-in config")
+        }
+        const result = (await response.json()) as { data?: TradeInConfig; fallback?: boolean }
+        if (result?.data && !tradeInConfigHasLocalUpdates.current) {
+          setTradeInConfig((prev) => mergeTradeInConfig(prev, result.data))
+        }
+      } catch (error) {
+        console.error("Failed to fetch trade-in config from API", error)
+      } finally {
+        setTradeInConfigInitialized(true)
+      }
+    }
+
+    void loadRemoteTradeInConfig()
+
     if (savedImageLibrary) {
       try {
         const parsed = JSON.parse(savedImageLibrary) as unknown
@@ -317,6 +357,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (!imageLibraryInitialized) return
     localStorage.setItem(IMAGE_LIBRARY_STORAGE_KEY, JSON.stringify(imageLibrary))
   }, [imageLibrary, imageLibraryInitialized])
+
+  useEffect(() => {
+    if (!tradeInConfigInitialized) return
+    localStorage.setItem(TRADE_IN_STORAGE_KEY, JSON.stringify(tradeInConfig))
+  }, [tradeInConfig, tradeInConfigInitialized])
 
   const addInstallmentPlan = (planData: Omit<InstallmentPlan, "id" | "createdAt">) => {
     const newPlan: InstallmentPlan = {
@@ -439,6 +484,46 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     await persistHomeConfig({ sections })
   }
 
+  const persistTradeInConfig = async (partial: Partial<TradeInConfig>): Promise<TradeInConfig> => {
+    let updatedConfig: TradeInConfig = tradeInConfig
+    try {
+      const response = await fetch("/api/admin/trade-in", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(partial),
+      })
+
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || "No se pudo actualizar la configuracion de canje")
+      }
+
+      const result = (await response.json()) as { data?: Partial<TradeInConfig> }
+
+      setTradeInConfig((prev) => {
+        const merged = mergeTradeInConfig(prev, result?.data ?? partial)
+        updatedConfig = merged
+        return merged
+      })
+
+      tradeInConfigHasLocalUpdates.current = true
+      return updatedConfig
+    } catch (error) {
+      console.error("Failed to persist trade-in config", error)
+      throw error instanceof Error ? error : new Error("Failed to persist trade-in config")
+    }
+  }
+
+  const updateTradeInConfig = async (configData: TradeInConfig) => {
+    const payload: Partial<TradeInConfig> = {
+      ...configData,
+      updatedAt: new Date().toISOString(),
+    }
+    await persistTradeInConfig(payload)
+  }
+
   const login = (password: string) => {
     if (password === "complejo.avesten") {
       setIsAuthenticated(true)
@@ -472,11 +557,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       updateHomeConfig,
       updateHomeSection,
       reorderHomeSection,
+      tradeInConfig,
+      updateTradeInConfig,
       isAuthenticated,
       login,
       logout,
     }),
-    [installmentPlans, imageLibrary, dollarConfig, homeConfig, isAuthenticated],
+    [installmentPlans, imageLibrary, dollarConfig, homeConfig, tradeInConfig, isAuthenticated],
   )
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
