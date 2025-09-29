@@ -277,13 +277,23 @@ function AdminDashboard() {
   const handleSaveHomeConfig = async () => {
     setSavingHomeConfig(true)
     try {
+      const tradeInLabel = homeForm.tradeInTitle.trim().length > 0 ? homeForm.tradeInTitle.trim() : "Plan canje"
+
       await updateHomeConfig({
         heroImage: homeForm.heroImage,
         heroHeadline: homeForm.heroHeadline,
         heroSubheadline: homeForm.heroSubheadline,
         promoMessage: homeForm.promoMessage,
         whatsappNumber: homeForm.whatsappNumber,
+        tradeInTitle: homeForm.tradeInTitle,
+        tradeInSubtitle: homeForm.tradeInSubtitle,
       })
+
+      const tradeInSectionConfig = homeForm.sections.find((section) => section.id === "trade-in")
+      if (!tradeInSectionConfig || tradeInSectionConfig.label !== tradeInLabel) {
+        await updateHomeSection("trade-in", { label: tradeInLabel })
+      }
+
       console.log("Configuracion de la portada actualizada")
     } catch (error) {
       console.error("No se pudo guardar la configuracion de la portada", error)
@@ -1007,6 +1017,34 @@ function AdminDashboard() {
                           value={homeForm.whatsappNumber}
                           onChange={(event) => setHomeForm((prev) => ({ ...prev, whatsappNumber: event.target.value }))}
                           placeholder="54911..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Título plan canje</label>
+                        <Input
+                          value={homeForm.tradeInTitle}
+                          onChange={(event) => {
+                            const value = event.target.value
+                            setHomeForm((prev) => ({
+                              ...prev,
+                              tradeInTitle: value,
+                              sections: prev.sections.map((section) =>
+                                section.id === "trade-in"
+                                  ? { ...section, label: value.trim().length > 0 ? value : "Plan canje" }
+                                  : section,
+                              ),
+                            }))
+                          }}
+                          placeholder="Ej: Plan canje premium"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Descripción plan canje</label>
+                        <Textarea
+                          value={homeForm.tradeInSubtitle}
+                          onChange={(event) => setHomeForm((prev) => ({ ...prev, tradeInSubtitle: event.target.value }))}
+                          rows={3}
+                          placeholder="Explica cómo funciona el canje para tus clientes"
                         />
                       </div>
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">

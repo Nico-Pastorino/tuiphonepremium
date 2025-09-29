@@ -1,4 +1,4 @@
-﻿export type HomeSectionId = "categories" | "featured" | "benefits" | "cta"
+﻿export type HomeSectionId = "categories" | "featured" | "benefits" | "trade-in" | "cta"
 
 export interface HomeSectionConfig {
   id: HomeSectionId
@@ -12,5 +12,7 @@ export interface HomeConfig {
   heroSubheadline: string
   promoMessage: string
   whatsappNumber: string
+  tradeInTitle: string
+  tradeInSubtitle: string
   sections: HomeSectionConfig[]
 }

@@ -1,6 +1,6 @@
 ﻿import type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 
-export const HOME_SECTIONS_ORDER: HomeSectionId[] = ["categories", "featured", "benefits", "cta"]
+export const HOME_SECTIONS_ORDER: HomeSectionId[] = ["categories", "featured", "benefits", "trade-in", "cta"]
 
 export const DEFAULT_HOME_CONFIG: HomeConfig = {
   
@@ -10,10 +10,13 @@ export const DEFAULT_HOME_CONFIG: HomeConfig = {
   
   promoMessage: "Productos nuevos y seminuevos con garantía y entrega inmediata.",
   whatsappNumber: "5491112345678",
+  tradeInTitle: "Plan canje",
+  tradeInSubtitle: "Tomamos tu Apple usado y te ayudamos a renovar tu equipo.",
   sections: [
     { id: "categories", label: "Explorar por categoría", enabled: true },
     { id: "featured", label: "Productos destacados", enabled: true },
     { id: "benefits", label: "Beneficios", enabled: true },
+    { id: "trade-in", label: "Plan canje", enabled: true },
     { id: "cta", label: "Llamado a la acción", enabled: true },
   ],
 }
@@ -66,6 +69,8 @@ export function mergeHomeConfig(base: HomeConfig, partial?: Partial<HomeConfig> 
     heroSubheadline: trimOrFallback(partial.heroSubheadline, base.heroSubheadline),
     promoMessage: trimOrFallback(partial.promoMessage, base.promoMessage),
     whatsappNumber: trimOrFallback(partial.whatsappNumber, base.whatsappNumber),
+    tradeInTitle: trimOrFallback(partial.tradeInTitle, base.tradeInTitle),
+    tradeInSubtitle: trimOrFallback(partial.tradeInSubtitle, base.tradeInSubtitle),
     sections: mergeHomeSections(base.sections, partial.sections),
   }
 }

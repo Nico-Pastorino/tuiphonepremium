@@ -1,11 +1,12 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import {
   AlertCircle,
   ArrowDown,
+  ArrowLeftRight,
   ArrowRight,
   Award,
   Cable,
@@ -27,19 +28,112 @@ import { ProductsLoading } from "@/components/ProductsLoading"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
+import type { TradeInConditionId, TradeInStorageId } from "@/types/trade-in"
 
-const sectionIdToLabel: Record<"categories" | "featured" | "benefits" | "cta", string> = {
-  categories: "Explorá por categoría",
+const sectionIdToLabel: Record<"categories" | "featured" | "benefits" | "trade-in" | "cta", string> = {
+  categories: "Explor� por categor�a",
   featured: "Productos destacados",
-  benefits: "¿Por qué elegirnos?",
-  cta: "¿Listo para comprar?",
+  benefits: "�Por qu� elegirnos?",
+  "trade-in": "Plan canje",
+  cta: "�Listo para comprar?",
 }
 
 export default function HomePage() {
   const { products, loading, error, supabaseConnected, refreshProducts } = useProducts()
-  const { homeConfig } = useAdmin()
+  const { homeConfig, tradeInConfig } = useAdmin()
+
+  const tradeInConditionLabels: Record<TradeInConditionId, string> = {
+    under90: "-90%",
+    over90: "90+",
+  }
+
+  const tradeInOptions = useMemo(
+    () =>
+      tradeInConfig.sections.flatMap((section) =>
+        section.rows.map((row) => ({
+          value: `${section.id}::${row.id}`,
+          label: `${section.title} · ${row.label}`,
+          sectionId: section.id,
+          rowId: row.id,
+        })),
+      ),
+    [tradeInConfig.sections],
+  )
+
+  const [selectedModelKey, setSelectedModelKey] = useState(() => tradeInOptions[0]?.value ?? "")
+  useEffect(() => {
+    if (tradeInOptions.length === 0) {
+      setSelectedModelKey("")
+      return
+    }
+    setSelectedModelKey((previous) =>
+      tradeInOptions.some((option) => option.value === previous) ? previous : tradeInOptions[0].value,
+    )
+  }, [tradeInOptions])
+
+  const selectedOption = useMemo(
+    () => tradeInOptions.find((option) => option.value === selectedModelKey) ?? null,
+    [tradeInOptions, selectedModelKey],
+  )
+
+  const selectedSection = useMemo(
+    () => tradeInConfig.sections.find((section) => section.id === selectedOption?.sectionId) ?? null,
+    [tradeInConfig.sections, selectedOption],
+  )
+
+  const selectedRow = useMemo(
+    () => selectedSection?.rows.find((row) => row.id === selectedOption?.rowId) ?? null,
+    [selectedSection, selectedOption],
+  )
+
+  const availableStorageOptions = useMemo(
+    () => {
+      if (!selectedSection || !selectedRow) {
+        return [] as { id: TradeInStorageId; label: string }[]
+      }
+      return selectedSection.storageColumns
+        .filter((column) => {
+          const values = selectedRow.values[column.id]
+          return values.under90 !== null || values.over90 !== null
+        })
+        .map((column) => ({ id: column.id, label: column.label }))
+    },
+    [selectedSection, selectedRow],
+  )
+
+  const [selectedStorageId, setSelectedStorageId] = useState<TradeInStorageId | null>(
+    () => availableStorageOptions[0]?.id ?? null,
+  )
+  useEffect(() => {
+    if (availableStorageOptions.length === 0) {
+      setSelectedStorageId(null)
+      return
+    }
+    setSelectedStorageId((previous) =>
+      previous && availableStorageOptions.some((option) => option.id === previous)
+        ? previous
+        : availableStorageOptions[0].id,
+    )
+  }, [availableStorageOptions])
+
+  const [selectedCondition, setSelectedCondition] = useState<TradeInConditionId>("over90")
+
+  const usdFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("es-AR", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }),
+    [],
+  )
+
+  const selectedValue =
+    selectedRow && selectedStorageId ? selectedRow.values[selectedStorageId][selectedCondition] : null
+  const formattedTradeInValue = selectedValue !== null ? usdFormatter.format(selectedValue) : null
 
   const featuredProducts = useMemo(() => products.filter((product) => product.featured).slice(0, 8), [products])
   const enabledSections = homeConfig.sections.filter((section) => section.enabled)
@@ -269,7 +363,125 @@ export default function HomePage() {
     </AnimatedSection>
   )
 
-  const ctaSection = (
+  const tradeInSection = (
+    <AnimatedSection animation="fadeUp">
+      <section className="py-12 sm:py-16 md:py-20 bg-blue-50" data-anchor="trade-in">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-[1.2fr,1fr]">
+            <div className="space-y-4 sm:space-y-5">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600">
+                <ArrowLeftRight className="w-4 h-4" />
+                Plan canje
+              </span>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900">
+                {homeConfig.tradeInTitle || "Plan canje"}
+              </h2>
+              <p className="text-base sm:text-lg text-gray-600 max-w-xl">
+                {homeConfig.tradeInSubtitle || "Tomamos tu Apple usado y te ayudamos a renovar tu equipo."}
+              </p>
+              <div className="rounded-2xl border border-blue-100 bg-white p-4 sm:p-5 shadow-sm">
+                <p className="text-sm font-semibold text-blue-700">Cómo funciona</p>
+                <p className="mt-1 text-sm text-blue-600 leading-relaxed">
+                  Elegí el modelo, capacidad y estado de batería para conocer el valor estimado que podemos ofrecerte por tu equipo usado.
+                </p>
+              </div>
+            </div>
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-6 sm:p-8 space-y-5">
+                {tradeInOptions.length === 0 ? (
+                  <div className="flex flex-col items-center text-center gap-3 text-gray-500">
+                    <AlertCircle className="w-10 h-10 text-gray-400" />
+                    <p className="text-base font-semibold text-gray-700">Valores próximamente</p>
+                    <p className="text-sm">
+                      Estamos preparando la información de canje para tus equipos. Vuelve a intentarlo en unas horas.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Modelo</label>
+                      <Select value={selectedModelKey} onValueChange={setSelectedModelKey}>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Elegí un modelo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tradeInOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Capacidad</label>
+                        <Select
+                          value={selectedStorageId ?? ""}
+                          onValueChange={(value) => setSelectedStorageId(value as TradeInStorageId)}
+                          disabled={availableStorageOptions.length === 0}
+                        >
+                          <SelectTrigger className="bg-white">
+                            <SelectValue placeholder="Seleccioná la capacidad" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableStorageOptions.map((option) => (
+                              <SelectItem key={option.id} value={option.id}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Condición de batería</label>
+                        <Select
+                          value={selectedCondition}
+                          onValueChange={(value) => setSelectedCondition(value as TradeInConditionId)}
+                          disabled={!selectedStorageId}
+                        >
+                          <SelectTrigger className="bg-white">
+                            <SelectValue placeholder="Condición" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(tradeInConditionLabels).map(([conditionId, label]) => (
+                              <SelectItem key={conditionId} value={conditionId}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-gray-900 text-white p-6 space-y-2">
+                      <p className="text-xs uppercase tracking-widest text-white/60">Valor estimado</p>
+                      <p className="text-3xl sm:text-4xl font-semibold">
+                        {formattedTradeInValue ?? "No disponible"}
+                      </p>
+                      <p className="text-xs text-white/60 leading-relaxed">
+                        Los montos son referenciales y pueden ajustarse luego de revisar físicamente tu equipo.
+                      </p>
+                    </div>
+                    <Button
+                      asChild
+                      className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-5 py-3 rounded-xl transition-all duration-300"
+                    >
+                      <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Coordinar evaluación
+                      </a>
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+    </AnimatedSection>
+  )
+
+const ctaSection = (
     <AnimatedSection animation="scale">
       <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-r from-blue-500 to-purple-600">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -300,6 +512,7 @@ export default function HomePage() {
     categories: categoriesSection,
     featured: featuredSection,
     benefits: benefitsSection,
+    "trade-in": tradeInSection,
     cta: ctaSection,
   }
 
