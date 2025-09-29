@@ -29,30 +29,31 @@ export function mergeHomeSections(
   updates?: HomeSectionConfig[] | null,
 ): HomeSectionConfig[] {
   if (!updates || updates.length === 0) {
-    return [...baseSections]
+    return baseSections.map((section) => ({ ...section }))
   }
 
-  const sectionMap = new Map<HomeSectionId, HomeSectionConfig>()
-  baseSections.forEach((section) => {
-    sectionMap.set(section.id, { ...section })
-  })
+  const baseMap = new Map<HomeSectionId, HomeSectionConfig>(
+    baseSections.map((section) => [section.id, { ...section }]),
+  )
+
+  const seen = new Set<HomeSectionId>()
+  const mergedSections: HomeSectionConfig[] = []
 
   updates.forEach((update) => {
-    const current = sectionMap.get(update.id)
-    if (current) {
-      sectionMap.set(update.id, { ...current, ...update })
-    } else {
-      sectionMap.set(update.id, { ...update })
+    const base = baseMap.get(update.id)
+    const merged = base ? { ...base, ...update } : { ...update }
+    mergedSections.push(merged)
+    seen.add(update.id)
+  })
+
+  baseSections.forEach((section) => {
+    if (!seen.has(section.id)) {
+      mergedSections.push({ ...section })
+      seen.add(section.id)
     }
   })
 
-  const ordered = HOME_SECTIONS_ORDER.map((id) => sectionMap.get(id)).filter(Boolean) as HomeSectionConfig[]
-
-  const extraSections = Array.from(sectionMap.values()).filter(
-    (section) => !HOME_SECTIONS_ORDER.includes(section.id),
-  )
-
-  return [...ordered, ...extraSections]
+  return mergedSections
 }
 
 export function mergeHomeConfig(base: HomeConfig, partial?: Partial<HomeConfig> | null): HomeConfig {

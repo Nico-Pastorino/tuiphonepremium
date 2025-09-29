@@ -35,7 +35,19 @@ import type { Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
 import { InstallmentPlanCard } from "@/components/installment-plan-card"
-import { Trash2, Edit, Plus, RefreshCw, DollarSign, Settings, Package, CreditCard, ArrowLeftRight } from "lucide-react"
+import {
+  Trash2,
+  Edit,
+  Plus,
+  RefreshCw,
+  DollarSign,
+  Settings,
+  Package,
+  CreditCard,
+  ArrowLeftRight,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react"
 import type { TradeInConditionId, TradeInStorageId } from "@/types/trade-in"
 
 type NewLibraryImageForm = { label: string; category: string; url: string }
@@ -300,6 +312,43 @@ function AdminDashboard() {
       alert("No se pudo guardar la portada. Revisa tu conexion e intenta nuevamente.")
     } finally {
       setSavingHomeConfig(false)
+    }
+  }
+
+  const handleMoveSection = async (
+    id: (typeof homeForm.sections)[number]["id"],
+    direction: "up" | "down",
+  ) => {
+    const currentIndex = homeForm.sections.findIndex((section) => section.id === id)
+    if (currentIndex === -1) {
+      return
+    }
+
+    const swapIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1
+    if (swapIndex < 0 || swapIndex >= homeForm.sections.length) {
+      return
+    }
+
+    const previousSections = homeForm.sections.map((section) => ({ ...section }))
+
+    setHomeForm((prev) => {
+      const nextSections = prev.sections.map((section) => ({ ...section }))
+      ;[nextSections[currentIndex], nextSections[swapIndex]] = [
+        nextSections[swapIndex],
+        nextSections[currentIndex],
+      ]
+      return {
+        ...prev,
+        sections: nextSections,
+      }
+    })
+
+    try {
+      await updateHomeConfig({ sections: nextSections })
+    } catch (error) {
+      console.error("No se pudo reordenar la sección", error)
+      setHomeForm((prev) => ({ ...prev, sections: previousSections }))
+      alert("No se pudo reordenar la sección. Intenta nuevamente.")
     }
   }
 
@@ -1064,20 +1113,46 @@ function AdminDashboard() {
                           </p>
                         </div>
                         <div className="divide-y divide-gray-100">
-                          {homeForm.sections.map((section) => (
-                            <div key={section.id} className="flex items-center justify-between px-4 py-3">
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{section.label}</p>
-                                <p className="text-xs text-gray-500">
-                                  {section.enabled ? "Visible en la home" : "Oculto en la home"}
-                                </p>
+                          {homeForm.sections.map((section, index) => {
+                            const isFirst = index === 0
+                            const isLast = index === homeForm.sections.length - 1
+                            return (
+                              <div key={section.id} className="flex items-center gap-3 px-4 py-3">
+                                <div className="flex flex-col gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-gray-500 hover:text-gray-700"
+                                    onClick={() => handleMoveSection(section.id, "up")}
+                                    disabled={isFirst}
+                                  >
+                                    <ArrowUp className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-gray-500 hover:text-gray-700"
+                                    onClick={() => handleMoveSection(section.id, "down")}
+                                    disabled={isLast}
+                                  >
+                                    <ArrowDown className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                                <div className="flex flex-1 items-center justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">{section.label}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {section.enabled ? "Visible en la home" : "Oculto en la home"}
+                                    </p>
+                                  </div>
+                                  <Switch
+                                    checked={section.enabled}
+                                    onCheckedChange={(value) => handleSectionToggle(section.id, value)}
+                                  />
+                                </div>
                               </div>
-                              <Switch
-                                checked={section.enabled}
-                                onCheckedChange={(value) => handleSectionToggle(section.id, value)}
-                              />
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     </div>

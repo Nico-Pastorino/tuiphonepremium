@@ -54,9 +54,8 @@ interface AdminContextType {
   getEffectiveDollarRate: () => number
 
   homeConfig: HomeConfig
-  updateHomeConfig: (config: Partial<Omit<HomeConfig, "sections">>) => Promise<void>
+  updateHomeConfig: (config: Partial<HomeConfig>) => Promise<void>
   updateHomeSection: (id: HomeSectionId, updates: Partial<HomeSectionConfig>) => Promise<void>
-  reorderHomeSection: (id: HomeSectionId, direction: "up" | "down") => Promise<void>
 
   tradeInConfig: TradeInConfig
   updateTradeInConfig: (config: TradeInConfig) => Promise<void>
@@ -457,7 +456,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const updateHomeConfig = async (configData: Partial<Omit<HomeConfig, "sections">>) => {
+  const updateHomeConfig = async (configData: Partial<HomeConfig>) => {
     await persistHomeConfig(configData)
   }
 
@@ -466,22 +465,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       section.id === id ? { ...section, ...updates } : section,
     )
     await persistHomeConfig({ sections: nextSections })
-  }
-
-  const reorderHomeSection = async (id: HomeSectionId, direction: "up" | "down") => {
-    const sections = [...homeConfig.sections]
-    const index = sections.findIndex((section) => section.id === id)
-    if (index === -1) {
-      return
-    }
-
-    const swapIndex = direction === "up" ? index - 1 : index + 1
-    if (swapIndex < 0 || swapIndex >= sections.length) {
-      return
-    }
-
-    ;[sections[index], sections[swapIndex]] = [sections[swapIndex], sections[index]]
-    await persistHomeConfig({ sections })
   }
 
   const persistTradeInConfig = async (partial: Partial<TradeInConfig>): Promise<TradeInConfig> => {
@@ -556,7 +539,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       homeConfig,
       updateHomeConfig,
       updateHomeSection,
-      reorderHomeSection,
       tradeInConfig,
       updateTradeInConfig,
       isAuthenticated,
