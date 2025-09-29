@@ -23,6 +23,16 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
     return product.price
   }, [product.price, product.priceUSD, effectiveDollarRate])
 
+  const priceInDollars = useMemo(() => {
+    if (product.priceUSD !== undefined && product.priceUSD !== null) {
+      return product.priceUSD
+    }
+    if (effectiveDollarRate) {
+      return Number((product.price / effectiveDollarRate).toFixed(0))
+    }
+    return null
+  }, [product.price, product.priceUSD, effectiveDollarRate])
+
   return (
     <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-xl transition-all rounded-3xl">
       <CardContent className="p-0">
@@ -41,7 +51,12 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
             </h3>
             <p className="text-sm text-gray-600 capitalize">{product.category}</p>
           </div>
-          <div className="text-3xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</div>
+          <div className="space-y-1">
+            <div className="text-3xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</div>
+            {priceInDollars !== null && (
+              <div className="text-sm text-gray-500">USD {priceInDollars.toLocaleString("es-AR")}</div>
+            )}
+          </div>
           <div className="flex gap-3">
             <Button className="flex-1" asChild>
               <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
@@ -49,7 +64,7 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
               </a>
             </Button>
             <Button variant="outline" asChild>
-              <Link href={`/productos/${product.id}`}>Ver mas</Link>
+              <Link href={`/productos/${product.id}`}>Ver más</Link>
             </Button>
           </div>
         </div>

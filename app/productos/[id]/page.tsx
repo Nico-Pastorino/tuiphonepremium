@@ -14,6 +14,7 @@ import { useAdmin } from "@/contexts/AdminContext"
 import Image from "next/image"
 import Link from "next/link"
 import type { Product } from "@/types/product"
+import { TradeInEstimator } from "@/components/trade-in-estimator"
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -50,6 +51,12 @@ export default function ProductDetailPage() {
 
   const priceInPesos =
     product.priceUSD !== undefined && product.priceUSD !== null ? product.priceUSD * effectiveDollarRate : product.price
+  const priceInUSD =
+    product.priceUSD !== undefined && product.priceUSD !== null
+      ? product.priceUSD
+      : effectiveDollarRate
+        ? Number((product.price / effectiveDollarRate).toFixed(0))
+        : null
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
 
@@ -264,6 +271,9 @@ export default function ProductDetailPage() {
                     )}
                   </div>
 
+                  {priceInUSD !== null && (
+                    <div className="text-sm text-gray-500">USD {priceInUSD.toLocaleString("es-AR")}</div>
+                  )}
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <p className="text-blue-700 font-medium">Opciones de financiacion disponibles</p>
 
@@ -306,6 +316,15 @@ export default function ProductDetailPage() {
                     )}
                   </div>
                 </div>
+
+                {product.category.toLowerCase() === "iphone" && (
+                  <TradeInEstimator
+                    productName={product.name}
+                    productPriceARS={Math.round(priceInPesos)}
+                    productPriceUSD={priceInUSD}
+                  />
+                )}
+
                 {/* Actions */}
 
                 <div className="flex gap-4">
