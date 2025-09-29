@@ -34,11 +34,11 @@ import { useAdmin } from "@/contexts/AdminContext"
 import type { TradeInConditionId, TradeInStorageId } from "@/types/trade-in"
 
 const sectionIdToLabel: Record<"categories" | "featured" | "benefits" | "trade-in" | "cta", string> = {
-  categories: "Explor� por categor�a",
+  categories: "Explorá por categoría",
   featured: "Productos destacados",
-  benefits: "�Por qu� elegirnos?",
+  benefits: "¿Por qué elegirnos?",
   "trade-in": "Plan canje",
-  cta: "�Listo para comprar?",
+  cta: "¿Listo para comprar?",
 }
 
 export default function HomePage() {
