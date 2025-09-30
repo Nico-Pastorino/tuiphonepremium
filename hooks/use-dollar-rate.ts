@@ -37,42 +37,69 @@ interface DolarSiItem {
 
 type DolarSiResponse = DolarSiItem[]
 
+type FetchDollarFn = (signal: AbortSignal) => Promise<DollarRate>
+
+const JSON_HEADERS: Record<string, string> = { Accept: "application/json" }
+
+const withJsonHeaders = (init: RequestInit = {}): RequestInit => ({
+  ...init,
+  headers: {
+    ...JSON_HEADERS,
+    ...(init.headers ?? {}),
+  },
+})
+
+const parseNumber = (value: string): number => {
+  return Number.parseFloat(value.replace(",", "."))
+}
+
+const normalizeRate = (rate: DollarRate): DollarRate => ({
+  ...rate,
+  blue: Number(rate.blue),
+  official: Number(rate.official),
+})
+
 export function useDollarRate() {
   const [dollarRate, setDollarRate] = useState<DollarRate | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  const fetchFromDolarAPI = async (): Promise<DollarRate> => {
-    const response = await fetch("https://dolarapi.com/v1/dolares/blue", {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-    })
+  const fetchFromDolarAPI: FetchDollarFn = async (signal) => {
+    const blueResponse = await fetch(
+      "https://dolarapi.com/v1/dolares/blue",
+      withJsonHeaders({ method: "GET", signal }),
+    )
 
-    if (!response.ok) {
-      throw new Error(`DolarAPI error: ${response.status}`)
+    if (!blueResponse.ok) {
+      throw new Error(`DolarAPI error: ${blueResponse.status}`)
     }
 
-    const data = (await response.json()) as DollarAPIResponse
-    const officialResponse = await fetch("https://dolarapi.com/v1/dolares/oficial")
+    const blueData = (await blueResponse.json()) as DollarAPIResponse
+
+    const officialResponse = await fetch(
+      "https://dolarapi.com/v1/dolares/oficial",
+      withJsonHeaders({ method: "GET", signal }),
+    )
+
+    if (!officialResponse.ok) {
+      throw new Error(`DolarAPI (oficial) error: ${officialResponse.status}`)
+    }
+
     const officialData = (await officialResponse.json()) as DollarAPIResponse
 
-    return {
-      blue: data.venta,
+    return normalizeRate({
+      blue: blueData.venta,
       official: officialData.venta,
-      lastUpdate: data.fecha,
+      lastUpdate: blueData.fecha,
       source: "DolarAPI",
-    }
+    })
   }
 
-  const fetchFromBluelytics = async (): Promise<DollarRate> => {
-    const response = await fetch("https://api.bluelytics.com.ar/v2/latest", {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-    })
+  const fetchFromBluelytics: FetchDollarFn = async (signal) => {
+    const response = await fetch(
+      "https://api.bluelytics.com.ar/v2/latest",
+      withJsonHeaders({ method: "GET", signal }),
+    )
 
     if (!response.ok) {
       throw new Error(`Bluelytics error: ${response.status}`)
@@ -80,21 +107,19 @@ export function useDollarRate() {
 
     const data = (await response.json()) as BluelyticsResponse
 
-    return {
+    return normalizeRate({
       blue: data.blue.value_sell,
       official: data.oficial.value_sell,
       lastUpdate: data.last_update,
       source: "Bluelytics",
-    }
+    })
   }
 
-  const fetchFromDolarSi = async (): Promise<DollarRate> => {
-    const response = await fetch("https://dolarsi.com/api/api.php?type=valoresprincipales", {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-    })
+  const fetchFromDolarSi: FetchDollarFn = async (signal) => {
+    const response = await fetch(
+      "https://dolarsi.com/api/api.php?type=valoresprincipales",
+      withJsonHeaders({ method: "GET", signal }),
+    )
 
     if (!response.ok) {
       throw new Error(`DolarSi error: ${response.status}`)
@@ -109,35 +134,30 @@ export function useDollarRate() {
       throw new Error("DolarSi: No se encontraron datos del dolar")
     }
 
-    return {
-      blue: Number.parseFloat(blueData.casa.venta.replace(",", ".")),
-      official: Number.parseFloat(officialData.casa.venta.replace(",", ".")),
+    return normalizeRate({
+      blue: parseNumber(blueData.casa.venta),
+      official: parseNumber(officialData.casa.venta),
       lastUpdate: new Date().toISOString(),
       source: "DolarSi",
-    }
+    })
   }
 
   const fetchDollarRate = useCallback(async () => {
     setLoading(true)
     setError(null)
 
-    const apis = [fetchFromDolarAPI, fetchFromBluelytics, fetchFromDolarSi]
+    const providers: Array<{ name: string; fetcher: FetchDollarFn }> = [
+      { name: "DolarAPI", fetcher: fetchFromDolarAPI },
+      { name: "Bluelytics", fetcher: fetchFromBluelytics },
+      { name: "DolarSi", fetcher: fetchFromDolarSi },
+    ]
 
-    for (const fetchAPI of apis) {
+    for (const { name, fetcher } of providers) {
+      const controller = new AbortController()
+      const timeoutId = window.setTimeout(() => controller.abort(), 10_000)
+
       try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 10000)
-
-        const rate = await Promise.race([
-          fetchAPI(),
-          new Promise<never>((_, reject) => {
-            controller.signal.addEventListener("abort", () => {
-              reject(new Error("Request timeout"))
-            })
-          }),
-        ])
-
-        clearTimeout(timeoutId)
+        const rate = await fetcher(controller.signal)
 
         if (rate.blue > 0 && rate.official > 0) {
           setDollarRate(rate)
@@ -145,11 +165,19 @@ export function useDollarRate() {
           return
         }
       } catch (err) {
-        console.warn(`Error fetching from ${fetchAPI.name}:`, err)
+        const errorInstance = err instanceof Error ? err : new Error(String(err))
+        if (errorInstance.name === "AbortError") {
+          console.warn(`${name} request aborted by timeout`)
+        } else {
+          console.warn(`Error fetching from ${name}:`, errorInstance)
+        }
+      } finally {
+        window.clearTimeout(timeoutId)
       }
     }
 
-    setError(new Error("No se pudo obtener la cotizacion del dolar de ninguna fuente"))
+    const fallbackError = new Error("No se pudo obtener la cotizacion del dolar de ninguna fuente")
+    setError(fallbackError)
     setLoading(false)
   }, [])
 
@@ -159,9 +187,9 @@ export function useDollarRate() {
 
   useEffect(() => {
     fetchDollarRate()
-    const interval = setInterval(fetchDollarRate, 60 * 1000)
+    const interval = window.setInterval(fetchDollarRate, 60 * 1000)
 
-    return () => clearInterval(interval)
+    return () => window.clearInterval(interval)
   }, [fetchDollarRate])
 
   return {

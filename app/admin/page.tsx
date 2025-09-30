@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
-import type { HomeConfig } from "@/contexts/AdminContext"
+import type { HomeConfig, InstallmentPlan } from "@/contexts/AdminContext"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { cloneHomeConfig } from "@/lib/home-config"
 import { cloneTradeInConfig } from "@/lib/trade-in-config"
@@ -91,7 +91,7 @@ function AdminDashboard() {
   const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false)
   const [installmentCategory, setInstallmentCategory] = useState<"visa-mastercard" | "naranja">("visa-mastercard")
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [editingInstallment, setEditingInstallment] = useState<any>(null)
+  const [editingInstallment, setEditingInstallment] = useState<InstallmentPlan | null>(null)
   const [newLibraryImage, setNewLibraryImage] = useState<NewLibraryImageForm>({
     label: "",
     category: "",

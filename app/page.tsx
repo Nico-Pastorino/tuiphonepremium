@@ -32,18 +32,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
 import type { TradeInConditionId, TradeInStorageId } from "@/types/trade-in"
+import type { HomeSectionId } from "@/types/home"
+import { DEFAULT_HOME_CONFIG } from "@/lib/home-config"
 
-const sectionIdToLabel: Record<"categories" | "featured" | "benefits" | "trade-in" | "cta", string> = {
-  categories: "Explorá por categoría",
-  featured: "Productos destacados",
-  benefits: "¿Por qué elegirnos?",
-  "trade-in": "Plan canje",
-  cta: "¿Listo para comprar?",
-}
+const DEFAULT_SECTION_LABELS: Record<HomeSectionId, string> = DEFAULT_HOME_CONFIG.sections.reduce(
+  (acc, section) => {
+    acc[section.id] = section.label
+    return acc
+  },
+  {} as Record<HomeSectionId, string>,
+)
 
 export default function HomePage() {
   const { products, loading, error, supabaseConnected, refreshProducts } = useProducts()
   const { homeConfig, tradeInConfig } = useAdmin()
+  const sectionLabels = useMemo(() => {
+    const labels: Record<HomeSectionId, string> = { ...DEFAULT_SECTION_LABELS }
+    homeConfig.sections.forEach((section) => {
+      labels[section.id] = section.label
+    })
+    return labels
+  }, [homeConfig.sections])
 
   const tradeInConditionLabels: Record<TradeInConditionId, string> = {
     under90: "-90%",
@@ -153,7 +162,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedSection animation="fadeUp" className="text-center mb-8 sm:mb-12 md:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6">
-              {sectionIdToLabel.categories}
+              {sectionLabels.categories}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
               Encontrá el dispositivo ideal dentro de nuestra selección premium de productos Apple
@@ -238,7 +247,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedSection animation="fadeUp" className="text-center mb-8 sm:mb-12 md:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6">
-              {sectionIdToLabel.featured}
+              {sectionLabels.featured}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
               Los favoritos de nuestra comunidad, con la mejor valoración
@@ -304,7 +313,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedSection animation="fadeUp" className="text-center mb-8 sm:mb-12 md:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6">
-              {sectionIdToLabel.benefits}
+              {sectionLabels.benefits}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
               Beneficios que nos convierten en tu mejor opción Apple
@@ -487,7 +496,7 @@ const ctaSection = (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-3xl mx-auto text-white">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
-              {sectionIdToLabel.cta}
+              {sectionLabels.cta}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-blue-100 mb-6 sm:mb-8 px-4">
               Contáctanos por WhatsApp y te ayudamos a encontrar el producto perfecto
