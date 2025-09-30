@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import type { ChangeEvent, FormEvent } from "react"
 
 import { useEffect, useMemo, useState, useCallback } from "react"
@@ -48,9 +48,45 @@ import {
   ArrowUp,
   ArrowDown,
 } from "lucide-react"
-import type { TradeInConditionId, TradeInStorageId } from "@/types/trade-in"
+import type { TradeInConditionId, TradeInStorageId, TradeInRow } from "@/types/trade-in"
 
 type NewLibraryImageForm = { label: string; category: string; url: string }
+
+
+
+const TRADE_IN_STORAGE_IDS: TradeInStorageId[] = ["64gb", "128gb", "256gb", "512gb"]
+const TRADE_IN_CONDITION_IDS: TradeInConditionId[] = ["under90", "over90"]
+
+const slugifyTradeInLabel = (value: string) => {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+const createEmptyTradeInRow = (label: string, id: string): TradeInRow => {
+  const values = TRADE_IN_STORAGE_IDS.reduce(
+    (storageAcc, storageId) => {
+      storageAcc[storageId] = TRADE_IN_CONDITION_IDS.reduce(
+        (conditionAcc, conditionId) => {
+          conditionAcc[conditionId] = null
+          return conditionAcc
+        },
+        {} as Record<TradeInConditionId, number | null>,
+      )
+      return storageAcc
+    },
+    {} as Record<TradeInStorageId, Record<TradeInConditionId, number | null>>,
+  )
+
+  return {
+    id,
+    label,
+    values,
+  }
+}
 
 
 export default function AdminPage() {
@@ -105,12 +141,20 @@ function AdminDashboard() {
 
   const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
   const [savingHomeConfig, setSavingHomeConfig] = useState(false)
+
   const [tradeInForm, setTradeInForm] = useState(() => cloneTradeInConfig(tradeInConfig))
   const [savingTradeInConfig, setSavingTradeInConfig] = useState(false)
+  const [tradeInRowDialog, setTradeInRowDialog] = useState<{ sectionId: string | null; label: string; error: string | null }>(
+    {
+      sectionId: null,
+      label: "",
+      error: null,
+    },
+  )
 
   useEffect(() => {
     setHomeForm(cloneHomeConfig(homeConfig))
-  }, [homeConfig]) // Dependencias especÃ­ficas en lugar del objeto completo
+  }, [homeConfig]) // Dependencias especficas en lugar del objeto completo
 
   useEffect(() => {
     setTradeInForm(cloneTradeInConfig(tradeInConfig))
@@ -243,6 +287,7 @@ function AdminDashboard() {
     }
   }
 
+
   const handleTradeInValueChange = (
     sectionId: string,
     rowId: string,
@@ -271,6 +316,87 @@ function AdminDashboard() {
       row.values[storageId][conditionId] = Number.isNaN(parsed) ? null : parsed
       return next
     })
+  }
+
+  const closeTradeInRowDialog = () => {
+    setTradeInRowDialog({ sectionId: null, label: "", error: null })
+  }
+
+  const handleTradeInRowLabelChange = (sectionId: string, rowId: string, label: string) => {
+    setTradeInForm((prev) => {
+      const next = cloneTradeInConfig(prev)
+      const section = next.sections.find((item) => item.id === sectionId)
+      if (!section) {
+        return prev
+      }
+      const row = section.rows.find((item) => item.id === rowId)
+      if (!row) {
+        return prev
+      }
+      row.label = label
+      return next
+    })
+  }
+
+  const handleRemoveTradeInRow = (sectionId: string, rowId: string) => {
+    setTradeInForm((prev) => {
+      const next = cloneTradeInConfig(prev)
+      const section = next.sections.find((item) => item.id === sectionId)
+      if (!section) {
+        return prev
+      }
+      section.rows = section.rows.filter((item) => item.id !== rowId)
+      return next
+    })
+  }
+
+  const handleAddTradeInRow = () => {
+    const { sectionId, label } = tradeInRowDialog
+    if (!sectionId) {
+      return
+    }
+
+    const trimmedLabel = label.trim()
+    if (trimmedLabel.length === 0) {
+      setTradeInRowDialog((prev) => ({ ...prev, error: "Ingresa un nombre valido." }))
+      return
+    }
+
+    let duplicated = false
+
+    setTradeInForm((prev) => {
+      const next = cloneTradeInConfig(prev)
+      const section = next.sections.find((item) => item.id === sectionId)
+      if (!section) {
+        return prev
+      }
+
+      if (section.rows.some((row) => row.label.trim().toLowerCase() === trimmedLabel.toLowerCase())) {
+        duplicated = true
+        return prev
+      }
+
+      let baseId = slugifyTradeInLabel(trimmedLabel)
+      if (!baseId) {
+        baseId = `modelo-${Date.now()}`
+      }
+      let candidateId = baseId
+      let counter = 1
+      while (section.rows.some((row) => row.id === candidateId)) {
+        candidateId = `${baseId}-${counter}`
+        counter += 1
+      }
+
+      section.rows.push(createEmptyTradeInRow(trimmedLabel, candidateId))
+      return next
+    })
+
+    if (duplicated) {
+      setTradeInRowDialog((prev) => ({ ...prev, error: "Ya existe un modelo con ese nombre." }))
+      return
+    }
+
+    closeTradeInRowDialog()
   }
 
   const handleSaveTradeInConfig = async () => {
@@ -344,9 +470,9 @@ function AdminDashboard() {
     try {
       await updateHomeConfig({ sections: nextSections })
     } catch (error) {
-      console.error("No se pudo reordenar la sección", error)
+      console.error("No se pudo reordenar la seccion", error)
       setHomeForm((prev) => ({ ...prev, sections: previousSections }))
-      alert("No se pudo reordenar la sección. Intenta nuevamente.")
+      alert("No se pudo reordenar la seccion. Intenta nuevamente.")
     }
   }
 
@@ -357,13 +483,13 @@ function AdminDashboard() {
 
     // Validar tipo de archivo
     if (!file.type.startsWith("image/")) {
-      alert("Por favor selecciona un archivo de imagen vÃ¡lido (JPG, PNG)")
+      alert("Por favor selecciona un archivo de imagen vlido (JPG, PNG)")
       return
     }
 
-    // Validar tamaÃ±o (mÃ¡ximo 5MB)
+    // Validar tamao (mximo 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("El archivo es demasiado grande. MÃ¡ximo 5MB permitido.")
+      alert("El archivo es demasiado grande. Mximo 5MB permitido.")
       return
     }
 
@@ -546,7 +672,7 @@ function AdminDashboard() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Ã‚Â¿Eliminar producto?</AlertDialogTitle>
+                                <AlertDialogTitle>Eliminar producto?</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   Esta accion no se puede deshacer. El producto{" "}
                                   <span className="font-semibold text-gray-900">{product.name}</span> sera eliminado
@@ -917,96 +1043,191 @@ function AdminDashboard() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-8">
-                  {tradeInForm.sections.map((section) => (
-                    <div key={section.id} className="rounded-xl border border-gray-200 bg-white shadow-sm">
-                      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 px-4 py-3">
-                        <div>
-                          <h3 className="text-base font-semibold text-gray-900">{section.title}</h3>
-                          <p className="text-xs text-gray-500">
-                            Define los montos estimados para cada capacidad y estado.
-                          </p>
+                  {tradeInForm.sections.map((section) => {
+                    const totalColumns =
+                      1 + section.storageColumns.reduce((acc, column) => acc + column.conditions.length, 0)
+
+                    return (
+                      <div key={section.id} className="rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-4 py-3">
+                          <div>
+                            <h3 className="text-base font-semibold text-gray-900">{section.title}</h3>
+                            <p className="text-xs text-gray-500">Define los montos estimados para cada capacidad y estado.</p>
+                          </div>
+                          <Dialog
+                            open={tradeInRowDialog.sectionId === section.id}
+                            onOpenChange={(isOpen) => {
+                              if (isOpen) {
+                                setTradeInRowDialog({ sectionId: section.id, label: "", error: null })
+                              } else if (tradeInRowDialog.sectionId === section.id) {
+                                closeTradeInRowDialog()
+                              }
+                            }}
+                          >
+                            <DialogTrigger asChild>
+                              <Button type="button" size="sm" variant="outline" className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Agregar modelo
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Agregar modelo</DialogTitle>
+                              </DialogHeader>
+                              <form
+                                className="space-y-4"
+                                onSubmit={(event) => {
+                                  event.preventDefault()
+                                  handleAddTradeInRow()
+                                }}
+                              >
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium text-gray-700">Nombre del modelo</label>
+                                  <Input
+                                    autoFocus
+                                    value={tradeInRowDialog.sectionId === section.id ? tradeInRowDialog.label : ""}
+                                    onChange={(event) =>
+                                      setTradeInRowDialog((prev) => ({
+                                        sectionId: section.id,
+                                        label: event.target.value,
+                                        error: null,
+                                      }))
+                                    }
+                                    placeholder="Ej: iPhone 14 Pro"
+                                  />
+                                  {tradeInRowDialog.sectionId === section.id && tradeInRowDialog.error && (
+                                    <p className="text-xs text-red-600">{tradeInRowDialog.error}</p>
+                                  )}
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                  <Button type="button" variant="outline" onClick={closeTradeInRowDialog}>
+                                    Cancelar
+                                  </Button>
+                                  <Button type="submit">Agregar</Button>
+                                </div>
+                              </form>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full border border-gray-200 text-sm">
+                            <thead>
+                              <tr className="bg-emerald-100 text-gray-900">
+                                <th rowSpan={2} className="border border-gray-200 px-3 py-2 text-left font-semibold">
+                                  Modelo
+                                </th>
+                                {section.storageColumns.map((column) => (
+                                  <th
+                                    key={`${section.id}-${column.id}`}
+                                    colSpan={column.conditions.length}
+                                    className="border border-gray-200 px-3 py-2 text-center font-semibold uppercase"
+                                  >
+                                    {column.label}
+                                  </th>
+                                ))}
+                              </tr>
+                              <tr className="bg-amber-100 text-gray-800">
+                                {section.storageColumns.flatMap((column) =>
+                                  column.conditions.map((condition) => (
+                                    <th
+                                      key={`${section.id}-${column.id}-${condition.id}`}
+                                      className="border border-gray-200 px-2 py-1 text-center text-xs font-semibold uppercase"
+                                    >
+                                      {condition.label}
+                                    </th>
+                                  )),
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {section.rows.length === 0 ? (
+                                <tr>
+                                  <td
+                                    colSpan={totalColumns}
+                                    className="border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500"
+                                  >
+                                    No hay modelos configurados en esta seccion.
+                                  </td>
+                                </tr>
+                              ) : (
+                                section.rows.map((row, rowIndex) => (
+                                  <tr key={row.id} className={rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                                    <td className="border border-gray-200 px-3 py-2 text-sm font-medium text-gray-900">
+                                      <div className="flex items-center gap-2">
+                                        <Input
+                                          value={row.label}
+                                          onChange={(event) =>
+                                            handleTradeInRowLabelChange(section.id, row.id, event.target.value)
+                                          }
+                                          placeholder="Nombre del modelo"
+                                          className="h-9 w-full min-w-[160px]"
+                                        />
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              type="button"
+                                              size="icon"
+                                              variant="ghost"
+                                              className="text-red-600 hover:text-red-700"
+                                              aria-label={`Eliminar ${row.label}`}
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Eliminar modelo?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Esta accion quitara <span className="font-semibold">{row.label}</span> de la tabla de canje.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => handleRemoveTradeInRow(section.id, row.id)}>
+                                                Eliminar
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      </div>
+                                    </td>
+                                    {section.storageColumns.flatMap((column) => {
+                                      const storageId = column.id as TradeInStorageId
+                                      return column.conditions.map((condition) => {
+                                        const conditionId = condition.id as TradeInConditionId
+                                        const currentValue = row.values[storageId][conditionId]
+                                        return (
+                                          <td key={`${row.id}-${storageId}-${conditionId}`} className="border border-gray-200 px-2 py-2">
+                                            <Input
+                                              type="number"
+                                              min="0"
+                                              step="10"
+                                              placeholder="---"
+                                              value={currentValue ?? ""}
+                                              onChange={(event) =>
+                                                handleTradeInValueChange(
+                                                  section.id,
+                                                  row.id,
+                                                  storageId,
+                                                  conditionId,
+                                                  event.target.value,
+                                                )
+                                              }
+                                              className="h-9 text-center text-sm"
+                                            />
+                                          </td>
+                                        )
+                                      })
+                                    })}
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full border border-gray-200 text-sm">
-                          <thead>
-                            <tr className="bg-emerald-100 text-gray-900">
-                              <th
-                                rowSpan={2}
-                                className="border border-gray-200 px-3 py-2 text-left font-semibold"
-                              >
-                                Modelo
-                              </th>
-                              {section.storageColumns.map((column) => (
-                                <th
-                                  key={`${section.id}-${column.id}`}
-                                  colSpan={column.conditions.length}
-                                  className="border border-gray-200 px-3 py-2 text-center font-semibold uppercase"
-                                >
-                                  {column.label}
-                                </th>
-                              ))}
-                            </tr>
-                            <tr className="bg-amber-100 text-gray-800">
-                              {section.storageColumns.flatMap((column) =>
-                                column.conditions.map((condition) => (
-                                  <th
-                                    key={`${section.id}-${column.id}-${condition.id}`}
-                                    className="border border-gray-200 px-2 py-1 text-center text-xs font-semibold uppercase"
-                                  >
-                                    {condition.label}
-                                  </th>
-                                )),
-                              )}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {section.rows.map((row, rowIndex) => (
-                              <tr
-                                key={row.id}
-                                className={rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                              >
-                                <td className="border border-gray-200 px-3 py-2 text-sm font-medium text-gray-900">
-                                  {row.label}
-                                </td>
-                                {section.storageColumns.flatMap((column) => {
-                                  const storageId = column.id as TradeInStorageId
-                                  return column.conditions.map((condition) => {
-                                    const conditionId = condition.id as TradeInConditionId
-                                    const currentValue = row.values[storageId][conditionId]
-                                    return (
-                                      <td
-                                        key={`${row.id}-${storageId}-${conditionId}`}
-                                        className="border border-gray-200 px-2 py-2"
-                                      >
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          step="10"
-                                          placeholder="---"
-                                          value={currentValue ?? ""}
-                                          onChange={(event) =>
-                                            handleTradeInValueChange(
-                                              section.id,
-                                              row.id,
-                                              storageId,
-                                              conditionId,
-                                              event.target.value,
-                                            )
-                                          }
-                                          className="h-9 text-center text-sm"
-                                        />
-                                      </td>
-                                    )
-                                  })
-                                })}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <Button onClick={handleSaveTradeInConfig} disabled={savingTradeInConfig} className="sm:w-auto">
                       {savingTradeInConfig ? "Guardando..." : "Guardar valores"}
@@ -1067,7 +1288,7 @@ function AdminDashboard() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Título plan canje</label>
+                        <label className="text-sm font-medium text-gray-700">Ttulo plan canje</label>
                         <Input
                           value={homeForm.tradeInTitle}
                           onChange={(event) => {
@@ -1086,12 +1307,12 @@ function AdminDashboard() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Descripción plan canje</label>
+                        <label className="text-sm font-medium text-gray-700">Descripcin plan canje</label>
                         <Textarea
                           value={homeForm.tradeInSubtitle}
                           onChange={(event) => setHomeForm((prev) => ({ ...prev, tradeInSubtitle: event.target.value }))}
                           rows={3}
-                          placeholder="Explica cómo funciona el canje para tus clientes"
+                          placeholder="Explica cmo funciona el canje para tus clientes"
                         />
                       </div>
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -1165,6 +1386,8 @@ function AdminDashboard() {
     </div>
   )
 }
+
+
 
 
 
