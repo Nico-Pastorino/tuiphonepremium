@@ -211,21 +211,48 @@ export class SiteConfigService {
         updated_at: new Date().toISOString(),
       }
 
-      const { data, error } = await client
+      const { data: existing, error: selectError } = await client
         .from("site_config")
-        .upsert(payload, { onConflict: "key" })
         .select("*")
-        .single()
+        .eq("key", key)
+        .maybeSingle()
 
-      if (error) {
-        if (isMissingSiteConfigTableError(error)) {
+      if (selectError) {
+        if (isMissingSiteConfigTableError(selectError)) {
           return { data: null, error: new Error(SITE_CONFIG_TABLE_NOT_FOUND) }
         }
-        throw error
+        throw selectError
       }
 
-      const typedData = data as SiteConfigRow
-      return { data: typedData, error: null }
+      let result: SiteConfigRow | null = null
+
+      if (existing) {
+        const { data, error } = await client
+          .from("site_config")
+          .update({ value: payload.value, updated_at: payload.updated_at })
+          .eq("key", key)
+          .select("*")
+          .single()
+
+        if (error) {
+          throw error
+        }
+
+        result = data as SiteConfigRow
+      } else {
+        const { data, error } = await client.from("site_config").insert(payload).select("*").single()
+
+        if (error) {
+          if (isMissingSiteConfigTableError(error)) {
+            return { data: null, error: new Error(SITE_CONFIG_TABLE_NOT_FOUND) }
+          }
+          throw error
+        }
+
+        result = data as SiteConfigRow
+      }
+
+      return { data: result, error: null }
     } catch (error) {
       const normalized = normalizeError(error)
       if (!isMissingSiteConfigTableError(normalized)) {
