@@ -428,7 +428,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     let updatedConfig: HomeConfig = homeConfig
     try {
       const response = await fetch("/api/admin/home-config", {
-        method: "PUT",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -471,7 +471,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     let updatedConfig: TradeInConfig = tradeInConfig
     try {
       const response = await fetch("/api/admin/trade-in", {
-        method: "PUT",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },

@@ -49,7 +49,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: NextRequest) {
+async function handleUpdate(request: NextRequest) {
   try {
     const updates = (await request.json()) as Partial<HomeConfig>
 
@@ -80,4 +80,12 @@ export async function PUT(request: NextRequest) {
     console.error("Home config PUT error:", error)
     return buildErrorResponse("Error interno del servidor")
   }
+}
+
+export async function PUT(request: NextRequest) {
+  return handleUpdate(request)
+}
+
+export async function POST(request: NextRequest) {
+  return handleUpdate(request)
 }
