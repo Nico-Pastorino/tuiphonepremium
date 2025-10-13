@@ -4,6 +4,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
 import type { Product, ProductFormData, ProductFilters } from "@/types/product"
 import type { ProductRow } from "@/types/database"
+import { supabase } from "@/lib/supabase"
 
 type ApiListResponse = { data?: ProductRow[]; error?: string }
 
