@@ -22,6 +22,16 @@ Continue building your app on:
 
 **[https://v0.dev/chat/projects/thlzES0cSz1](https://v0.dev/chat/projects/thlzES0cSz1)**
 
+## Supabase setup
+
+To enable the admin panels (productos, plan canje y configuración de portada) run the SQL scripts inside the `scripts/` folder from the Supabase SQL editor in this order:
+
+1. `create-products-table.sql` (si no existe la tabla)
+2. `create-site-config-table.sql`
+3. `update-rls-policies.sql`
+
+Whenever policies need to be reset for troubleshooting you can run `disable-rls-temporarily.sql` followed by `fix-admin-permissions.sql`, and finally `update-rls-policies.sql` again to restore the final policy set.
+
 ## How It Works
 
 1. Create and modify your project using [v0.dev](https://v0.dev)
