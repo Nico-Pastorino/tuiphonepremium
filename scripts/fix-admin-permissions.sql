@@ -58,5 +58,32 @@ CREATE TRIGGER update_products_updated_at
 -- Garantizar que la tabla site_config tenga las filas principales
 INSERT INTO site_config (key, value, updated_at) VALUES
   ('home', '{}'::jsonb, NOW()),
-  ('trade-in', jsonb_build_object('updatedAt', to_char(timezone('UTC', now()), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'), 'sections', '[]'::jsonb), NOW())
+  (
+    'trade-in',
+    jsonb_build_object(
+      'updatedAt', to_char(timezone('UTC', now()), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+      'sections', '[]'::jsonb
+    ),
+    NOW()
+  ),
+  (
+    'installments',
+    jsonb_build_object(
+      'plans', '[]'::jsonb,
+      'updatedAt', to_char(timezone('UTC', now()), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+    ),
+    NOW()
+  ),
+  (
+    'dollar',
+    jsonb_build_object(
+      'id', 'default',
+      'officialRate', 350,
+      'blueRate', 1000,
+      'markup', 5,
+      'lastUpdated', to_char(timezone('UTC', now()), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+      'autoUpdate', true
+    ),
+    NOW()
+  )
 ON CONFLICT (key) DO NOTHING;

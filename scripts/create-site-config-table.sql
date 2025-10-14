@@ -65,6 +65,103 @@ WITH iso_now AS (
 )
 INSERT INTO site_config (key, value, updated_at)
 SELECT
+  'installments',
+  jsonb_build_object(
+    'plans', jsonb_build_array(
+      jsonb_build_object(
+        'id', 'visa-1',
+        'months', 3,
+        'interestRate', 0,
+        'isActive', true,
+        'createdAt', iso_now.iso_value,
+        'category', 'visa-mastercard'
+      ),
+      jsonb_build_object(
+        'id', 'visa-2',
+        'months', 6,
+        'interestRate', 12,
+        'isActive', true,
+        'createdAt', iso_now.iso_value,
+        'category', 'visa-mastercard'
+      ),
+      jsonb_build_object(
+        'id', 'visa-3',
+        'months', 12,
+        'interestRate', 25,
+        'isActive', true,
+        'createdAt', iso_now.iso_value,
+        'category', 'visa-mastercard'
+      ),
+      jsonb_build_object(
+        'id', 'naranja-1',
+        'months', 3,
+        'interestRate', 5,
+        'isActive', true,
+        'createdAt', iso_now.iso_value,
+        'category', 'naranja'
+      ),
+      jsonb_build_object(
+        'id', 'naranja-2',
+        'months', 6,
+        'interestRate', 18,
+        'isActive', true,
+        'createdAt', iso_now.iso_value,
+        'category', 'naranja'
+      ),
+      jsonb_build_object(
+        'id', 'naranja-3',
+        'months', 9,
+        'interestRate', 28,
+        'isActive', true,
+        'createdAt', iso_now.iso_value,
+        'category', 'naranja'
+      ),
+      jsonb_build_object(
+        'id', 'naranja-4',
+        'months', 12,
+        'interestRate', 35,
+        'isActive', true,
+        'createdAt', iso_now.iso_value,
+        'category', 'naranja'
+      )
+    ),
+    'updatedAt', iso_now.iso_value
+  ),
+  timezone('UTC', now())
+FROM iso_now
+ON CONFLICT (key)
+DO UPDATE
+SET
+  value = EXCLUDED.value,
+  updated_at = EXCLUDED.updated_at;
+
+WITH iso_now AS (
+  SELECT to_char(timezone('UTC', now()), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS iso_value
+)
+INSERT INTO site_config (key, value, updated_at)
+SELECT
+  'dollar',
+  jsonb_build_object(
+    'id', 'default',
+    'officialRate', 350,
+    'blueRate', 1000,
+    'markup', 5,
+    'lastUpdated', iso_now.iso_value,
+    'autoUpdate', true
+  ),
+  timezone('UTC', now())
+FROM iso_now
+ON CONFLICT (key)
+DO UPDATE
+SET
+  value = EXCLUDED.value,
+  updated_at = EXCLUDED.updated_at;
+
+WITH iso_now AS (
+  SELECT to_char(timezone('UTC', now()), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS iso_value
+)
+INSERT INTO site_config (key, value, updated_at)
+SELECT
   'trade-in',
   jsonb_build_object(
     'updatedAt', iso_now.iso_value,
