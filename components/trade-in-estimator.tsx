@@ -15,31 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAdmin } from "@/contexts/AdminContext"
-import type { TradeInConditionId, TradeInStorageId, TradeInRow } from "@/types/trade-in"
+import type { TradeInConditionId, TradeInStorageId } from "@/types/trade-in"
 
 interface TradeInEstimatorProps {
   productName: string
   productPriceARS: number
   productPriceUSD: number | null
-}
-
-type DisplayColumn = {
-  id: string
-  label: string
-  conditions: Array<{ id: TradeInConditionId; label: string }>
-}
-
-type DisplayRow = {
-  optionValue: string
-  data: TradeInRow
-}
-
-type DisplaySection = {
-  id: string
-  title: string
-  description?: string
-  storageColumns: DisplayColumn[]
-  rows: DisplayRow[]
 }
 
 const STORAGE_LABELS: Record<TradeInStorageId, string> = {
@@ -63,72 +44,29 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
   const { tradeInConfig, getEffectiveDollarRate, homeConfig } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
 
-  const sectionsForDisplay = useMemo<DisplaySection[]>(() => {
-    return tradeInConfig.sections
-      .map<DisplaySection | null>((section) => {
-        const rowsWithValues = section.rows.filter((row) =>
-          Object.values(row.values).some((storageValues) => hasAnyTradeInValue(storageValues)),
-        )
-
-        if (rowsWithValues.length === 0) {
-          return null
-        }
-
-        const baseColumns: DisplayColumn[] = section.storageColumns.map((column) => ({
-          id: column.id,
-          label: column.label,
-          conditions: column.conditions.map((condition) => ({
-            id: condition.id as TradeInConditionId,
-            label: CONDITION_LABELS[condition.id as TradeInConditionId] ?? condition.label,
-          })),
-        }))
-
-        const definedIds = new Set(baseColumns.map((column) => column.id))
-
-        const extraIds = Array.from(
-          new Set(
-            rowsWithValues.flatMap((row) =>
-              Object.entries(row.values)
-                .filter(([storageId, values]) => hasAnyTradeInValue(values) && !definedIds.has(storageId))
-                .map(([storageId]) => storageId),
-            ),
-          ),
-        )
-
-        const extraColumns: DisplayColumn[] = extraIds.map((storageId) => ({
-          id: storageId,
-          label: STORAGE_LABELS[storageId as TradeInStorageId] ?? storageId.toUpperCase(),
-          conditions: CONDITION_ORDER.map((conditionId) => ({
-            id: conditionId,
-            label: CONDITION_LABELS[conditionId],
-          })),
-        }))
-
-        return {
-          id: section.id,
-          title: section.title,
-          description: section.description,
-          storageColumns: [...baseColumns, ...extraColumns],
-          rows: rowsWithValues.map((row) => ({
-            optionValue: `${section.id}::${row.id}`,
-            data: row,
-          })),
-        }
-      })
-      .filter((section): section is DisplaySection => section !== null)
-  }, [tradeInConfig.sections])
+  const sections = useMemo(
+    () =>
+      tradeInConfig.sections.map((section) => ({
+        id: section.id,
+        title: section.title,
+        description: section.description,
+        storageColumns: section.storageColumns,
+        rows: section.rows,
+      })),
+    [tradeInConfig.sections],
+  )
 
   const tradeInOptions = useMemo(
     () =>
-      sectionsForDisplay.flatMap((section) =>
+      sections.flatMap((section) =>
         section.rows.map((row) => ({
-          value: row.optionValue,
-          label: `${section.title} - ${row.data.label}`,
+          value: `${section.id}::${row.id}`,
+          label: `${section.title} - ${row.label}`,
           sectionId: section.id,
-          rowId: row.data.id,
+          rowId: row.id,
         })),
       ),
-    [sectionsForDisplay],
+    [sections],
   )
 
   const [selectedModelKey, setSelectedModelKey] = useState(() => tradeInOptions[0]?.value ?? "")
@@ -143,17 +81,16 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
     )
   }, [tradeInOptions])
 
-  const selectedSection = useMemo(() => {
-    return (
-      sectionsForDisplay.find((section) => section.rows.some((row) => row.optionValue === selectedModelKey)) ?? null
-    )
-  }, [sectionsForDisplay, selectedModelKey])
+  const selectedSection = useMemo(
+    () => sections.find((section) => section.rows.some((row) => `${section.id}::${row.id}` === selectedModelKey)) ?? null,
+    [sections, selectedModelKey],
+  )
 
   const selectedRow = useMemo(() => {
     if (!selectedSection) {
       return null
     }
-    return selectedSection.rows.find((row) => row.optionValue === selectedModelKey) ?? null
+    return selectedSection.rows.find((row) => `${selectedSection.id}::${row.id}` === selectedModelKey) ?? null
   }, [selectedSection, selectedModelKey])
 
   const availableStorageOptions = useMemo(() => {
@@ -166,7 +103,7 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
 
     if (selectedSection) {
       for (const column of selectedSection.storageColumns) {
-        const valueSet = selectedRow.data.values[column.id as TradeInStorageId]
+        const valueSet = selectedRow.values[column.id as TradeInStorageId]
         if (valueSet && hasAnyTradeInValue(valueSet)) {
           options.push({ id: column.id, label: column.label })
           taken.add(column.id)
@@ -174,7 +111,7 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
       }
     }
 
-    for (const [storageId, values] of Object.entries(selectedRow.data.values) as [
+    for (const [storageId, values] of Object.entries(selectedRow.values) as [
       string,
       Record<TradeInConditionId, number | null>,
     ][]) {
@@ -209,7 +146,7 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
 
   const tradeInValueUSD =
     selectedRow && selectedStorageId
-      ? selectedRow.data.values[selectedStorageId as TradeInStorageId]?.[selectedCondition] ?? null
+      ? selectedRow.values[selectedStorageId as TradeInStorageId]?.[selectedCondition] ?? null
       : null
 
   const tradeInValueARS =
@@ -257,12 +194,12 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
                 <SelectValue placeholder="Elegi tu modelo" />
               </SelectTrigger>
               <SelectContent>
-                {sectionsForDisplay.map((section) => (
+                {sections.map((section) => (
                   <SelectGroup key={section.id}>
                     <SelectLabel className="text-xs uppercase tracking-wide text-gray-500">{section.title}</SelectLabel>
                     {section.rows.map((row) => (
-                      <SelectItem key={row.optionValue} value={row.optionValue}>
-                        {row.data.label}
+                      <SelectItem key={`${section.id}::${row.id}`} value={`${section.id}::${row.id}`}>
+                        {row.label}
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -339,104 +276,6 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
             Los montos son estimativos y pueden ajustarse luego de revisar el equipo. Cotizamos unicamente modelos Apple
             con condiciones similares a las aqui listadas.
           </p>
-        </div>
-
-        <div className="space-y-4 rounded-2xl border border-blue-100 bg-white/80 p-5">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900">Modelos disponibles para canje</h3>
-            <p className="text-xs text-gray-600">
-              Consulta la tabla completa de valores estimados por capacidad y estado.
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            {sectionsForDisplay.map((section) => (
-              <div key={section.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-4 py-3">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900">{section.title}</h4>
-                    {section.description && <p className="text-xs text-gray-500">{section.description}</p>}
-                  </div>
-                  <span className="text-xs font-medium uppercase tracking-wide text-blue-600">
-                    Valores referenciales en USD
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-xs text-gray-700">
-                    <thead>
-                      <tr className="bg-blue-100/60 text-blue-900">
-                        <th rowSpan={2} className="border border-blue-100 px-3 py-2 text-left font-semibold">
-                          Modelo
-                        </th>
-                        {section.storageColumns.map((column) => (
-                          <th key={column.id} colSpan={column.conditions.length} className="border border-blue-100 px-3 py-2">
-                            {column.label}
-                          </th>
-                        ))}
-                      </tr>
-                      <tr className="bg-blue-50 text-blue-800">
-                        {section.storageColumns.flatMap((column) =>
-                          column.conditions.map((condition) => (
-                            <th key={`${column.id}-${condition.id}`} className="border border-blue-100 px-2 py-2 font-medium">
-                              {condition.label}
-                            </th>
-                          )),
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {section.rows.map((row) => (
-                        <tr key={row.data.id} className="odd:bg-white even:bg-blue-50/30">
-                          <td className="border border-blue-100 px-3 py-2 font-medium text-gray-900">{row.data.label}</td>
-                          {section.storageColumns.flatMap((column) => {
-                            const storageValues =
-                              row.data.values[column.id as TradeInStorageId] as
-                                | Record<TradeInConditionId, number | null>
-                                | undefined
-                            return column.conditions.map((condition) => {
-                              const value = storageValues?.[condition.id] ?? null
-                              const valueARS =
-                                value !== null && effectiveDollarRate ? Math.round(value * effectiveDollarRate) : null
-                              const userPaysUSD =
-                                value !== null && productPriceUSD !== null ? Math.max(productPriceUSD - value, 0) : null
-                              const userPaysARS =
-                                value !== null ? Math.max(productPriceARS - (valueARS ?? 0), 0) : productPriceARS
-
-                              return (
-                                <td key={`${row.data.id}-${column.id}-${condition.id}`} className="border border-blue-100 px-2 py-2">
-                                  {value !== null ? (
-                                    <div className="space-y-1 text-xs">
-                                      <p className="font-semibold text-gray-900">
-                                        USD {value.toLocaleString("es-AR")}
-                                      </p>
-                                      {valueARS !== null && (
-                                        <p className="text-[11px] text-blue-600">
-                                          ~ ${valueARS.toLocaleString("es-AR")} ARS
-                                        </p>
-                                      )}
-                                      <p className="text-[11px] text-gray-600">
-                                        Pagas:{" "}
-                                        {userPaysUSD !== null
-                                          ? `USD ${userPaysUSD.toLocaleString("es-AR")}`
-                                          : `$${userPaysARS.toLocaleString("es-AR")} ARS`}
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    <span className="text-gray-400">-</span>
-                                  )}
-                                </td>
-                              )
-                            })
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
 
         <Button
