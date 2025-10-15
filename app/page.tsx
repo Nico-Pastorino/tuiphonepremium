@@ -151,11 +151,6 @@ export default function HomePage() {
   const heroImage = homeConfig.heroImage || "/portada.jpg"
   const whatsappLink = `https://wa.me/${homeConfig.whatsappNumber}`
 
-  const scrollToFirstSection = () => {
-    if (!firstSectionId) return
-    document.querySelector(`[data-home-section="${firstSectionId}"]`)?.scrollIntoView({ behavior: "smooth" })
-  }
-
   const categoriesSection = (
     <AnimatedSection animation="fadeUp">
       <section className="py-12 sm:py-16 md:py-20 bg-gray-50" id="productos">
@@ -565,10 +560,12 @@ const ctaSection = (
                     <Button
                       size="lg"
                       className="w-full sm:w-auto bg-white text-gray-900 hover:bg-gray-50 font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-xl transition-all duration-300 shadow-lg text-base sm:text-lg min-h-[48px]"
-                      onClick={scrollToFirstSection}
+                      asChild
                     >
-                      Explorar productos
-                      <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                      <Link href="/productos">
+                        Explorar productos
+                        <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                      </Link>
                     </Button>
                     <Button
                       size="lg"
@@ -588,17 +585,6 @@ const ctaSection = (
           </div>
         </div>
 
-        {firstSectionId && (
-          <div className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-10 hidden md:block">
-            <button
-              onClick={scrollToFirstSection}
-              className="text-white/90 hover:text-white transition-colors animate-bounce p-2 rounded-full hover:bg-white/10 drop-shadow-lg"
-              aria-label="Scroll to next section"
-            >
-              <ArrowDown className="w-6 h-6 sm:w-8 sm:h-8" />
-            </button>
-          </div>
-        )}
       </section>
 
       {enabledSections.map((section) => (

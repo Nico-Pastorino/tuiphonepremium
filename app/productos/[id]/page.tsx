@@ -438,18 +438,34 @@ export default function ProductDetailPage() {
                             return (
                               <div
                                 key={group.category}
-                                className="rounded-xl border border-blue-200/70 bg-white/90 shadow-sm"
+                                className={`rounded-xl shadow-sm transition ${
+                                  group.category === "naranja"
+                                    ? "border border-orange-300 bg-orange-50/90"
+                                    : "border border-blue-200/70 bg-white/90"
+                                }`}
                               >
                                 <button
                                   type="button"
                                   onClick={() => toggleInstallmentCategory(group.category)}
-                                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-blue-50/60"
+                                  className={`flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors ${
+                                    group.category === "naranja"
+                                      ? "hover:bg-orange-100/80"
+                                      : "hover:bg-blue-50/60"
+                                  }`}
                                 >
                                   <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                                    <p
+                                      className={`text-xs font-semibold uppercase tracking-wide ${
+                                        group.category === "naranja" ? "text-orange-600" : "text-blue-600"
+                                      }`}
+                                    >
                                       {group.label}
                                     </p>
-                                    <p className="mt-1 text-sm text-blue-900">
+                                    <p
+                                      className={`mt-1 text-sm ${
+                                        group.category === "naranja" ? "text-orange-900" : "text-blue-900"
+                                      }`}
+                                    >
                                       {firstOption
                                         ? `${firstOption.months} ${
                                             firstOption.months === 1 ? "cuota" : "cuotas"
@@ -462,12 +478,18 @@ export default function ProductDetailPage() {
                                   <ChevronDown
                                     className={`h-5 w-5 text-blue-600 transition-transform ${
                                       isOpen ? "rotate-180" : ""
-                                    }`}
+                                    } ${group.category === "naranja" ? "text-orange-600" : "text-blue-600"}`}
                                   />
                                 </button>
 
                                 {isOpen && (
-                                  <div className="border-t border-blue-100 px-5 pb-4 pt-3 text-sm text-blue-700">
+                                  <div
+                                    className={`border-t px-5 pb-4 pt-3 text-sm ${
+                                      group.category === "naranja"
+                                        ? "border-orange-200 text-orange-700"
+                                        : "border-blue-100 text-blue-700"
+                                    }`}
+                                  >
                                     {hasOptionsForGroup ? (
                                       <div className="space-y-2">
                                         {group.options.map((option) => (
@@ -488,7 +510,11 @@ export default function ProductDetailPage() {
                                         ))}
                                       </div>
                                     ) : (
-                                      <p className="text-xs text-blue-600/70">
+                                      <p
+                                        className={`text-xs ${
+                                          group.category === "naranja" ? "text-orange-600/70" : "text-blue-600/70"
+                                        }`}
+                                      >
                                         No hay planes disponibles en este momento.
                                       </p>
                                     )}
