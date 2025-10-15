@@ -15,6 +15,16 @@ interface TradeInEstimatorProps {
   productPriceUSD: number | null
 }
 
+const STORAGE_LABELS: Record<TradeInStorageId, string> = {
+  "64gb": "64GB",
+  "128gb": "128GB",
+  "256gb": "256GB",
+  "512gb": "512GB",
+}
+
+const hasAnyTradeInValue = (values: Record<TradeInConditionId, number | null>): boolean =>
+  Object.values(values).some((value) => value !== null)
+
 export function TradeInEstimator({ productName, productPriceARS, productPriceUSD }: TradeInEstimatorProps) {
   const { tradeInConfig, getEffectiveDollarRate, homeConfig } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
@@ -27,15 +37,10 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
   const tradeInOptions = useMemo(() => {
     return tradeInConfig.sections.flatMap((section) =>
       section.rows
-        .filter((row) =>
-          section.storageColumns.some((column) => {
-            const values = row.values[column.id]
-            return values.under90 !== null || values.over90 !== null
-          }),
-        )
+        .filter((row) => Object.values(row.values).some((storageValues) => hasAnyTradeInValue(storageValues)))
         .map((row) => ({
           value: `${section.id}::${row.id}`,
-          label: `${section.title} · ${row.label}`,
+          label: `${section.title} - ${row.label}`,
           sectionId: section.id,
           rowId: row.id,
         })),
@@ -70,16 +75,21 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
   )
 
   const availableStorageOptions = useMemo(() => {
-    if (!selectedSection || !selectedRow) {
+    if (!selectedRow) {
       return [] as { id: TradeInStorageId; label: string }[]
     }
-    return selectedSection.storageColumns
-      .filter((column) => {
-        const values = selectedRow.values[column.id]
-        return values.under90 !== null || values.over90 !== null
-      })
-      .map((column) => ({ id: column.id, label: column.label }))
-  }, [selectedSection, selectedRow])
+
+    return (Object.entries(selectedRow.values) as [TradeInStorageId, Record<TradeInConditionId, number | null>][]).filter(
+      ([, conditionValues]) => hasAnyTradeInValue(conditionValues),
+    ).map(([storageId]) => {
+      const labelFromSection =
+        selectedSection?.storageColumns.find((column) => column.id === storageId)?.label || STORAGE_LABELS[storageId]
+      return {
+        id: storageId,
+        label: labelFromSection ?? storageId.toUpperCase(),
+      }
+    })
+  }, [selectedRow, selectedSection])
 
   const [selectedStorageId, setSelectedStorageId] = useState<TradeInStorageId | null>(
     () => availableStorageOptions[0]?.id ?? null,
@@ -102,9 +112,8 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
   const tradeInValueUSD =
     selectedRow && selectedStorageId ? selectedRow.values[selectedStorageId][selectedCondition] : null
 
-  const tradeInValueARS = tradeInValueUSD !== null && effectiveDollarRate
-    ? Math.round(tradeInValueUSD * effectiveDollarRate)
-    : null
+  const tradeInValueARS =
+    tradeInValueUSD !== null && effectiveDollarRate ? Math.round(tradeInValueUSD * effectiveDollarRate) : null
 
   const finalPriceARS = tradeInValueARS !== null ? Math.max(productPriceARS - tradeInValueARS, 0) : productPriceARS
   const finalPriceUSD =
@@ -117,8 +126,8 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
   if (!canEstimate) {
     return (
       <Card className="border border-gray-200 shadow-sm">
-        <CardContent className="p-6 flex items-center gap-3 text-sm text-gray-600">
-          <AlertCircle className="w-5 h-5 text-gray-500" />
+        <CardContent className="flex items-center gap-3 p-6 text-sm text-gray-600">
+          <AlertCircle className="h-5 w-5 text-gray-500" />
           <span>Pronto compartiremos los valores de canje para este modelo.</span>
         </CardContent>
       </Card>
@@ -127,15 +136,15 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
 
   return (
     <Card className="border border-blue-200 shadow-md">
-      <CardContent className="p-6 space-y-5">
+      <CardContent className="space-y-5 p-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-            <ArrowLeftRight className="w-5 h-5" />
+            <ArrowLeftRight className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest text-blue-500">Plan canje</p>
             <h2 className="text-lg font-semibold text-gray-900">
-              Calculá cuánto pagás por {productName} entregando tu usado
+              Calcula cuanto pagas por {productName} entregando tu usado
             </h2>
           </div>
         </div>
@@ -145,7 +154,7 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
             <label className="text-sm font-medium text-gray-700">Modelo a entregar</label>
             <Select value={selectedModelKey} onValueChange={setSelectedModelKey}>
               <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Elegí tu modelo" />
+                <SelectValue placeholder="Elegi tu modelo" />
               </SelectTrigger>
               <SelectContent>
                 {tradeInOptions.map((option) => (
@@ -164,7 +173,7 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
               disabled={availableStorageOptions.length === 0}
             >
               <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Seleccioná la capacidad" />
+                <SelectValue placeholder="Selecciona la capacidad" />
               </SelectTrigger>
               <SelectContent>
                 {availableStorageOptions.map((option) => (
@@ -176,14 +185,14 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Condición de batería</label>
+            <label className="text-sm font-medium text-gray-700">Condicion de bateria</label>
             <Select
               value={selectedCondition}
               onValueChange={(value) => setSelectedCondition(value as TradeInConditionId)}
               disabled={!selectedStorageId}
             >
               <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Seleccioná la condición" />
+                <SelectValue placeholder="Selecciona la condicion" />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(tradeInConditionLabels).map(([conditionId, label]) => (
@@ -196,38 +205,39 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
           </div>
         </div>
 
-        <div className="rounded-2xl bg-blue-50 border border-blue-100 p-5 space-y-3">
+        <div className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-xs uppercase tracking-widest text-blue-500">Valor estimado de tu usado</p>
               <p className="text-xl font-semibold text-blue-700">
-                {tradeInValueUSD !== null ? `USD ${tradeInValueUSD.toLocaleString('es-AR')}` : 'Sin estimación'}
+                {tradeInValueUSD !== null ? `USD ${tradeInValueUSD.toLocaleString("es-AR")}` : "Sin estimacion"}
               </p>
               {tradeInValueARS !== null && (
                 <p className="text-sm text-blue-600">
-                  Aproximadamente ${tradeInValueARS.toLocaleString('es-AR')} ARS
+                  Aproximadamente ${tradeInValueARS.toLocaleString("es-AR")} ARS
                 </p>
               )}
             </div>
             <div>
-              <p className="text-xs uppercase tracking-widest text-blue-500 text-right">Pagás por el iPhone</p>
-              <p className="text-xl font-semibold text-blue-700 text-right">
-                {finalPriceUSD !== null ? `USD ${finalPriceUSD.toLocaleString('es-AR')}` : 'Consulta'}
+              <p className="text-right text-xs uppercase tracking-widest text-blue-500">Pagas por el iPhone</p>
+              <p className="text-right text-xl font-semibold text-blue-700">
+                {finalPriceUSD !== null ? `USD ${finalPriceUSD.toLocaleString("es-AR")}` : "Consulta"}
               </p>
               {finalPriceARS !== null && (
-                <p className="text-sm text-blue-600 text-right">
-                  ${finalPriceARS.toLocaleString('es-AR')} ARS
+                <p className="text-right text-sm text-blue-600">
+                  ${finalPriceARS.toLocaleString("es-AR")} ARS
                 </p>
               )}
             </div>
           </div>
-          <p className="text-xs text-blue-600 leading-relaxed">
-            Los montos son estimativos y pueden ajustarse luego de revisar el equipo. Cotizamos únicamente modelos Apple con condiciones similares a las aquí listadas.
+          <p className="text-xs leading-relaxed text-blue-600">
+            Los montos son estimativos y pueden ajustarse luego de revisar el equipo. Cotizamos unicamente modelos Apple
+            con condiciones similares a las aqui listadas.
           </p>
         </div>
 
         <Button
-          className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-5 py-3 rounded-xl transition-all duration-300"
+          className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-3 font-semibold text-white transition-all duration-300 hover:from-blue-600 hover:to-purple-700 sm:w-auto"
           asChild
         >
           <a
@@ -235,7 +245,7 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
             target="_blank"
             rel="noopener noreferrer"
           >
-            <MessageCircle className="w-4 h-4 mr-2" />
+            <MessageCircle className="mr-2 h-4 w-4" />
             Quiero entregar mi usado
           </a>
         </Button>

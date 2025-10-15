@@ -75,11 +75,18 @@ export default function ProductDetailPage() {
   const effectiveDollarRate = getEffectiveDollarRate()
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [isLoadingProduct, setIsLoadingProduct] = useState(true)
   useEffect(() => {
-    if (params.id) {
-      const foundProduct = getProductById(params.id as string)
-      setProduct(foundProduct || null)
+    if (!params.id) {
+      setProduct(null)
+      setIsLoadingProduct(false)
+      return
     }
+
+    setIsLoadingProduct(true)
+    const foundProduct = getProductById(params.id as string)
+    setProduct(foundProduct || null)
+    setIsLoadingProduct(false)
   }, [params.id, getProductById])
 
   const [openInstallmentCategory, setOpenInstallmentCategory] = useState<InstallmentCategory | null>(null)
@@ -108,6 +115,22 @@ export default function ProductDetailPage() {
 
   const toggleInstallmentCategory = (category: InstallmentCategory) => {
     setOpenInstallmentCategory((current) => (current === category ? null : category))
+  }
+
+  if (isLoadingProduct) {
+    return (
+      <div className="min-h-screen bg-white">
+        <MinimalNavbar />
+        <div className="pt-20 pb-8">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-100 border-t-blue-500" />
+              <p className="mt-6 text-lg font-medium text-gray-700">Cargando producto...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!product) {
