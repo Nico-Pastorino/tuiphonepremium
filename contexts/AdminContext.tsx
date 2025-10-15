@@ -104,6 +104,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const dollarConfigHasLocalUpdates = useRef(false)
   const homeConfigHasLocalUpdates = useRef(false)
   const tradeInConfigHasLocalUpdates = useRef(false)
+  const tradeInConfigLoadedFromStorage = useRef(false)
   useEffect(() => {
     const savedPlans = typeof window === "undefined" ? null : localStorage.getItem(INSTALLMENT_STORAGE_KEY)
     const savedDollarConfig = typeof window === "undefined" ? null : localStorage.getItem(DOLLAR_STORAGE_KEY)
@@ -219,6 +220,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       try {
         const parsed = JSON.parse(savedTradeInConfig) as Partial<TradeInConfig>
         setTradeInConfig((prev) => mergeTradeInConfig(prev, parsed))
+        tradeInConfigLoadedFromStorage.current = true
       } catch (error) {
         console.error("Failed to parse saved trade-in config", error)
       }
@@ -232,7 +234,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           throw new Error(message || "Unable to fetch trade-in config")
         }
         const result = (await response.json()) as { data?: TradeInConfig; fallback?: boolean }
-        if (result?.data && !tradeInConfigHasLocalUpdates.current) {
+        const shouldApplyRemote =
+          result?.data &&
+          !tradeInConfigHasLocalUpdates.current &&
+          (!result.fallback || !tradeInConfigLoadedFromStorage.current)
+
+        if (shouldApplyRemote) {
           setTradeInConfig((prev) => mergeTradeInConfig(prev, result.data))
         }
       } catch (error) {
