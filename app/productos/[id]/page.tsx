@@ -24,7 +24,48 @@ import { useAdmin } from "@/contexts/AdminContext"
 import Image from "next/image"
 import Link from "next/link"
 import type { Product } from "@/types/product"
+import type { InstallmentPlan } from "@/types/finance"
 import { TradeInEstimator } from "@/components/trade-in-estimator"
+
+const CATEGORY_LABELS = {
+  "visa-mastercard": "Visa / Mastercard",
+  naranja: "Tarjeta Naranja",
+} as const
+
+type InstallmentCategory = keyof typeof CATEGORY_LABELS
+
+type InstallmentOption = {
+  id: string
+  months: number
+  interestRate: number
+  monthlyAmount: number
+}
+
+type InstallmentGroup = {
+  category: InstallmentCategory
+  label: string
+  options: InstallmentOption[]
+}
+
+const buildInstallmentGroups = (priceInPesos: number, installmentPlans: InstallmentPlan[]): InstallmentGroup[] => {
+  return (Object.entries(CATEGORY_LABELS) as Array<[InstallmentCategory, string]>).map(([category, label]) => {
+    const options = installmentPlans
+      .filter((plan) => plan.category === category && plan.isActive)
+      .map((plan) => {
+        const totalAmount = priceInPesos * (1 + plan.interestRate / 100)
+        const monthlyAmount = plan.months > 0 ? totalAmount / plan.months : totalAmount
+        return {
+          id: plan.id,
+          months: plan.months,
+          interestRate: plan.interestRate,
+          monthlyAmount,
+        }
+      })
+      .sort((a, b) => a.months - b.months)
+
+    return { category, label, options }
+  })
+}
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -40,6 +81,34 @@ export default function ProductDetailPage() {
       setProduct(foundProduct || null)
     }
   }, [params.id, getProductById])
+
+  const [openInstallmentCategory, setOpenInstallmentCategory] = useState<InstallmentCategory | null>(null)
+
+  useEffect(() => {
+    if (!product) {
+      setOpenInstallmentCategory(null)
+      return
+    }
+
+    const computedPriceInPesos =
+      product.priceUSD !== undefined && product.priceUSD !== null
+        ? product.priceUSD * effectiveDollarRate
+        : product.price
+
+    const groups = buildInstallmentGroups(computedPriceInPesos, installmentPlans)
+
+    setOpenInstallmentCategory((current) => {
+      if (current && groups.some((group) => group.category === current && group.options.length > 0)) {
+        return current
+      }
+      const firstGroupWithOptions = groups.find((group) => group.options.length > 0)
+      return firstGroupWithOptions ? firstGroupWithOptions.category : null
+    })
+  }, [product, installmentPlans, effectiveDollarRate])
+
+  const toggleInstallmentCategory = (category: InstallmentCategory) => {
+    setOpenInstallmentCategory((current) => (current === category ? null : category))
+  }
 
   if (!product) {
     return (
@@ -70,53 +139,8 @@ export default function ProductDetailPage() {
   const discountPercentage = product.condition === "seminuevo" ? 15 : 0
   const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
 
-  const categoryLabels = {
-    "visa-mastercard": "Visa / Mastercard",
-    naranja: "Tarjeta Naranja",
-  } as const
-  type InstallmentCategory = keyof typeof categoryLabels
-
-  const installmentGroups = (Object.entries(categoryLabels) as Array<[InstallmentCategory, string]>).map(
-    ([category, label]) => {
-      const options = installmentPlans
-        .filter((plan) => plan.category === category && plan.isActive)
-        .map((plan) => {
-          const totalAmount = priceInPesos * (1 + plan.interestRate / 100)
-          const monthlyAmount = plan.months > 0 ? totalAmount / plan.months : totalAmount
-          return {
-            id: plan.id,
-            months: plan.months,
-            interestRate: plan.interestRate,
-            monthlyAmount,
-          }
-        })
-        .sort((a, b) => a.months - b.months)
-
-      return { category, label, options }
-    },
-  )
-
-  const [openInstallmentCategory, setOpenInstallmentCategory] = useState<InstallmentCategory | null>(() => {
-    const firstGroupWithOptions = installmentGroups.find((group) => group.options.length > 0)
-    return firstGroupWithOptions ? firstGroupWithOptions.category : null
-  })
-
+  const installmentGroups = buildInstallmentGroups(priceInPesos, installmentPlans)
   const hasInstallmentOptions = installmentGroups.some((group) => group.options.length > 0)
-
-  useEffect(() => {
-    if (openInstallmentCategory) {
-      return
-    }
-
-    const firstGroupWithOptions = installmentGroups.find((group) => group.options.length > 0)
-    if (firstGroupWithOptions) {
-      setOpenInstallmentCategory(firstGroupWithOptions.category)
-    }
-  }, [installmentGroups, openInstallmentCategory])
-
-  const toggleInstallmentCategory = (category: InstallmentCategory) => {
-    setOpenInstallmentCategory((current) => (current === category ? null : category))
-  }
 
   // Productos relacionados
   const relatedProducts = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4)
