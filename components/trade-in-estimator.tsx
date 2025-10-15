@@ -199,7 +199,7 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
                     <SelectLabel className="text-xs uppercase tracking-wide text-gray-500">{section.title}</SelectLabel>
                     {section.rows.map((row) => (
                       <SelectItem key={`${section.id}::${row.id}`} value={`${section.id}::${row.id}`}>
-                        {row.label}
+                        {`${section.title} - ${row.label}`}
                       </SelectItem>
                     ))}
                   </SelectGroup>
