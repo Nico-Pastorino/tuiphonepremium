@@ -490,12 +490,12 @@ const ctaSection = (
       <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-r from-blue-500 to-purple-600">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-3xl mx-auto text-white">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
-              {sectionLabels.cta}
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-blue-100 mb-6 sm:mb-8 px-4">
-              Contáctanos por WhatsApp y te ayudamos a encontrar el producto perfecto
-            </p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
+                Te ayudamos a encontrar el producto Apple perfecto!
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-blue-100 mb-6 sm:mb-8 px-4">
+                Hablá con nuestro equipo por WhatsApp, recibí cotizaciones y financiación a medida en minutos.
+              </p>
             <Button
               asChild
               size="lg"
