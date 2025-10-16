@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Award,
   Cable,
-  Settings,
   Headphones,
   Laptop,
   MessageCircle,
@@ -311,7 +310,7 @@ export default function HomePage() {
               {sectionLabels.benefits}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
-              Beneficios que nos convierten en tu mejor opción Apple
+              Beneficios que nos convierten en tu mejor opcion Apple
             </p>
           </AnimatedSection>
 
@@ -319,21 +318,21 @@ export default function HomePage() {
             {[
               {
                 icon: Shield,
-                title: "Garantía extendida",
-                description: "12 meses de garantía total y soporte técnico especializado",
-                features: ["Soporte 24/7", "Reparación gratuita", "Reemplazo inmediato"],
+                title: "Garantia extendida",
+                description: "12 meses de garantia total y soporte tecnico especializado",
+                features: ["Soporte 24/7", "Reparacion gratuita", "Reemplazo inmediato"],
               },
               {
                 icon: Truck,
-                title: "Envío exprés",
-                description: "Envío gratuito en CABA y GBA en menos de 24 horas",
-                features: ["Envío gratis", "Tracking en tiempo real", "Seguro incluido"],
+                title: "Envio express",
+                description: "Envio gratuito en CABA y GBA en menos de 24 horas",
+                features: ["Envio gratis", "Tracking en tiempo real", "Seguro incluido"],
               },
               {
                 icon: Award,
                 title: "Calidad premium",
-                description: "Productos verificados y certificados con garantía de autenticidad",
-                features: ["100% originales", "Certificación Apple", "Prueba de calidad"],
+                description: "Productos verificados y certificados con garantia de autenticidad",
+                features: ["100% originales", "Certificacion Apple", "Prueba de calidad"],
               },
             ].map((benefit, index) => (
               <AnimatedSection key={benefit.title} animation="fadeUp" delay={index * 200}>
@@ -494,7 +493,7 @@ const ctaSection = (
                 ¡Encontra tu Apple acá!
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-blue-100 mb-6 sm:mb-8 px-4">
-                Hablá con nuestro equipo por WhatsApp, recibí cotizaciones y financiación a medida en minutos.
+                Hablá con nuestro equipo por WhatsApp, recibí cotizaciones y financiacion a medida en minutos.
               </p>
             <Button
               asChild
@@ -596,28 +595,43 @@ const ctaSection = (
       <AnimatedSection animation="fadeUp">
         <footer className="bg-gray-900 text-white py-12 sm:py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 sm:mb-12">
+            <div className="grid grid-cols-1 gap-10 sm:gap-12 lg:grid-cols-[1.6fr_1fr_1fr] mb-10 sm:mb-14">
               <AnimatedSection animation="fadeLeft">
-                <div className="sm:col-span-2 lg:col-span-2">
-                  <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 relative flex-shrink-0">
+                <div className="sm:col-span-2 lg:col-span-1 space-y-6">
+                  <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:gap-6 sm:text-left mb-4 sm:mb-6">
+                    <div className="relative h-12 w-12 flex-shrink-0 sm:h-14 sm:w-14">
                       <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
                     </div>
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-bold">TuIphonepremium</h3>
-                      <p className="text-sm sm:text-base text-gray-400">Productos Apple Premium</p>
+                    <div className="space-y-1">
+                      <h3 className="text-2xl font-bold">TuIphonepremium</h3>
+                      <p className="text-sm text-gray-400 sm:text-base">Tu partner Apple de confianza</p>
                     </div>
                   </div>
-                  <p className="text-sm sm:text-base text-gray-400 mb-4 sm:mb-6 max-w-md">
-                    Tu tienda premium de productos Apple en Argentina. Calidad garantizada y el mejor servicio.
+                  <p className="max-w-lg text-center text-sm text-gray-400 leading-relaxed sm:text-left sm:text-base">
+                    Elegimos los mejores iPhone, iPad, Mac y accesorios para que disfrutes tecnologia premium con garantia
+                    oficial, financiacion flexible y asesoramiento cercano de expertos Apple.
                   </p>
+                  <div className="flex flex-wrap justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-gray-200 sm:justify-start sm:text-sm">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                      <Truck className="h-4 w-4 text-blue-200" />
+                      Envio en 24-48 hs
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                      <Shield className="h-4 w-4 text-blue-200" />
+                      Garantia oficial
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                      <CreditCard className="h-4 w-4 text-blue-200" />
+                      Financiacion flexible
+                    </span>
+                  </div>
                 </div>
               </AnimatedSection>
 
               <AnimatedSection animation="fadeUp" delay={200}>
-                <div>
+                <div className="space-y-4">
                   <h4 className="font-bold mb-3 sm:mb-4 text-base sm:text-lg">Productos</h4>
-                  <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-400">
+                  <ul className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm text-gray-400 sm:grid-cols-2 lg:grid-cols-1 sm:text-base">
                     <li>
                       <Link href="/productos?category=iphone" className="hover:text-white transition-colors">
                         iPhone
@@ -653,9 +667,9 @@ const ctaSection = (
               </AnimatedSection>
 
               <AnimatedSection animation="fadeRight" delay={400}>
-                <div>
+                <div className="space-y-5">
                   <h4 className="font-bold mb-3 sm:mb-4 text-base sm:text-lg">Contacto</h4>
-                  <div className="space-y-3 text-sm sm:text-base text-gray-400 mb-4 sm:mb-6">
+                  <div className="space-y-4 text-sm text-gray-300 sm:text-base mb-4 sm:mb-6">
                     <div>
                       <p className="font-medium text-white">WhatsApp</p>
                       <p className="text-xs sm:text-sm">+{homeConfig.whatsappNumber}</p>
@@ -665,33 +679,34 @@ const ctaSection = (
                       <p className="text-xs sm:text-sm">info@tuiphonepremium.com.ar</p>
                     </div>
                     <div>
-                      <p className="font-medium text-white">Ubicación</p>
+                      <p className="font-medium text-white">Ubicacion</p>
                       <p className="text-xs sm:text-sm">Buenos Aires, Argentina</p>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                    <Button
-                      asChild
-                      className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 text-sm sm:text-base"
-                    >
-                      <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Escribir
-                      </a>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="w-full sm:w-auto border-white/20 bg-white/5 text-white hover:bg-white/10 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 text-sm sm:text-base"
-                    >
-                      <Link href="/admin">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Administrar sitio
-                      </Link>
-                    </Button>
-                  </div>
+                  <Button
+                    asChild
+                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 text-sm sm:text-base"
+                  >
+                    <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2">
+                      <MessageCircle className="w-4 h-4" />
+                      Escribir por WhatsApp
+                    </a>
+                  </Button>
                 </div>
               </AnimatedSection>
+            </div>
+
+            <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-center text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:text-sm">
+              <p>&copy; {new Date().getFullYear()} TuIphonepremium. Todos los derechos reservados.</p>
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+                <Link href="/privacidad" className="hover:text-white transition-colors">
+                  Politica de privacidad
+                </Link>
+                <span className="hidden sm:inline text-white/30">-</span>
+                <Link href="/legales" className="hover:text-white transition-colors">
+                  Terminos y condiciones
+                </Link>
+              </div>
             </div>
           </div>
         </footer>
