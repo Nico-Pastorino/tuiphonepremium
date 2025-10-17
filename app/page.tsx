@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Award,
   Cable,
+  CreditCard,
   Headphones,
   Laptop,
   Mail,
