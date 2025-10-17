@@ -56,10 +56,14 @@ export function MinimalNavbar() {
     <>
       {/* Navbar - Logo y texto más grandes en móvil */}
       <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] sm:w-[95%] max-w-6xl flex items-center justify-between px-6 py-4 rounded-3xl shadow-lg z-50 bg-gradient-to-r from-blue-500 to-purple-600">
-        <div className="flex items-center gap-4">
+        <Link
+          href="/"
+          onClick={closeMenu}
+          className="flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-2xl transition"
+        >
           <Image src="/logo-final.png" alt="TuiPhonepremium Logo" width={40} height={40} className="object-contain" />
           <span className="text-xl sm:text-2xl font-bold text-white">TuiPhonepremium</span>
-        </div>
+        </Link>
         <Button
           variant="ghost"
           size="lg"
@@ -93,7 +97,11 @@ export function MinimalNavbar() {
           }
         >
           <div className="flex items-center justify-between p-6 border-b border-white/10">
-            <div className="flex items-center gap-4">
+            <Link
+              href="/"
+              onClick={handleLinkClick}
+              className="flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-2xl transition"
+            >
               <Image
                 src="/logo-final.png"
                 alt="TuiPhonepremium Logo"
@@ -102,7 +110,7 @@ export function MinimalNavbar() {
                 className="object-contain"
               />
               <span className="text-xl font-bold text-white">TuiPhonepremium</span>
-            </div>
+            </Link>
             <Button
               variant="ghost"
               size="sm"
