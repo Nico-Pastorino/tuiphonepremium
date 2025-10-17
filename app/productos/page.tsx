@@ -49,7 +49,7 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-gray-50">
       <MinimalNavbar />
 
-      <div className="pt-28 pb-12 sm:pt-32">
+      <div className="pt-24 pb-12 sm:pt-28">
         <div className="container mx-auto px-4">
           <AnimatedSection animation="fadeUp">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
