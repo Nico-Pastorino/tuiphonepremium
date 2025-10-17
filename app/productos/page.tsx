@@ -12,7 +12,6 @@ import { useProducts } from "@/contexts/ProductContext"
 import type { Product } from "@/types/product" // <-- Importa el tipo correcto
 
 export default function ProductsPage() {
-  // Tipado explícito para products
   const { products } = useProducts() // El contexto ya provee el tipo correcto
   const searchParams = useSearchParams()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -57,7 +56,7 @@ export default function ProductsPage() {
               <div>
                 <h1 className="text-4xl font-bold text-gray-900 mb-2">Productos Apple</h1>
                 <p className="text-gray-600">
-                  Descubre nuestra selecci??n completa de productos Apple nuevos y seminuevos
+                  Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos
                 </p>
               </div>
               <Button
@@ -71,32 +70,25 @@ export default function ProductsPage() {
             </div>
           </AnimatedSection>
 
-          {(selectedCategory || selectedCondition) && (
-            <AnimatedSection animation="fadeUp" delay={150}>
-              <div className="mb-6 flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-600">Filtros activos:</span>
-                {selectedCategory && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setSelectedCategory(null)}
-                    className="h-7 px-2 text-xs"
-                  >
-                    {selectedCategory} ?-
+          {showFilters && (
+            <div className="fixed inset-0 z-40 lg:hidden">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowFilters(false)} />
+              <div className="absolute inset-y-0 left-0 w-11/12 max-w-xs bg-white shadow-2xl rounded-r-3xl overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
+                  <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
+                    Cerrar
                   </Button>
-                )}
-                {selectedCondition && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setSelectedCondition(null)}
-                    className="h-7 px-2 text-xs"
-                  >
-                    {selectedCondition} ?-
-                  </Button>
-                )}
+                </div>
+                <div className="flex-1 overflow-y-auto p-5">
+                  <ProductFilters
+                    onFilterChange={(filters) => {
+                      handleFilterChange(filters)
+                    }}
+                  />
+                </div>
               </div>
-            </AnimatedSection>
+            </div>
           )}
 
           <div className="flex flex-col gap-8 lg:flex-row-reverse">
@@ -108,15 +100,6 @@ export default function ProductsPage() {
                   <p className="text-gray-600">
                     Mostrando {filteredProducts.length} de {products.length} productos
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowFilters((prev) => !prev)}
-                    className="hidden lg:inline-flex"
-                  >
-                    <Filter className="w-4 h-4 mr-2" />
-                    Ajustar filtros
-                  </Button>
                 </div>
 
                 {/* Products */}
@@ -149,14 +132,8 @@ export default function ProductsPage() {
             </div>
 
             {/* Sidebar Filters */}
-            <div className={`lg:w-80 w-full ${showFilters ? "block" : "hidden lg:block"}`}>
+            <div className="hidden lg:block lg:w-80">
               <AnimatedSection animation="fadeLeft" className="lg:sticky lg:top-32">
-                <div className="mb-4 flex items-center justify-between lg:hidden">
-                  <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
-                  <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
-                    Cerrar
-                  </Button>
-                </div>
                 <ProductFilters onFilterChange={handleFilterChange} />
               </AnimatedSection>
             </div>
@@ -166,4 +143,5 @@ export default function ProductsPage() {
     </div>
   )
 }
+
 

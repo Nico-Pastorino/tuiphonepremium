@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -38,9 +38,34 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
           <h3 className="text-2xl font-bold text-gray-900">Filtrar productos</h3>
         </div>
 
+        {/* Conditions */}
+        <div className="mb-8">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Estado</h4>
+          <div className="flex flex-wrap gap-4">
+            {conditions.map((condition) => (
+              <Button
+                key={condition.id}
+                variant={activeCondition === condition.id ? "default" : "outline"}
+                className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-300 ${
+                  activeCondition === condition.id
+                    ? `${condition.color} text-white shadow-lg`
+                    : "border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                }`}
+                onClick={() => {
+                  const newCondition = activeCondition === condition.id ? null : condition.id
+                  setActiveCondition(newCondition)
+                  onFilterChange?.({ category: activeCategory, condition: newCondition })
+                }}
+              >
+                {condition.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {/* Categories */}
         <div className="mb-8">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Categorías</h4>
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Categorias</h4>
           <div className="flex flex-wrap gap-4">
             {categories.map((category) => (
               <Button
@@ -70,31 +95,6 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
           </div>
         </div>
 
-        {/* Conditions */}
-        <div className="mb-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Estado</h4>
-          <div className="flex flex-wrap gap-4">
-            {conditions.map((condition) => (
-              <Button
-                key={condition.id}
-                variant={activeCondition === condition.id ? "default" : "outline"}
-                className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-300 ${
-                  activeCondition === condition.id
-                    ? `${condition.color} text-white shadow-lg`
-                    : "border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-                }`}
-                onClick={() => {
-                  const newCondition = activeCondition === condition.id ? null : condition.id
-                  setActiveCondition(newCondition)
-                  onFilterChange?.({ category: activeCategory, condition: newCondition })
-                }}
-              >
-                {condition.name}
-              </Button>
-            ))}
-          </div>
-        </div>
-
         {/* Active filters */}
         {(activeCategory || activeCondition) && (
           <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
@@ -107,7 +107,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
                   onFilterChange?.({ category: null, condition: activeCondition })
                 }}
               >
-                {categories.find((c) => c.id === activeCategory)?.name} ×
+                {categories.find((c) => c.id === activeCategory)?.name} x
               </Badge>
             )}
             {activeCondition && (
@@ -118,7 +118,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
                   onFilterChange?.({ category: activeCategory, condition: null })
                 }}
               >
-                {conditions.find((c) => c.id === activeCondition)?.name} ×
+                {conditions.find((c) => c.id === activeCondition)?.name} x
               </Badge>
             )}
           </div>
@@ -127,3 +127,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
     </Card>
   )
 }
+
+
+
+
