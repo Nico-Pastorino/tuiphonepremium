@@ -12,6 +12,8 @@ import {
   Cable,
   Headphones,
   Laptop,
+  Mail,
+  MapPin,
   MessageCircle,
   RefreshCw,
   Shield,
@@ -595,9 +597,9 @@ const ctaSection = (
       <AnimatedSection animation="fadeUp">
         <footer className="bg-gray-900 text-white py-12 sm:py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 gap-10 sm:gap-12 lg:grid-cols-[1.6fr_1fr_1fr] mb-10 sm:mb-14">
+            <div className="grid grid-cols-1 gap-10 sm:gap-12 md:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr] items-start mb-10 sm:mb-14">
               <AnimatedSection animation="fadeLeft">
-                <div className="sm:col-span-2 lg:col-span-1 space-y-6">
+                <div className="space-y-6">
                   <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:gap-6 sm:text-left mb-4 sm:mb-6">
                     <div className="relative h-12 w-12 flex-shrink-0 sm:h-14 sm:w-14">
                       <Image src="/logo-final.png" alt="TuIphonepremium Logo" fill className="object-contain" />
@@ -607,20 +609,20 @@ const ctaSection = (
                       <p className="text-sm text-gray-400 sm:text-base">Tu partner Apple de confianza</p>
                     </div>
                   </div>
-                  <p className="max-w-lg text-center text-sm text-gray-400 leading-relaxed sm:text-left sm:text-base">
+                  <p className="max-w-xl text-center text-sm text-gray-400 leading-relaxed sm:text-left sm:text-base">
                     Elegimos los mejores iPhone, iPad, Mac y accesorios para que disfrutes tecnologia premium con garantia
                     oficial, financiacion flexible y asesoramiento cercano de expertos Apple.
                   </p>
-                  <div className="flex flex-wrap justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-gray-200 sm:justify-start sm:text-sm">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                  <div className="grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-gray-200 sm:grid-cols-2 lg:grid-cols-3 sm:text-sm">
+                    <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-1.5">
                       <Truck className="h-4 w-4 text-blue-200" />
                       Envio en 24-48 hs
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                    <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-1.5">
                       <Shield className="h-4 w-4 text-blue-200" />
                       Garantia oficial
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                    <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-1.5">
                       <CreditCard className="h-4 w-4 text-blue-200" />
                       Financiacion flexible
                     </span>
@@ -629,9 +631,9 @@ const ctaSection = (
               </AnimatedSection>
 
               <AnimatedSection animation="fadeUp" delay={200}>
-                <div className="space-y-4">
-                  <h4 className="font-bold mb-3 sm:mb-4 text-base sm:text-lg">Productos</h4>
-                  <ul className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm text-gray-400 sm:grid-cols-2 lg:grid-cols-1 sm:text-base">
+                <div className="space-y-4 sm:space-y-5 lg:pl-4">
+                  <h4 className="font-bold text-base sm:text-lg">Productos</h4>
+                  <ul className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm text-gray-400 sm:text-base lg:grid-cols-1">
                     <li>
                       <Link href="/productos?category=iphone" className="hover:text-white transition-colors">
                         iPhone
@@ -666,32 +668,54 @@ const ctaSection = (
                 </div>
               </AnimatedSection>
 
-              <AnimatedSection animation="fadeRight" delay={400}>
-                <div className="space-y-5">
-                  <h4 className="font-bold mb-3 sm:mb-4 text-base sm:text-lg">Contacto</h4>
-                  <div className="space-y-4 text-sm text-gray-300 sm:text-base mb-4 sm:mb-6">
-                    <div>
-                      <p className="font-medium text-white">WhatsApp</p>
-                      <p className="text-xs sm:text-sm">+{homeConfig.whatsappNumber}</p>
+              <AnimatedSection animation="fadeRight" delay={350}>
+                <div className="space-y-6 lg:pl-4">
+                  <h4 className="font-bold text-base sm:text-lg">Contacto</h4>
+                  <div className="space-y-3 text-sm text-gray-300 sm:text-base">
+                    <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
+                      <span className="rounded-lg bg-white/10 p-2">
+                        <Smartphone className="h-4 w-4 text-blue-200" />
+                      </span>
+                      <div>
+                        <p className="font-medium text-white">WhatsApp</p>
+                        <p className="text-xs sm:text-sm">+{homeConfig.whatsappNumber}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-white">Email</p>
-                      <p className="text-xs sm:text-sm">info@tuiphonepremium.com.ar</p>
+                    <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
+                      <span className="rounded-lg bg-white/10 p-2">
+                        <Mail className="h-4 w-4 text-blue-200" />
+                      </span>
+                      <div>
+                        <p className="font-medium text-white">Email</p>
+                        <p className="text-xs sm:text-sm break-all">info@tuiphonepremium.com.ar</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-white">Ubicacion</p>
-                      <p className="text-xs sm:text-sm">Buenos Aires, Argentina</p>
+                    <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
+                      <span className="rounded-lg bg-white/10 p-2">
+                        <MapPin className="h-4 w-4 text-blue-200" />
+                      </span>
+                      <div>
+                        <p className="font-medium text-white">Ubicacion</p>
+                        <p className="text-xs sm:text-sm">Buenos Aires, Argentina</p>
+                      </div>
                     </div>
                   </div>
-                  <Button
-                    asChild
-                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 text-sm sm:text-base"
-                  >
-                    <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2">
-                      <MessageCircle className="w-4 h-4" />
-                      Escribir por WhatsApp
-                    </a>
-                  </Button>
+                  <div className="pt-1">
+                    <Button
+                      asChild
+                      className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all duration-300 text-sm sm:text-base shadow-md"
+                    >
+                      <a
+                        href={whatsappLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Escribir por WhatsApp
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               </AnimatedSection>
             </div>
