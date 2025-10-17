@@ -79,8 +79,8 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
 
   const handleAddImageFromLibrary = (image: ProductImageItem) => {
     if (formData.images.includes(image.url)) {
-      // Mostrar mensaje si la imagen ya está agregada
-      alert("Esta imagen ya está agregada al producto")
+      // Mostrar mensaje si la imagen ya esta agregada
+      alert("Esta imagen ya esta agregada al producto")
       return
     }
 
@@ -250,7 +250,6 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                 <SelectContent>
                   <SelectItem value="nuevo">Nuevo</SelectItem>
                   <SelectItem value="seminuevo">Seminuevo</SelectItem>
-                  <SelectItem value="usado">Usado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -270,7 +269,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
             <Label>Imagenes del producto</Label>
             {formData.images.length > 0 && (
               <div className="space-y-2">
-                <Label>Imágenes del producto ({formData.images.length})</Label>
+                <Label>Imagenes del producto ({formData.images.length})</Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {formData.images.map((image, index) => (
                     <div key={index} className="relative group">
@@ -433,3 +432,5 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     </Card>
   )
 }
+
+

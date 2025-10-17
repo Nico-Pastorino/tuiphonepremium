@@ -3,7 +3,7 @@ export interface Product {
   name: string
   description: string
   category: string
-  condition: "nuevo" | "seminuevo" | "usado"
+  condition: "nuevo" | "seminuevo"
   price: number
   originalPrice?: number | null
   priceUSD?: number | null
@@ -22,7 +22,7 @@ export interface ProductFormData {
   originalPrice?: number | null
   priceUSD?: number | null
   category: string
-  condition: "nuevo" | "seminuevo" | "usado"
+  condition: "nuevo" | "seminuevo"
   images: string[]
   specifications: Record<string, string | number | boolean>
   stock: number
@@ -39,3 +39,5 @@ export interface ProductFilters {
 
 export type ProductInsert = Omit<Product, "id" | "createdAt" | "updatedAt">
 export type ProductUpdate = Partial<ProductInsert>
+
+

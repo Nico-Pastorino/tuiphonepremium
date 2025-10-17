@@ -45,7 +45,7 @@ function transformSupabaseProduct(row: ProductRow): Product {
     originalPrice: row.original_price ?? undefined,
     priceUSD: row.price_usd ?? undefined,
     category: row.category,
-    condition: row.condition as "nuevo" | "seminuevo" | "usado",
+    condition: row.condition === "nuevo" ? "nuevo" : "seminuevo",
     images: row.images ?? [],
     specifications: normalizeSpecifications(row.specifications),
     stock: row.stock,

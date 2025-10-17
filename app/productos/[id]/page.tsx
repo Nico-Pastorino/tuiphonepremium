@@ -354,11 +354,6 @@ export default function ProductDetailPage() {
                       {product.featured && (
                         <Badge className="rounded-full bg-gray-900 px-3 py-1 font-medium text-white">Destacado</Badge>
                       )}
-                      {discountPercentage > 0 && (
-                        <Badge className="rounded-full bg-red-500 px-3 py-1 font-bold text-white">
-                          -{discountPercentage}%
-                        </Badge>
-                      )}
                     </div>
                   </div>
 
