@@ -607,8 +607,8 @@ const ctaSection = (
                     </div>
                     <div className="space-y-1">
                       <h3 className="text-2xl font-bold">TuIphonepremium</h3>
-                      <p className="text-sm text-gray-400 sm:text-base">Tu partner Apple de confianza</p>
-                    </div>
+                      <p className="text-sm text-gray-400 sm:text-base">Tu socio Apple de confianza</p>
+                    </div> 
                   </div>
                   <p className="max-w-xl text-center text-sm text-gray-400 leading-relaxed sm:text-left sm:text-base">
                     Elegimos los mejores iPhone, iPad, Mac y accesorios para que disfrutes tecnologia premium con garantia

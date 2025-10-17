@@ -47,6 +47,7 @@ export function MinimalNavbar() {
     { name: "iPhones Nuevos", href: "/productos?category=iphone&condition=nuevo", hasSubmenu: false },
     { name: "Macbooks", href: "/productos?category=mac", hasSubmenu: false },
     { name: "iPads", href: "/productos?category=ipad", hasSubmenu: false },
+    { name: "Apple Watch", href: "/productos?category=watch", hasSubmenu: false },
     { name: "AirPods", href: "/productos?category=airpods", hasSubmenu: false },
     { name: "Accesorios", href: "/productos?category=accesorios", hasSubmenu: false },
     { name: "Contacto", href: "/contacto", hasSubmenu: false },
