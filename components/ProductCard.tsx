@@ -40,10 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <Image src={product.images[0] || "/placeholder.svg"} alt={product.name} fill className="object-contain" />
         </div>
         <div className="p-4 space-y-3">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{product.name}</h3>
-            <p className="text-sm text-gray-600 capitalize">{product.category}</p>
-          </div>
+          <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{product.name}</h3>
           <div className="space-y-1">
             <div className="text-2xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</div>
             {priceInDollars !== null && (

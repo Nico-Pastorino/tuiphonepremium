@@ -45,12 +45,9 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
           />
         </div>
         <div className="p-6 space-y-4">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
-              {product.name}
-            </h3>
-            <p className="text-sm text-gray-600 capitalize">{product.category}</p>
-          </div>
+          <h3 className="text-xl font-semibold text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+            {product.name}
+          </h3>
           <div className="space-y-1">
             <div className="text-3xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</div>
             {priceInDollars !== null && (

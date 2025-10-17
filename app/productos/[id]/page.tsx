@@ -397,10 +397,6 @@ export default function ProductDetailPage() {
             <AnimatedSection animation="fadeRight">
               <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-5 lg:gap-6">
-                  <Badge variant="outline" className="rounded-full bg-blue-50 px-3 py-1 text-blue-600">
-                    {product.category.toUpperCase()}
-                  </Badge>
-
                   <h1 className="text-4xl font-bold leading-tight text-gray-900">{product.name}</h1>
 
                   <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">

@@ -625,7 +625,6 @@ function AdminDashboard() {
                       <CardContent className="p-4">
                         <div className="space-y-2">
                           <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
-                          <p className="text-sm text-gray-600 capitalize">{product.category}</p>
                           <div className="flex justify-between items-center">
                             <span className="text-xl font-bold">
                               ${computeDisplayPrice(product).toLocaleString("es-AR")}
