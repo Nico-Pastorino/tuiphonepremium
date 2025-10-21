@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { AnimatedSection } from "@/components/AnimatedSection"
@@ -71,7 +71,7 @@ export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { getProductById, products } = useProducts()
-  const { installmentPlans, getEffectiveDollarRate } = useAdmin()
+  const { installmentPlans, getEffectiveDollarRate, homeConfig } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -116,6 +116,17 @@ export default function ProductDetailPage() {
   const toggleInstallmentCategory = (category: InstallmentCategory) => {
     setOpenInstallmentCategory((current) => (current === category ? null : category))
   }
+
+  const whatsappNumber = useMemo(() => {
+    const configuredNumber = homeConfig.whatsappNumber?.trim()
+    return configuredNumber && configuredNumber.length > 0 ? configuredNumber : "5491112345678"
+  }, [homeConfig.whatsappNumber])
+
+  const productWhatsappLink = useMemo(() => {
+    const baseLink = `https://wa.me/${whatsappNumber}`
+    const message = product?.name ? `Quiero consultar por ${product.name}` : "Quiero consultar por un producto"
+    return `${baseLink}?text=${encodeURIComponent(message)}`
+  }, [product?.name, whatsappNumber])
 
   if (isLoadingProduct) {
     return (
@@ -220,7 +231,7 @@ export default function ProductDetailPage() {
           className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 py-4 text-lg font-semibold text-white shadow-sm transition hover:from-blue-600 hover:to-purple-700"
           asChild
         >
-          <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+          <a href={productWhatsappLink} target="_blank" rel="noopener noreferrer">
             <MessageCircle className="mr-2 h-5 w-5" />
             Consultar por WhatsApp
           </a>

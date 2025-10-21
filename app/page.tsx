@@ -145,59 +145,43 @@ export default function HomePage() {
   const selectedValue =
     selectedRow && selectedStorageId ? selectedRow.values[selectedStorageId][selectedCondition] : null
   const formattedTradeInValue = selectedValue !== null ? usdFormatter.format(selectedValue) : null
-  const tradeInWhatsappMessage = useMemo(() => {
-    const details: string[] = ["Quiero realizar el plan canje"]
+  const whatsappLink = `https://wa.me/${homeConfig.whatsappNumber}`
 
-    const modelParts: string[] = []
-    if (selectedSection?.title) {
-      modelParts.push(selectedSection.title)
-    }
-    if (selectedRow?.label) {
-      modelParts.push(selectedRow.label)
-    }
-    if (modelParts.length > 0) {
-      details.push(`Modelo: ${modelParts.join(" - ")}`)
-    }
+  const tradeInWhatsappLines: string[] = ["Quiero realizar el plan canje"]
 
-    const storageLabel =
-      availableStorageOptions.find((option) => option.id === selectedStorageId)?.label ?? null
-    if (storageLabel) {
-      details.push(`Capacidad: ${storageLabel}`)
-    }
+  const modelParts: string[] = []
+  if (selectedSection?.title) {
+    modelParts.push(selectedSection.title)
+  }
+  if (selectedRow?.label) {
+    modelParts.push(selectedRow.label)
+  }
+  if (modelParts.length > 0) {
+    tradeInWhatsappLines.push(`Modelo: ${modelParts.join(" - ")}`)
+  }
 
-    const conditionLabel = tradeInConditionLabels[selectedCondition]
-    if (conditionLabel) {
-      details.push(`Condicion de bateria: ${conditionLabel}`)
-    }
+  const storageLabel = availableStorageOptions.find((option) => option.id === selectedStorageId)?.label ?? null
+  if (storageLabel) {
+    tradeInWhatsappLines.push(`Capacidad: ${storageLabel}`)
+  }
 
-    if (formattedTradeInValue) {
-      details.push(`Valor estimado: ${formattedTradeInValue}`)
-    }
+  const conditionLabel = tradeInConditionLabels[selectedCondition]
+  if (conditionLabel) {
+    tradeInWhatsappLines.push(`Condicion de bateria: ${conditionLabel}`)
+  }
 
-    return details.join("\n")
-  }, [
-    availableStorageOptions,
-    formattedTradeInValue,
-    selectedCondition,
-    selectedRow,
-    selectedSection,
-    selectedStorageId,
-    tradeInConditionLabels,
-  ])
-  const tradeInWhatsappLink = useMemo(() => {
-    if (!tradeInWhatsappMessage) {
-      return whatsappLink
-    }
-    const messageParam = encodeURIComponent(tradeInWhatsappMessage)
-    return `${whatsappLink}?text=${messageParam}`
-  }, [tradeInWhatsappMessage, whatsappLink])
+  if (formattedTradeInValue) {
+    tradeInWhatsappLines.push(`Valor estimado: ${formattedTradeInValue}`)
+  }
+
+  const tradeInWhatsappMessage = tradeInWhatsappLines.join("\n")
+  const tradeInWhatsappLink = `${whatsappLink}?text=${encodeURIComponent(tradeInWhatsappMessage)}`
 
   const featuredProducts = useMemo(() => products.filter((product) => product.featured).slice(0, 8), [products])
   const enabledSections = homeConfig.sections.filter((section) => section.enabled)
   const firstSectionId = enabledSections[0]?.id
 
   const heroImage = homeConfig.heroImage || "/portada.jpg"
-  const whatsappLink = `https://wa.me/${homeConfig.whatsappNumber}`
 
   const categoriesSection = (
     <AnimatedSection animation="fadeUp">
