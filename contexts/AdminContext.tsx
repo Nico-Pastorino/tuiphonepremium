@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react"
 
 import type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 import { DEFAULT_HOME_CONFIG, mergeHomeConfig } from "@/lib/home-config"
@@ -16,17 +16,11 @@ import {
   sanitizeInstallmentPlanCollection,
 } from "@/lib/finance-config"
 
+import type { ImageLibraryItem } from "@/types/image-library"
+
 export type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 export type { TradeInConfig } from "@/types/trade-in"
 export type { InstallmentPlan, DollarConfig } from "@/types/finance"
-
-export interface ProductImageItem {
-  id: string
-  label: string
-  category: string
-  url: string
-  createdAt: string
-}
 
 interface AdminContextType {
   installmentPlans: InstallmentPlan[]
@@ -36,10 +30,14 @@ interface AdminContextType {
   getActiveInstallmentPlans: () => InstallmentPlan[]
   getInstallmentPlansByCategory: (category: InstallmentPlan["category"]) => InstallmentPlan[]
 
-  imageLibrary: ProductImageItem[]
-  addImageToLibrary: (image: Omit<ProductImageItem, "id" | "createdAt">) => void
-  updateImageInLibrary: (id: string, updates: Partial<Omit<ProductImageItem, "id" | "createdAt">>) => void
-  removeImageFromLibrary: (id: string) => void
+  imageLibrary: ImageLibraryItem[]
+  refreshImageLibrary: () => Promise<void>
+  addImageToLibrary: (image: { label: string; category: string; dataUrl: string }) => Promise<ImageLibraryItem>
+  updateImageInLibrary: (
+    id: string,
+    updates: Partial<Omit<ImageLibraryItem, "id" | "createdAt">>,
+  ) => Promise<void>
+  removeImageFromLibrary: (id: string) => Promise<void>
 
   dollarConfig: DollarConfig
   updateDollarConfig: (config: Partial<DollarConfig>) => void
@@ -59,28 +57,7 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined)
 
-function sanitizeProductImage(raw: any, fallbackIndex: number): ProductImageItem | null {
-  const url = typeof raw?.url === "string" ? raw.url.trim() : ""
-  if (!url) {
-    return null
-  }
-  const label = typeof raw?.label === "string" && raw.label.trim().length > 0 ? raw.label.trim() : "Imagen"
-  const category = typeof raw?.category === "string" && raw.category.trim().length > 0 ? raw.category.trim() : "general"
-  const hasValidId = typeof raw?.id === "string" && raw.id.trim().length > 0
-  const id = hasValidId ? (raw.id as string) : `${category}-${Date.now()}-${fallbackIndex}`
-  return {
-    id,
-    label,
-    category,
-    url,
-    createdAt: typeof raw?.createdAt === "string" ? (raw.createdAt as string) : new Date().toISOString(),
-  }
-}
-
-const defaultImageLibrary: ProductImageItem[] = []
-
 const INSTALLMENT_STORAGE_KEY = "admin-installment-plans"
-const IMAGE_LIBRARY_STORAGE_KEY = "admin-image-library"
 const DOLLAR_STORAGE_KEY = "admin-dollar-config"
 const AUTH_STORAGE_KEY = "admin-authenticated"
 const HOME_STORAGE_KEY = "admin-home-config"
@@ -91,14 +68,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans),
   )
   const [dollarConfig, setDollarConfig] = useState<DollarConfig>({ ...DEFAULT_DOLLAR_CONFIG })
-  const [imageLibrary, setImageLibrary] = useState<ProductImageItem[]>(defaultImageLibrary)
+  const [imageLibrary, setImageLibrary] = useState<ImageLibraryItem[]>([])
   const [homeConfig, setHomeConfig] = useState<HomeConfig>(DEFAULT_HOME_CONFIG)
   const [tradeInConfig, setTradeInConfig] = useState<TradeInConfig>(DEFAULT_TRADE_IN_CONFIG)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [installmentPlansInitialized, setInstallmentPlansInitialized] = useState(false)
   const [dollarConfigInitialized, setDollarConfigInitialized] = useState(false)
   const [homeConfigInitialized, setHomeConfigInitialized] = useState(false)
-  const [imageLibraryInitialized, setImageLibraryInitialized] = useState(false)
   const [tradeInConfigInitialized, setTradeInConfigInitialized] = useState(false)
   const installmentPlansHasLocalUpdates = useRef(false)
   const dollarConfigHasLocalUpdates = useRef(false)
@@ -111,7 +87,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const savedAuth = typeof window === "undefined" ? null : localStorage.getItem(AUTH_STORAGE_KEY)
     const savedHomeConfig = typeof window === "undefined" ? null : localStorage.getItem(HOME_STORAGE_KEY)
     const savedTradeInConfig = typeof window === "undefined" ? null : localStorage.getItem(TRADE_IN_STORAGE_KEY)
-    const savedImageLibrary = typeof window === "undefined" ? null : localStorage.getItem(IMAGE_LIBRARY_STORAGE_KEY)
 
     if (savedPlans) {
       try {
@@ -251,31 +226,30 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     void loadRemoteTradeInConfig()
 
-    if (savedImageLibrary) {
-      try {
-        const parsed = JSON.parse(savedImageLibrary) as unknown
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const sanitized = parsed
-            .map((item, index) => sanitizeProductImage(item, index))
-            .filter((item): item is ProductImageItem => item !== null)
-          if (sanitized.length > 0) {
-            setImageLibrary(sanitized)
-          } else {
-            setImageLibrary(defaultImageLibrary)
-          }
-        } else {
-          setImageLibrary(defaultImageLibrary)
-        }
-      } catch (error) {
-        console.error("Failed to parse saved image library", error)
-        setImageLibrary(defaultImageLibrary)
-      }
-    } else {
-      setImageLibrary(defaultImageLibrary)
-    }
-
-    setImageLibraryInitialized(true)
   }, [])
+
+  const refreshImageLibrary = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/image-library")
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || "Unable to fetch image library")
+      }
+      const result = (await response.json()) as { data?: ImageLibraryItem[] }
+      if (Array.isArray(result?.data)) {
+        setImageLibrary(result.data)
+      } else {
+        setImageLibrary([])
+      }
+    } catch (error) {
+      console.error("Failed to fetch image library from API", error)
+      setImageLibrary([])
+    }
+  }, [])
+
+  useEffect(() => {
+    void refreshImageLibrary()
+  }, [refreshImageLibrary])
 
   useEffect(() => {
     if (!installmentPlansInitialized) return
@@ -301,11 +275,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       }),
     )
   }, [homeConfig, homeConfigInitialized])
-
-  useEffect(() => {
-    if (!imageLibraryInitialized) return
-    localStorage.setItem(IMAGE_LIBRARY_STORAGE_KEY, JSON.stringify(imageLibrary))
-  }, [imageLibrary, imageLibraryInitialized])
 
   useEffect(() => {
     if (!tradeInConfigInitialized) return
@@ -393,32 +362,65 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const addImageToLibrary = (imageData: Omit<ProductImageItem, "id" | "createdAt">) => {
-    setImageLibrary((prev) => {
-      if (prev.some((item) => item.url === imageData.url)) {
-        return prev
-      }
-      const id =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${imageData.category}-${Date.now()}-${Math.random().toString(16).slice(2)}`
-      const newItem: ProductImageItem = {
-        id,
-        label: imageData.label.trim() || "Imagen",
-        category: imageData.category.trim() || "general",
-        url: imageData.url.trim(),
-        createdAt: new Date().toISOString(),
-      }
-      return [...prev, newItem]
+  const addImageToLibrary = async (imageData: { label: string; category: string; dataUrl: string }) => {
+    const payload = {
+      label: imageData.label.trim() || "Imagen",
+      category: imageData.category.trim() || "general",
+      dataUrl: imageData.dataUrl,
+    }
+
+    const response = await fetch("/api/admin/image-library", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     })
+
+    if (!response.ok) {
+      const message = await response.text()
+      throw new Error(message || "No se pudo subir la imagen")
+    }
+
+    const result = (await response.json()) as { data?: ImageLibraryItem }
+    if (!result?.data) {
+      throw new Error("La respuesta del servidor no contiene la imagen")
+    }
+
+    setImageLibrary((prev) => [...prev, result.data!])
+    return result.data
   }
 
-  const updateImageInLibrary = (id: string, updates: Partial<Omit<ProductImageItem, "id" | "createdAt">>) => {
-    setImageLibrary((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)))
+  const updateImageInLibrary = async (
+    id: string,
+    updates: Partial<Omit<ImageLibraryItem, "id" | "createdAt">>,
+  ) => {
+    setImageLibrary((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+    )
+    // TODO: Persist updates via API if needed
   }
 
-  const removeImageFromLibrary = (id: string) => {
-    setImageLibrary((prev) => prev.filter((item) => item.id !== id))
+  const removeImageFromLibrary = async (id: string) => {
+    const response = await fetch("/api/admin/image-library", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id }),
+    })
+
+    if (!response.ok) {
+      const message = await response.text()
+      throw new Error(message || "No se pudo eliminar la imagen")
+    }
+
+    const result = (await response.json()) as { data?: ImageLibraryItem[] }
+    if (Array.isArray(result?.data)) {
+      setImageLibrary(result.data)
+    } else {
+      setImageLibrary((prev) => prev.filter((item) => item.id !== id))
+    }
   }
 
   const getActiveInstallmentPlans = () => installmentPlans.filter((plan) => plan.isActive)
@@ -539,32 +541,30 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(AUTH_STORAGE_KEY)
   }
 
-  const value = useMemo(
-    () => ({
-      installmentPlans,
-      imageLibrary,
-      addInstallmentPlan,
-      updateInstallmentPlan,
-      deleteInstallmentPlan,
-      getActiveInstallmentPlans,
-      getInstallmentPlansByCategory,
-      addImageToLibrary,
-      updateImageInLibrary,
-      removeImageFromLibrary,
-      dollarConfig,
-      updateDollarConfig,
-      getEffectiveDollarRate,
-      homeConfig,
-      updateHomeConfig,
-      updateHomeSection,
-      tradeInConfig,
-      updateTradeInConfig,
-      isAuthenticated,
-      login,
-      logout,
-    }),
-    [installmentPlans, imageLibrary, dollarConfig, homeConfig, tradeInConfig, isAuthenticated],
-  )
+  const value: AdminContextType = {
+    installmentPlans,
+    imageLibrary,
+    refreshImageLibrary,
+    addInstallmentPlan,
+    updateInstallmentPlan,
+    deleteInstallmentPlan,
+    getActiveInstallmentPlans,
+    getInstallmentPlansByCategory,
+    addImageToLibrary,
+    updateImageInLibrary,
+    removeImageFromLibrary,
+    dollarConfig,
+    updateDollarConfig,
+    getEffectiveDollarRate,
+    homeConfig,
+    updateHomeConfig,
+    updateHomeSection,
+    tradeInConfig,
+    updateTradeInConfig,
+    isAuthenticated,
+    login,
+    logout,
+  }
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
 }

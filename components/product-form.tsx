@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { X, Plus } from "lucide-react"
-import { useAdmin, type ProductImageItem } from "@/contexts/AdminContext"
+import { useAdmin } from "@/contexts/AdminContext"
+import type { ImageLibraryItem } from "@/types/image-library"
 import type { ProductFormData } from "@/types/product"
 
 interface ProductFormProps {
@@ -77,7 +78,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
   const [newSpecKey, setNewSpecKey] = useState("")
   const [newSpecValue, setNewSpecValue] = useState("")
 
-  const handleAddImageFromLibrary = (image: ProductImageItem) => {
+  const handleAddImageFromLibrary = (image: ImageLibraryItem) => {
     if (formData.images.includes(image.url)) {
       // Mostrar mensaje si la imagen ya esta agregada
       alert("Esta imagen ya esta agregada al producto")

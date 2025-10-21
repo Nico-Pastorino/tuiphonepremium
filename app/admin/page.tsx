@@ -50,7 +50,7 @@ import {
 } from "lucide-react"
 import type { TradeInConditionId, TradeInStorageId, TradeInRow } from "@/types/trade-in"
 
-type NewLibraryImageForm = { label: string; category: string; url: string }
+type NewLibraryImageForm = { label: string; category: string; dataUrl: string }
 
 
 
@@ -131,13 +131,14 @@ function AdminDashboard() {
   const [newLibraryImage, setNewLibraryImage] = useState<NewLibraryImageForm>({
     label: "",
     category: "",
-    url: "",
+    dataUrl: "",
   })
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
   const [searchTerm, setSearchTerm] = useState("")
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string>("")
+  const [savingLibraryImage, setSavingLibraryImage] = useState(false)
 
   const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
   const [savingHomeConfig, setSavingHomeConfig] = useState(false)
@@ -248,28 +249,45 @@ function AdminDashboard() {
   }, [imageLibrary, libraryCategoryFilter])
 
   const handleAddLibraryImage = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
       const label = newLibraryImage.label.trim()
       const category = newLibraryImage.category.trim() || "general"
-      const url = newLibraryImage.url.trim()
-      if (!url) {
+      const dataUrl = newLibraryImage.dataUrl.trim()
+      if (!dataUrl) {
+        alert("Selecciona una imagen antes de agregarla.")
         return
       }
-      addImageToLibrary({
-        label: label || "Imagen",
-        category,
-        url,
-      })
-      setNewLibraryImage({ label: "", category, url: "" })
-      setImagePreview("")
-      setLibraryCategoryFilter(category)
+
+      try {
+        setSavingLibraryImage(true)
+        await addImageToLibrary({
+          label: label || "Imagen",
+          category,
+          dataUrl,
+        })
+        setNewLibraryImage({ label: "", category, dataUrl: "" })
+        setImagePreview("")
+        setLibraryCategoryFilter(category)
+      } catch (error) {
+        console.error("No se pudo guardar la imagen:", error)
+        const message = error instanceof Error ? error.message : "No se pudo guardar la imagen. Intenta nuevamente."
+        alert(message)
+      } finally {
+        setSavingLibraryImage(false)
+      }
     },
-    [newLibraryImage, addImageToLibrary],
+    [addImageToLibrary, newLibraryImage],
   )
 
-  const handleRemoveLibraryImage = (id: string) => {
-    removeImageFromLibrary(id)
+  const handleRemoveLibraryImage = async (id: string) => {
+    try {
+      await removeImageFromLibrary(id)
+    } catch (error) {
+      console.error("No se pudo eliminar la imagen:", error)
+      const message = error instanceof Error ? error.message : "No se pudo eliminar la imagen. Intenta nuevamente."
+      alert(message)
+    }
   }
 
   const handleSectionToggle = async (id: (typeof homeConfig.sections)[number]["id"], enabled: boolean) => {
@@ -500,7 +518,7 @@ function AdminDashboard() {
       reader.onload = (e) => {
         const result = e.target?.result as string
         setImagePreview(result)
-        setNewLibraryImage((prev) => ({ ...prev, url: result }))
+        setNewLibraryImage((prev) => ({ ...prev, dataUrl: result }))
         setUploadingImage(false)
       }
       reader.onerror = () => {
@@ -765,8 +783,16 @@ function AdminDashboard() {
                       {uploadingImage && <p className="text-sm text-blue-600">Procesando imagen...</p>}
                     </div>
                     <div className="md:col-span-4 flex justify-end">
-                      <Button type="submit" disabled={!newLibraryImage.url || uploadingImage} className="self-end">
-                        {uploadingImage ? "Procesando..." : "Agregar imagen"}
+                      <Button
+                        type="submit"
+                        disabled={!newLibraryImage.dataUrl || uploadingImage || savingLibraryImage}
+                        className="self-end"
+                      >
+                        {uploadingImage
+                          ? "Procesando..."
+                          : savingLibraryImage
+                            ? "Guardando..."
+                            : "Agregar imagen"}
                       </Button>
                     </div>
                   </form>
