@@ -145,6 +145,52 @@ export default function HomePage() {
   const selectedValue =
     selectedRow && selectedStorageId ? selectedRow.values[selectedStorageId][selectedCondition] : null
   const formattedTradeInValue = selectedValue !== null ? usdFormatter.format(selectedValue) : null
+  const tradeInWhatsappMessage = useMemo(() => {
+    const details: string[] = ["Quiero realizar el plan canje"]
+
+    const modelParts: string[] = []
+    if (selectedSection?.title) {
+      modelParts.push(selectedSection.title)
+    }
+    if (selectedRow?.label) {
+      modelParts.push(selectedRow.label)
+    }
+    if (modelParts.length > 0) {
+      details.push(`Modelo: ${modelParts.join(" - ")}`)
+    }
+
+    const storageLabel =
+      availableStorageOptions.find((option) => option.id === selectedStorageId)?.label ?? null
+    if (storageLabel) {
+      details.push(`Capacidad: ${storageLabel}`)
+    }
+
+    const conditionLabel = tradeInConditionLabels[selectedCondition]
+    if (conditionLabel) {
+      details.push(`Condicion de bateria: ${conditionLabel}`)
+    }
+
+    if (formattedTradeInValue) {
+      details.push(`Valor estimado: ${formattedTradeInValue}`)
+    }
+
+    return details.join("\n")
+  }, [
+    availableStorageOptions,
+    formattedTradeInValue,
+    selectedCondition,
+    selectedRow,
+    selectedSection,
+    selectedStorageId,
+    tradeInConditionLabels,
+  ])
+  const tradeInWhatsappLink = useMemo(() => {
+    if (!tradeInWhatsappMessage) {
+      return whatsappLink
+    }
+    const messageParam = encodeURIComponent(tradeInWhatsappMessage)
+    return `${whatsappLink}?text=${messageParam}`
+  }, [tradeInWhatsappMessage, whatsappLink])
 
   const featuredProducts = useMemo(() => products.filter((product) => product.featured).slice(0, 8), [products])
   const enabledSections = homeConfig.sections.filter((section) => section.enabled)
@@ -472,7 +518,7 @@ export default function HomePage() {
                       asChild
                       className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-5 py-3 rounded-xl transition-all duration-300"
                     >
-                      <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                      <a href={tradeInWhatsappLink} target="_blank" rel="noopener noreferrer">
                         <MessageCircle className="w-4 h-4 mr-2" />
                         Coordinar evaluación
                       </a>
