@@ -59,7 +59,7 @@ const fallbackProducts: Product[] = [
   {
     id: "00000000-0000-0000-0000-000000000001",
     name: "iPhone 15 Pro Max",
-    description: "El iPhone más avanzado con chip A17 Pro y cámara de 48MP",
+    description: "El iPhone mas avanzado con chip A17 Pro y camara de 48MP",
     price: 1_500_000,
     originalPrice: 1_600_000,
     priceUSD: 1299,
@@ -78,7 +78,7 @@ const fallbackProducts: Product[] = [
   {
     id: "00000000-0000-0000-0000-000000000002",
     name: "MacBook Air M2",
-    description: "Ultraportátil con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
+    description: "Ultraportatil con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
     price: 1_200_000,
     originalPrice: 1_350_000,
     priceUSD: 1199,
@@ -133,51 +133,88 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     setLoading(true)
     setError(null)
 
+    type SourceName = "api" | "supabase"
+    type SourceResult = { source: SourceName; products: Product[] }
+
+    const fetchFromApi = async (): Promise<SourceResult> => {
+      const response = await fetch("/api/admin/products", { cache: "no-store" })
+      const result = (await response.json()) as ApiListResponse
+
+      if (!response.ok) {
+        throw new Error(result?.error || `API responded with status ${response.status}`)
+      }
+
+      return { source: "api", products: mapProducts(result.data) }
+    }
+
+    const fetchFromSupabase = async (): Promise<SourceResult> => {
+      const { data, error: supabaseError } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (supabaseError) {
+        throw supabaseError
+      }
+
+      return { source: "supabase", products: mapProducts(data ?? []) }
+    }
+
     try {
-      let loaded = false
+      const errors: Array<{ source: SourceName; error: unknown }> = []
+      let firstResult: SourceResult | null = null
+      let apiResult: SourceResult | null = null
+      let supabaseResult: SourceResult | null = null
 
-      try {
-        const response = await fetch("/api/admin/products")
-        if (response.ok) {
-          const result = (await response.json()) as ApiListResponse
-          setProducts(mapProducts(result.data))
-          setSupabaseConnected(true)
-          loaded = true
+      const captureResult = (result: SourceResult) => {
+        if (result.source === "api") {
+          apiResult = result
         } else {
-          console.warn("API /api/admin/products responded with status", response.status)
+          supabaseResult = result
         }
-      } catch (apiError) {
-        console.warn("Failed to fetch via API, will try direct Supabase query", apiError)
+
+        if (!firstResult) {
+          firstResult = result
+          setProducts(result.products)
+        } else if (result.source === "supabase") {
+          // Prefer direct Supabase data when it becomes available.
+          setProducts(result.products)
+        }
+
+        setSupabaseConnected(Boolean(apiResult || supabaseResult))
       }
 
-      if (!loaded) {
-        try {
-          const { data, error: supabaseError } = await supabase
-            .from("products")
-            .select("*")
-            .order("created_at", { ascending: false })
-
-          if (supabaseError) {
-            throw supabaseError
+      await Promise.all([
+        (async () => {
+          try {
+            const result = await fetchFromApi()
+            captureResult(result)
+          } catch (error) {
+            console.warn("Failed to load products from API:", error)
+            errors.push({ source: "api", error })
           }
+        })(),
+        (async () => {
+          try {
+            const result = await fetchFromSupabase()
+            captureResult(result)
+          } catch (error) {
+            console.warn("Failed to load products directly from Supabase:", error)
+            errors.push({ source: "supabase", error })
+          }
+        })(),
+      ])
 
-          setProducts(mapProducts(data ?? []))
-          setSupabaseConnected(true)
-          loaded = true
-        } catch (directError) {
-          console.error("Direct Supabase query failed:", directError)
-        }
-      }
-
-      if (!loaded) {
-        throw new Error("No se pudo cargar productos desde Supabase ni desde la API")
+      if (!firstResult) {
+        const fallbackError = errors[0]?.error
+        throw fallbackError instanceof Error ? fallbackError : new Error("No se pudo cargar productos")
       }
     } catch (err) {
       console.error("Error loading products:", err)
       setError(err instanceof Error ? err.message : "Error desconocido")
       setProducts(fallbackProducts)
       setSupabaseConnected(false)
-      showToast("Usando datos de ejemplo. Verificá la configuración de Supabase.", "warning")
+      showToast("Usando datos de ejemplo. Verifica la configuracion de Supabase.", "warning")
     } finally {
       setLoading(false)
     }

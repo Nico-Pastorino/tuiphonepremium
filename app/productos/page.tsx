@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { ModernProductCard } from "@/components/ModernProductCard"
 import { ProductFilters } from "@/components/ProductFilters"
+import { ProductsLoading } from "@/components/ProductsLoading"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
 import { Filter } from "lucide-react"
@@ -12,7 +13,7 @@ import { useProducts } from "@/contexts/ProductContext"
 import type { Product } from "@/types/product" // <-- Importa el tipo correcto
 
 export default function ProductsPage() {
-  const { products } = useProducts() // El contexto ya provee el tipo correcto
+  const { products, loading } = useProducts() // El contexto ya provee el tipo correcto
   const searchParams = useSearchParams()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null)
@@ -98,12 +99,16 @@ export default function ProductsPage() {
                 {/* Results Count */}
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-gray-600">
-                    Mostrando {filteredProducts.length} de {products.length} productos
+                    {loading
+                      ? "Cargando productos..."
+                      : `Mostrando ${filteredProducts.length} de ${products.length} productos`}
                   </p>
                 </div>
 
                 {/* Products */}
-                {filteredProducts.length > 0 ? (
+                {loading ? (
+                  <ProductsLoading />
+                ) : filteredProducts.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredProducts.map((product: Product, index: number) => (
                       <AnimatedSection key={product.id} animation="fadeUp" delay={index * 50}>
