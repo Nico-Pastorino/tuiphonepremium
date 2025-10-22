@@ -50,11 +50,14 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-gray-50">
       <MinimalNavbar />
 
-      <div className="pt-20 pb-12 sm:pt-28">
-        <div className="container mx-auto max-w-6xl px-3 sm:px-4">
+      <div className="section-padding">
+        <div className="inner-container px-4 sm:px-6 lg:px-0">
           <AnimatedSection animation="fadeUp">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-blue-500 sm:text-xs">
+                  Catálogo completo
+                </p>
                 <h1 className="mb-2 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">Productos Apple</h1>
                 <p className="text-sm text-gray-600 sm:text-base">
                   Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos
@@ -63,9 +66,9 @@ export default function ProductsPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowFilters((prev) => !prev)}
-                className="w-full text-sm sm:hidden"
+                className="w-full justify-center gap-2 rounded-xl border-gray-200 text-sm hover:border-gray-300 hover:bg-white sm:hidden"
               >
-                <Filter className="w-4 h-4 mr-2" />
+                <Filter className="w-4 h-4" />
                 Filtros
               </Button>
             </div>
@@ -96,7 +99,7 @@ export default function ProductsPage() {
             </div>
           )}
 
-          <div className="flex flex-col gap-8 lg:flex-row-reverse">
+          <div className="flex flex-col gap-10 lg:flex-row-reverse">
             {/* Products Grid */}
             <div className="flex-1">
               <AnimatedSection animation="fadeRight">
@@ -113,7 +116,7 @@ export default function ProductsPage() {
                 {loading ? (
                   <ProductsLoading />
                 ) : filteredProducts.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-2 sm:gap-6 md:gap-8 xl:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-x-8 xl:gap-y-10">
                     {filteredProducts.map((product: Product, index: number) => (
                       <AnimatedSection key={product.id} animation="fadeUp" delay={index * 60}>
                         <ModernProductCard product={product} />

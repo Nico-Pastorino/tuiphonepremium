@@ -22,7 +22,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.png" />
       </head>
-      <body className="mobile-centered-body">
+      <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
         <AdminProvider>
           <ProductProvider>
             {children}

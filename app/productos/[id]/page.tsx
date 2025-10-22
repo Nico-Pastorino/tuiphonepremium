@@ -297,11 +297,11 @@ export default function ProductDetailPage() {
   )
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-white">
       <MinimalNavbar />
 
-      <div className="pt-20 pb-10 sm:pb-12">
-        <div className="container mx-auto max-w-6xl px-3 sm:px-4">
+      <div className="section-padding">
+        <div className="inner-container px-4 sm:px-6 lg:px-0">
           {/* Breadcrumb */}
           <AnimatedSection animation="fadeUp">
             <div className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-gray-600 sm:text-sm">
@@ -339,15 +339,19 @@ export default function ProductDetailPage() {
               <div className="flex flex-col gap-6">
                 <div className="space-y-4">
                   {/* Main Image */}
-                  <div className="relative flex aspect-[3/4] w-full max-w-[400px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-100 to-white p-2 sm:aspect-[3/4] sm:max-w-none sm:p-4 md:aspect-[4/5]">
-                    <Image
-                      src={product.images[selectedImageIndex] || "/placeholder.svg?height=600&width=600"}
-                      alt={product.name}
-                      fill
-                      priority
-                      className="object-contain drop-shadow-2xl transition-transform duration-500 scale-[1.18] sm:scale-[1.08]"
-                      sizes="(min-width: 1280px) 480px, (min-width: 1024px) 45vw, (min-width: 640px) 70vw, 92vw"
-                    />
+                  <div className="group relative mx-auto aspect-[4/5] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-slate-100 via-white to-white shadow-md ring-1 ring-white/60 sm:mx-0 sm:aspect-[4/5] lg:aspect-[5/6]">
+                    <div className="pointer-events-none absolute inset-0">
+                      <div className="relative h-full w-full p-5 sm:p-8 md:p-10">
+                        <Image
+                          src={product.images[selectedImageIndex] || "/placeholder.svg?height=600&width=600"}
+                          alt={product.name}
+                          fill
+                          priority
+                          className="object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-[1.05]"
+                          sizes="(min-width: 1280px) 520px, (min-width: 1024px) 45vw, (min-width: 640px) 70vw, 92vw"
+                        />
+                      </div>
+                    </div>
 
                     {/* Navigation Arrows */}
                     {product.images.length > 1 && (
@@ -355,7 +359,7 @@ export default function ProductDetailPage() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          className="absolute left-4 top-1/2 h-10 w-10 -translate-y-1/2 transform rounded-full bg-white/80 p-0 hover:bg-white"
+                          className="absolute left-4 top-1/2 z-10 h-10 w-10 -translate-y-1/2 transform rounded-full bg-white/80 p-0 shadow-sm backdrop-blur hover:bg-white"
                           onClick={prevImage}
                         >
                           <ChevronLeft className="h-5 w-5" />
@@ -363,7 +367,7 @@ export default function ProductDetailPage() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          className="absolute right-4 top-1/2 h-10 w-10 -translate-y-1/2 transform rounded-full bg-white/80 p-0 hover:bg-white"
+                          className="absolute right-4 top-1/2 z-10 h-10 w-10 -translate-y-1/2 transform rounded-full bg-white/80 p-0 shadow-sm backdrop-blur hover:bg-white"
                           onClick={nextImage}
                         >
                           <ChevronRight className="h-5 w-5" />
@@ -372,7 +376,7 @@ export default function ProductDetailPage() {
                     )}
 
                     {/* Badges */}
-                    <div className="absolute left-4 top-4 flex flex-col gap-2">
+                    <div className="absolute left-5 top-5 z-10 flex flex-col gap-2">
                       {product.condition === "seminuevo" && (
                         <Badge className="rounded-full bg-blue-500 px-3 py-1 font-medium text-white">Seminuevo</Badge>
                       )}

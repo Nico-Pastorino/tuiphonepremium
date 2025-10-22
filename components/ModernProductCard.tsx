@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Product } from "@/types/product"
 import { useAdmin } from "@/contexts/AdminContext"
@@ -44,19 +45,33 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
     return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
   }, [whatsappNumber, product.name, product.condition])
 
+  const stockLabel = product.stock > 0 ? "Disponible" : "Sin stock"
+  const stockClass = product.stock > 0 ? "text-emerald-600" : "text-rose-500"
+
   return (
-    <Card className="group overflow-hidden rounded-2xl border-0 shadow-sm transition-all hover:shadow-xl sm:rounded-3xl">
-      <CardContent className="p-0">
-        <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-gray-100 to-white sm:aspect-[4/5]">
+    <Card className="group h-full overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <CardContent className="flex h-full flex-col p-0">
+        <div className="relative aspect-[5/6] overflow-hidden bg-gradient-to-br from-slate-100 via-white to-white sm:aspect-[4/5]">
           <Image
             src={product.images[0] || "/placeholder.svg?height=400&width=400"}
             alt={product.name}
             fill
-            className="object-contain drop-shadow-2xl transition-transform duration-500 scale-[1.1] group-hover:scale-[1.18]"
+            className="object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
             sizes="(min-width: 1280px) 320px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 80vw"
           />
         </div>
-        <div className="space-y-3 p-4 sm:space-y-4 sm:p-6">
+        <div className="flex flex-1 flex-col gap-3 px-5 pb-5 pt-6 sm:gap-4 sm:px-6 sm:pb-6">
+          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide">
+            <Badge
+              variant="secondary"
+              className={`rounded-full border-0 px-3 py-1 text-[11px] font-semibold ${
+                product.condition === "seminuevo" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
+              }`}
+            >
+              {product.condition === "seminuevo" ? "Seminuevo" : "Nuevo"}
+            </Badge>
+            <span className={stockClass}>{stockLabel}</span>
+          </div>
           <h3 className="text-lg font-semibold leading-tight text-gray-900 transition-colors line-clamp-2 group-hover:text-blue-600 sm:text-xl">
             {product.name}
           </h3>
@@ -66,13 +81,17 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
               <div className="text-sm text-gray-500 sm:text-base">USD {priceInDollars.toLocaleString("es-AR")}</div>
             )}
           </div>
-          <div className="flex gap-2 sm:gap-3">
-            <Button className="flex-1 py-2 text-sm sm:py-3 sm:text-base" asChild>
+          <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <Button className="flex-1 justify-center py-2 text-sm sm:py-3 sm:text-base" asChild>
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                 Consultar
               </a>
             </Button>
-            <Button variant="outline" className="px-4 py-2 text-sm sm:px-5 sm:py-3 sm:text-base" asChild>
+            <Button
+              variant="outline"
+              className="justify-center px-4 py-2 text-sm sm:flex-1 sm:px-5 sm:py-3 sm:text-base"
+              asChild
+            >
               <Link href={`/productos/${product.id}`}>Ver mas</Link>
             </Button>
           </div>
