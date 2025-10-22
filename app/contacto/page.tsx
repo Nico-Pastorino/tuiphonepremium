@@ -38,7 +38,7 @@ export default function ContactPage() {
   const formattedWhatsappNumber = useMemo(() => formatWhatsappNumber(whatsappNumber), [whatsappNumber])
 
   const instagramUrl = "https://www.instagram.com/tuiphonepremium"
-  const tiktokUrl = "https://www.tiktok.com/@tuiphonepremium"
+  const tiktokUrl = "https://www.tiktok.com/@tu.iphone.premium?_t=ZS-90ljWaLjkxh&_r=1"
 
   return (
     <div className="min-h-screen bg-gray-50">
