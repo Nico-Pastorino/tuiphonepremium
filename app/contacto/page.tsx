@@ -116,7 +116,7 @@ export default function ContactPage() {
                       <p className="text-sm text-gray-600">Respondemos dentro del dia</p>
                     </div>
                   </div>
-                  <p className="text-gray-700 text-lg font-semibold break-all">info@tuiphonepremium.com.ar</p>
+                  <p className="text-gray-700 text-lg font-semibold break-all">tuiphonepremium@gmail.com</p>
                 </CardContent>
               </Card>
 
