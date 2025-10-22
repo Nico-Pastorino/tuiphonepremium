@@ -124,9 +124,15 @@ export default function ProductDetailPage() {
 
   const productWhatsappLink = useMemo(() => {
     const baseLink = `https://wa.me/${whatsappNumber}`
-    const message = product?.name ? `Quiero consultar por ${product.name}` : "Quiero consultar por un producto"
+    if (!product?.name) {
+      return `${baseLink}?text=${encodeURIComponent("Quiero consultar por un producto")}`
+    }
+
+    const conditionLabel = product.condition === "seminuevo" ? "Seminuevo" : "Nuevo"
+    const message = `Quiero consultar por ${product.name} (${conditionLabel})`
+
     return `${baseLink}?text=${encodeURIComponent(message)}`
-  }, [product?.name, whatsappNumber])
+  }, [product?.name, product?.condition, whatsappNumber])
 
   if (isLoadingProduct) {
     return (
