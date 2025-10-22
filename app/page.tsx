@@ -206,6 +206,8 @@ export default function HomePage() {
   const heroImage = homeConfig.heroImage || "/portada.jpg"
   const instagramUrl = "https://www.instagram.com/tuiphonepremium"
   const tiktokUrl = "https://www.tiktok.com/@tu.iphone.premium?_t=ZS-90ljWaLjkxh&_r=1"
+  const contactEmail = "tuiphonepremium@gmail.com"
+  const contactMailto = `mailto:${contactEmail}`
 
   const categoriesSection = (
     <AnimatedSection animation="fadeUp">
@@ -779,7 +781,12 @@ const ctaSection = (
                       </span>
                       <div>
                         <p className="font-medium text-white">Email</p>
-                        <p className="text-xs sm:text-sm break-all">info@tuiphonepremium.com.ar</p>
+                        <a
+                          href={contactMailto}
+                          className="text-xs sm:text-sm break-all text-blue-200 hover:text-white transition-colors"
+                        >
+                          {contactEmail}
+                        </a>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4">

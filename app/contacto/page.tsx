@@ -36,6 +36,8 @@ export default function ContactPage() {
   }, [homeConfig.whatsappNumber])
   const whatsappLink = useMemo(() => `https://wa.me/${whatsappNumber}`, [whatsappNumber])
   const formattedWhatsappNumber = useMemo(() => formatWhatsappNumber(whatsappNumber), [whatsappNumber])
+  const contactEmail = "tuiphonepremium@gmail.com"
+  const contactMailto = `mailto:${contactEmail}`
 
   const instagramUrl = "https://www.instagram.com/tuiphonepremium"
   const tiktokUrl = "https://www.tiktok.com/@tu.iphone.premium?_t=ZS-90ljWaLjkxh&_r=1"
@@ -116,7 +118,12 @@ export default function ContactPage() {
                       <p className="text-sm text-gray-600">Respondemos dentro del dia</p>
                     </div>
                   </div>
-                  <p className="text-gray-700 text-lg font-semibold break-all">tuiphonepremium@gmail.com</p>
+                  <a
+                    href={contactMailto}
+                    className="text-gray-700 text-lg font-semibold break-all hover:text-blue-600 transition-colors"
+                  >
+                    {contactEmail}
+                  </a>
                 </CardContent>
               </Card>
 
