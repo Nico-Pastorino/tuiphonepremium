@@ -50,7 +50,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
   return (
     <Card className="group overflow-hidden rounded-2xl border-0 shadow-sm transition-shadow hover:shadow-lg">
       <CardContent className="p-0">
-        <div className="relative aspect-[4/5] bg-gray-50 sm:aspect-square">
+        <div className="relative aspect-[3/4] bg-gray-50 sm:aspect-[4/5]">
           <Image
             src={product.images[0] || "/placeholder.svg"}
             alt={product.name}

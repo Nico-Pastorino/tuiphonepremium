@@ -3,10 +3,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function ProductsLoading() {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, index) => (
         <Card key={index} className="overflow-hidden border-0 shadow-sm rounded-xl sm:rounded-2xl">
-          <div className="aspect-[4/5] sm:aspect-square">
+          <div className="aspect-[3/4] sm:aspect-[4/5]">
             <Skeleton className="w-full h-full" />
           </div>
           <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">

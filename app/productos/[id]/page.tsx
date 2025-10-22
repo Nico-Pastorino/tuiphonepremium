@@ -339,7 +339,7 @@ export default function ProductDetailPage() {
               <div className="flex flex-col gap-6">
                 <div className="space-y-4">
                   {/* Main Image */}
-                  <div className="relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-100 to-white p-4 sm:aspect-[5/6] sm:p-6 md:aspect-square">
+                  <div className="relative flex aspect-[3/4] w-full max-w-[380px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-100 to-white p-2.5 sm:aspect-[3/4] sm:max-w-none sm:p-4 md:aspect-[4/5]">
                     <Image
                       src={product.images[selectedImageIndex] || "/placeholder.svg?height=600&width=600"}
                       alt={product.name}

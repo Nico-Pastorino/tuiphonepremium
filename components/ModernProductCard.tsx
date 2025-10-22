@@ -47,12 +47,12 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
   return (
     <Card className="group overflow-hidden rounded-2xl border-0 shadow-sm transition-all hover:shadow-xl sm:rounded-3xl">
       <CardContent className="p-0">
-        <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-gray-100 to-white sm:aspect-square">
+        <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-gray-100 to-white sm:aspect-[4/5]">
           <Image
             src={product.images[0] || "/placeholder.svg?height=400&width=400"}
             alt={product.name}
             fill
-            className="object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
+            className="object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-110"
             sizes="(min-width: 1280px) 320px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 80vw"
           />
         </div>
