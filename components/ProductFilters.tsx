@@ -4,15 +4,25 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Smartphone, Tablet, Laptop, Watch, Headphones, Filter, Cable } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 interface ProductFiltersProps {
-  onFilterChange?: (filters: any) => void
+  onFilterChange?: (filters: { category: string | null; condition: string | null }) => void
+  category?: string | null
+  condition?: string | null
 }
 
-export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [activeCondition, setActiveCondition] = useState<string | null>(null)
+export function ProductFilters({ onFilterChange, category = null, condition = null }: ProductFiltersProps) {
+  const [activeCategory, setActiveCategory] = useState<string | null>(category)
+  const [activeCondition, setActiveCondition] = useState<string | null>(condition)
+
+  useEffect(() => {
+    setActiveCategory(category)
+  }, [category])
+
+  useEffect(() => {
+    setActiveCondition(condition)
+  }, [condition])
 
   const categories = [
     { id: "iphone", name: "iPhone", icon: Smartphone, color: "from-blue-500 to-purple-600" },
@@ -30,8 +40,8 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
 
   return (
     <Card className="border-0 shadow-lg rounded-3xl overflow-hidden">
-      <CardContent className="p-8">
-        <div className="flex items-center gap-3 mb-6">
+      <CardContent className="p-6 sm:p-8">
+        <div className="mb-6 flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center">
             <Filter className="w-5 h-5 text-white" />
           </div>
@@ -41,23 +51,23 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
         {/* Conditions */}
         <div className="mb-8">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Estado</h4>
-          <div className="flex flex-wrap gap-4">
-            {conditions.map((condition) => (
+          <div className="flex flex-col gap-3">
+            {conditions.map((conditionOption) => (
               <Button
-                key={condition.id}
-                variant={activeCondition === condition.id ? "default" : "outline"}
-                className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-300 ${
-                  activeCondition === condition.id
-                    ? `${condition.color} text-white shadow-lg`
+                key={conditionOption.id}
+                variant={activeCondition === conditionOption.id ? "default" : "outline"}
+                className={`w-full justify-start rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-300 sm:text-base ${
+                  activeCondition === conditionOption.id
+                    ? `${conditionOption.color} text-white shadow-lg`
                     : "border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
                 }`}
                 onClick={() => {
-                  const newCondition = activeCondition === condition.id ? null : condition.id
+                  const newCondition = activeCondition === conditionOption.id ? null : conditionOption.id
                   setActiveCondition(newCondition)
                   onFilterChange?.({ category: activeCategory, condition: newCondition })
                 }}
               >
-                {condition.name}
+                {conditionOption.name}
               </Button>
             ))}
           </div>
@@ -66,30 +76,30 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
         {/* Categories */}
         <div className="mb-8">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Categorias</h4>
-          <div className="flex flex-wrap gap-4">
-            {categories.map((category) => (
+          <div className="grid grid-cols-1 gap-3">
+            {categories.map((categoryOption) => (
               <Button
-                key={category.id}
-                variant={activeCategory === category.id ? "default" : "outline"}
-                className={`flex items-center justify-start gap-3 rounded-2xl px-4 py-3 min-w-[140px] flex-1 transition-all duration-300 ${
-                  activeCategory === category.id
+                key={categoryOption.id}
+                variant={activeCategory === categoryOption.id ? "default" : "outline"}
+                className={`flex w-full items-center justify-start gap-3 rounded-2xl px-4 py-3 transition-all duration-300 ${
+                  activeCategory === categoryOption.id
                     ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
                     : "border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
                 }`}
                 onClick={() => {
-                  const newCategory = activeCategory === category.id ? null : category.id
+                  const newCategory = activeCategory === categoryOption.id ? null : categoryOption.id
                   setActiveCategory(newCategory)
                   onFilterChange?.({ category: newCategory, condition: activeCondition })
                 }}
               >
                 <div
                   className={`w-10 h-10 rounded-2xl flex items-center justify-center p-1 ${
-                    activeCategory === category.id ? "bg-white/20" : `bg-gradient-to-br ${category.color}`
+                    activeCategory === categoryOption.id ? "bg-white/20" : `bg-gradient-to-br ${categoryOption.color}`
                   }`}
                 >
-                  <category.icon className="w-5 h-5 text-white" />
+                  <categoryOption.icon className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm font-medium text-left">{category.name}</span>
+                <span className="text-sm font-medium text-left sm:text-base">{categoryOption.name}</span>
               </Button>
             ))}
           </div>

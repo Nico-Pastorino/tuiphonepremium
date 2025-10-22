@@ -72,21 +72,25 @@ export default function ProductsPage() {
           </AnimatedSection>
 
           {showFilters && (
-            <div className="fixed inset-0 z-40 lg:hidden">
+            <div className="fixed inset-0 z-[60] lg:hidden">
               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowFilters(false)} />
-              <div className="absolute inset-y-0 left-0 w-11/12 max-w-xs bg-white shadow-2xl rounded-r-3xl overflow-hidden flex flex-col">
-                <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
-                  <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
-                    Cerrar
-                  </Button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-5">
-                  <ProductFilters
-                    onFilterChange={(filters) => {
-                      handleFilterChange(filters)
-                    }}
-                  />
+              <div className="absolute inset-y-0 left-0 flex w-full max-w-sm px-4">
+                <div className="relative flex-1 overflow-hidden rounded-r-3xl bg-white shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                    <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
+                    <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)}>
+                      Cerrar
+                    </Button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-5">
+                    <ProductFilters
+                      category={selectedCategory}
+                      condition={selectedCondition}
+                      onFilterChange={(filters) => {
+                        handleFilterChange(filters)
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -139,7 +143,11 @@ export default function ProductsPage() {
             {/* Sidebar Filters */}
             <div className="hidden lg:block lg:w-80">
               <AnimatedSection animation="fadeLeft" className="lg:sticky lg:top-32">
-                <ProductFilters onFilterChange={handleFilterChange} />
+                <ProductFilters
+                  category={selectedCategory}
+                  condition={selectedCondition}
+                  onFilterChange={handleFilterChange}
+                />
               </AnimatedSection>
             </div>
           </div>

@@ -270,19 +270,21 @@ export default function HomePage() {
               <AnimatedSection key={category.name} animation="scale" delay={index * 100}>
                 <Link href={category.href}>
                   <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-0 shadow-sm overflow-hidden rounded-xl sm:rounded-2xl h-full bg-white">
-                    <CardContent className="p-3 sm:p-4 md:p-6 text-center h-full flex flex-col justify-between">
-                      <div>
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 mx-auto mb-2 sm:mb-3 md:mb-4 rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                    <CardContent className="flex h-full flex-col justify-between p-3 text-left sm:p-4 md:p-6">
+                      <div className="flex items-start gap-3 sm:gap-4 md:gap-5">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                           <category.icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-white" />
                         </div>
-                        <h3 className="font-bold text-sm sm:text-base md:text-lg lg:text-xl text-gray-900 group-hover:text-blue-600 transition-colors mb-1 sm:mb-2">
-                          {category.name}
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2 hidden sm:block">
-                          {category.description}
-                        </p>
+                        <div>
+                          <h3 className="font-bold text-sm sm:text-base md:text-lg lg:text-xl text-gray-900 group-hover:text-blue-600 transition-colors mb-1 sm:mb-2">
+                            {category.name}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">
+                            {category.description}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-500 font-medium">{category.count}</p>
+                      <p className="text-xs text-gray-500 font-medium sm:text-sm">{category.count}</p>
                     </CardContent>
                   </Card>
                 </Link>
