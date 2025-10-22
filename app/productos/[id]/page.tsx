@@ -170,8 +170,10 @@ export default function ProductDetailPage() {
       : effectiveDollarRate
         ? Number((product.price / effectiveDollarRate).toFixed(0))
         : null
-  const discountPercentage = product.condition === "seminuevo" ? 15 : 0
-  const originalPrice = discountPercentage > 0 ? priceInPesos / (1 - discountPercentage / 100) : null
+  const originalPrice =
+    product.condition === "nuevo" && product.originalPrice !== undefined && product.originalPrice !== null
+      ? product.originalPrice
+      : null
 
   const installmentGroups = buildInstallmentGroups(priceInPesos, installmentPlans)
   const hasInstallmentOptions = installmentGroups.some((group) => group.options.length > 0)

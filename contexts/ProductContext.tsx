@@ -80,7 +80,6 @@ const fallbackProducts: Product[] = [
     name: "MacBook Air M2",
     description: "Ultraportatil con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
     price: 1_200_000,
-    originalPrice: 1_350_000,
     priceUSD: 1199,
     category: "mac",
     condition: "seminuevo",

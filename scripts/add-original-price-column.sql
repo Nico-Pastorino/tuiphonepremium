@@ -11,10 +11,7 @@ BEGIN
     END IF;
 END $$;
 
--- Update existing products to have original_price based on condition
-UPDATE products 
-SET original_price = CASE 
-    WHEN condition = 'seminuevo' THEN price * 1.15  -- Add 15% to seminuevo products
-    ELSE NULL
-END
-WHERE original_price IS NULL;
+-- Ensure seminuevo products do not carry an automatic discount
+UPDATE products
+SET original_price = NULL
+WHERE condition = 'seminuevo';
