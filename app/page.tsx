@@ -12,10 +12,12 @@ import {
   Cable,
   CreditCard,
   Headphones,
+  Instagram,
   Laptop,
   Mail,
   MapPin,
   MessageCircle,
+  Music4,
   RefreshCw,
   Shield,
   Smartphone,
@@ -202,6 +204,8 @@ export default function HomePage() {
   const firstSectionId = enabledSections[0]?.id
 
   const heroImage = homeConfig.heroImage || "/portada.jpg"
+  const instagramUrl = "https://www.instagram.com/tuiphonepremium"
+  const tiktokUrl = "https://www.tiktok.com/@tu.iphone.premium?_t=ZS-90ljWaLjkxh&_r=1"
 
   const categoriesSection = (
     <AnimatedSection animation="fadeUp">
@@ -648,6 +652,43 @@ const ctaSection = (
       <AnimatedSection animation="fadeUp">
         <footer className="bg-gray-900 text-white py-12 sm:py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <AnimatedSection animation="fadeUp" delay={100}>
+              <div className="mb-10 sm:mb-12 rounded-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 p-6 sm:p-8 text-white shadow-xl">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="space-y-2 text-center lg:text-left">
+                    <h3 className="text-xl sm:text-2xl font-semibold">Seguinos en redes sociales</h3>
+                    <p className="text-sm sm:text-base text-white/80">
+                      Descubri lanzamientos, ofertas y contenido exclusivo de la comunidad.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-3 sm:gap-4 lg:justify-end">
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      className="w-full sm:w-auto bg-white/20 hover:bg-white/30 text-white border-white/30 shadow-sm"
+                      asChild
+                    >
+                      <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                        <Instagram className="mr-2 h-5 w-5" />
+                        Instagram
+                      </a>
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      className="w-full sm:w-auto bg-white/20 hover:bg-white/30 text-white border-white/30 shadow-sm"
+                      asChild
+                    >
+                      <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                        <Music4 className="mr-2 h-5 w-5" />
+                        TikTok
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </AnimatedSection>
+
             <div className="grid grid-cols-1 gap-10 sm:gap-12 md:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr] items-start mb-10 sm:mb-14">
               <AnimatedSection animation="fadeLeft">
                 <div className="space-y-6">
