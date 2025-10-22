@@ -43,6 +43,10 @@ const hasAnyTradeInValue = (values: Record<TradeInConditionId, number | null>): 
 export function TradeInEstimator({ productName, productPriceARS, productPriceUSD }: TradeInEstimatorProps) {
   const { tradeInConfig, getEffectiveDollarRate, homeConfig } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
+  const whatsappNumber = useMemo(() => {
+    const rawNumber = homeConfig.whatsappNumber?.trim()
+    return rawNumber && rawNumber.length > 0 ? rawNumber : "5491112345678"
+  }, [homeConfig.whatsappNumber])
 
   const sections = useMemo(
     () =>
@@ -283,7 +287,7 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
           asChild
         >
           <a
-            href={homeConfig.whatsappNumber ? `https://wa.me/${homeConfig.whatsappNumber}` : "https://wa.me/5491112345678"}
+            href={`https://wa.me/${whatsappNumber}`}
             target="_blank"
             rel="noopener noreferrer"
           >

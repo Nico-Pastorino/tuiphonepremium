@@ -13,7 +13,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { getEffectiveDollarRate } = useAdmin()
+  const { getEffectiveDollarRate, homeConfig } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
 
   const priceInPesos = useMemo(() => {
@@ -33,6 +33,17 @@ export function ProductCard({ product }: ProductCardProps) {
     return null
   }, [product.price, product.priceUSD, effectiveDollarRate])
 
+  const whatsappNumber = useMemo(() => {
+    const rawNumber = homeConfig.whatsappNumber?.trim()
+    return rawNumber && rawNumber.length > 0 ? rawNumber : "5491112345678"
+  }, [homeConfig.whatsappNumber])
+
+  const whatsappLink = useMemo(() => {
+    const conditionLabel = product.condition === "seminuevo" ? "Seminuevo" : "Nuevo"
+    const message = `Quiero consultar por ${product.name} (${conditionLabel})`
+    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+  }, [whatsappNumber, product.name, product.condition])
+
   return (
     <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-lg transition-shadow">
       <CardContent className="p-0">
@@ -49,7 +60,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
           <div className="flex gap-2">
             <Button className="flex-1" asChild>
-              <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+              <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                 Consultar
               </a>
             </Button>

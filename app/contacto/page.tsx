@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
@@ -12,8 +12,36 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MessageCircle, Mail, Phone, MapPin, Clock, Send, Instagram, Facebook, Twitter } from "lucide-react"
+import { useAdmin } from "@/contexts/AdminContext"
+
+const formatWhatsappNumber = (value: string) => {
+  const digits = value.replace(/\D/g, "")
+
+  if (digits.startsWith("549") && digits.length >= 11) {
+    const area = digits.slice(3, 5)
+    const firstPart = digits.slice(5, 9)
+    const secondPart = digits.slice(9)
+
+    if (firstPart && secondPart) {
+      return `+54 9 ${area} ${firstPart}-${secondPart}`
+    }
+  }
+
+  if (digits.length > 0) {
+    return `+${digits}`
+  }
+
+  return "+54 9 11 1234-5678"
+}
 
 export default function ContactPage() {
+  const { homeConfig } = useAdmin()
+  const whatsappNumber = useMemo(() => {
+    const rawNumber = homeConfig.whatsappNumber?.trim()
+    return rawNumber && rawNumber.length > 0 ? rawNumber : "5491112345678"
+  }, [homeConfig.whatsappNumber])
+  const whatsappLink = useMemo(() => `https://wa.me/${whatsappNumber}`, [whatsappNumber])
+  const formattedWhatsappNumber = useMemo(() => formatWhatsappNumber(whatsappNumber), [whatsappNumber])
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -75,9 +103,9 @@ export default function ContactPage() {
                           <p className="text-sm text-gray-600">Respuesta inmediata</p>
                         </div>
                       </div>
-                      <p className="text-gray-700 mb-4">+54 9 11 1234-5678</p>
+                      <p className="text-gray-700 mb-4">{formattedWhatsappNumber}</p>
                       <Button className="w-full bg-green-500 hover:bg-green-600" asChild>
-                        <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                           Escribir por WhatsApp
                         </a>
                       </Button>

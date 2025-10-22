@@ -3,15 +3,24 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
+import { useAdmin } from "@/contexts/AdminContext"
 
 export function MinimalNavbar() {
+  const { homeConfig } = useAdmin()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const pathname = usePathname()
   const isHomePage = pathname === "/"
+
+  const whatsappNumber = useMemo(() => {
+    const rawNumber = homeConfig.whatsappNumber?.trim()
+    return rawNumber && rawNumber.length > 0 ? rawNumber : "5491112345678"
+  }, [homeConfig.whatsappNumber])
+
+  const whatsappLink = useMemo(() => `https://wa.me/${whatsappNumber}`, [whatsappNumber])
 
   useEffect(() => {
     if (!isHomePage) return
@@ -142,7 +151,7 @@ export function MinimalNavbar() {
                 size="lg"
                 className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3"
               >
-                <a href="https://wa.me/5491112345678" target="_blank" rel="noopener noreferrer">
+                <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                   WhatsApp
                 </a>
               </Button>

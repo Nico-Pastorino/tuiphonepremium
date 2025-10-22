@@ -145,7 +145,27 @@ export default function HomePage() {
   const selectedValue =
     selectedRow && selectedStorageId ? selectedRow.values[selectedStorageId][selectedCondition] : null
   const formattedTradeInValue = selectedValue !== null ? usdFormatter.format(selectedValue) : null
-  const whatsappLink = `https://wa.me/${homeConfig.whatsappNumber}`
+  const whatsappNumber = homeConfig.whatsappNumber?.trim() || "5491112345678"
+  const whatsappLink = `https://wa.me/${whatsappNumber}`
+  const formattedWhatsappNumber = useMemo(() => {
+    const digits = whatsappNumber.replace(/\D/g, "")
+
+    if (digits.startsWith("549") && digits.length >= 11) {
+      const area = digits.slice(3, 5)
+      const firstPart = digits.slice(5, 9)
+      const secondPart = digits.slice(9)
+
+      if (firstPart && secondPart) {
+        return `+54 9 ${area} ${firstPart}-${secondPart}`
+      }
+    }
+
+    if (digits.length > 0) {
+      return `+${digits}`
+    }
+
+    return "+54 9 11 1234-5678"
+  }, [whatsappNumber])
 
   const tradeInWhatsappLines: string[] = ["Quiero realizar el plan canje"]
 
@@ -709,7 +729,7 @@ const ctaSection = (
                       </span>
                       <div>
                         <p className="font-medium text-white">WhatsApp</p>
-                        <p className="text-xs sm:text-sm">+{homeConfig.whatsappNumber}</p>
+                        <p className="text-xs sm:text-sm">{formattedWhatsappNumber}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
