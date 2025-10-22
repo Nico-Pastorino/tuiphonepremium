@@ -45,34 +45,35 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
   }, [whatsappNumber, product.name, product.condition])
 
   return (
-    <Card className="group overflow-hidden border-0 shadow-sm hover:shadow-xl transition-all rounded-3xl">
+    <Card className="group overflow-hidden rounded-2xl border-0 shadow-sm transition-all hover:shadow-xl sm:rounded-3xl">
       <CardContent className="p-0">
-        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-100 to-white">
+        <div className="relative aspect-[4/5] overflow-hidden bg-gradient-to-br from-gray-100 to-white sm:aspect-square">
           <Image
             src={product.images[0] || "/placeholder.svg?height=400&width=400"}
             alt={product.name}
             fill
             className="object-contain transition-transform duration-500 group-hover:scale-105"
+            sizes="(min-width: 1280px) 320px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 80vw"
           />
         </div>
-        <div className="p-6 space-y-4">
-          <h3 className="text-xl font-semibold text-gray-900 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+        <div className="space-y-3 p-4 sm:space-y-4 sm:p-6">
+          <h3 className="text-lg font-semibold leading-tight text-gray-900 transition-colors line-clamp-2 group-hover:text-blue-600 sm:text-xl">
             {product.name}
           </h3>
           <div className="space-y-1">
-            <div className="text-3xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</div>
+            <div className="text-2xl font-bold text-gray-900 sm:text-3xl">${priceInPesos.toLocaleString("es-AR")}</div>
             {priceInDollars !== null && (
-              <div className="text-sm text-gray-500">USD {priceInDollars.toLocaleString("es-AR")}</div>
+              <div className="text-sm text-gray-500 sm:text-base">USD {priceInDollars.toLocaleString("es-AR")}</div>
             )}
           </div>
-          <div className="flex gap-3">
-            <Button className="flex-1" asChild>
+          <div className="flex gap-2 sm:gap-3">
+            <Button className="flex-1 py-2 text-sm sm:py-3 sm:text-base" asChild>
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                 Consultar
               </a>
             </Button>
-            <Button variant="outline" asChild>
-              <Link href={`/productos/${product.id}`}>Ver más</Link>
+            <Button variant="outline" className="px-4 py-2 text-sm sm:px-5 sm:py-3 sm:text-base" asChild>
+              <Link href={`/productos/${product.id}`}>Ver mas</Link>
             </Button>
           </div>
         </div>

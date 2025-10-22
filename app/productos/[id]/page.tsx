@@ -233,10 +233,10 @@ export default function ProductDetailPage() {
   }
 
   const QuickActionButtons = ({ className = "" }: { className?: string }) => (
-    <div className={`flex flex-col gap-4 ${className}`}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+    <div className={`flex flex-col gap-3 ${className}`}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
         <Button
-          className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 py-4 text-lg font-semibold text-white shadow-sm transition hover:from-blue-600 hover:to-purple-700"
+          className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 py-3 text-base font-semibold text-white shadow-sm transition hover:from-blue-600 hover:to-purple-700 sm:py-4 sm:text-lg"
           asChild
         >
           <a href={productWhatsappLink} target="_blank" rel="noopener noreferrer">
@@ -248,19 +248,19 @@ export default function ProductDetailPage() {
         <Button
           variant="outline"
           size="lg"
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 bg-transparent px-6 py-4 font-medium text-blue-600 transition hover:border-blue-400 hover:text-blue-700 sm:w-auto"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 bg-white/80 px-4 py-3 text-sm font-semibold text-blue-600 transition hover:border-blue-400 hover:bg-white sm:w-auto sm:px-5 sm:py-4 sm:text-base"
           onClick={handleShare}
           aria-label="Compartir producto"
         >
           <Share2 className="h-5 w-5" />
-          <span className="text-sm font-semibold sm:hidden">Compartir</span>
+          <span className="font-semibold">Compartir</span>
         </Button>
       </div>
     </div>
   )
 
   const BenefitsGrid = ({ className = "" }: { className?: string }) => (
-    <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 ${className}`}>
+    <div className={`grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4 ${className}`}>
       <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
           <Shield className="h-5 w-5 text-green-600" />
@@ -300,11 +300,11 @@ export default function ProductDetailPage() {
     <div className="min-h-screen bg-white">
       <MinimalNavbar />
 
-      <div className="pt-20 pb-8">
-        <div className="container mx-auto px-4">
+      <div className="pt-20 pb-10 sm:pb-12">
+        <div className="container mx-auto max-w-6xl px-3 sm:px-4">
           {/* Breadcrumb */}
           <AnimatedSection animation="fadeUp">
-            <div className="flex items-center gap-2 mb-6 text-sm text-gray-600">
+            <div className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-gray-600 sm:text-sm">
               <Link href="/" className="hover:text-blue-600">
                 Inicio
               </Link>
@@ -323,24 +323,29 @@ export default function ProductDetailPage() {
 
           {/* Back Button */}
           <AnimatedSection animation="fadeUp" delay={100}>
-            <Button variant="ghost" onClick={() => router.back()} className="mb-6 text-gray-600">
+            <Button
+              variant="ghost"
+              onClick={() => router.back()}
+              className="mb-6 w-full justify-center gap-2 rounded-xl text-sm text-gray-600 hover:bg-gray-100 sm:w-fit sm:justify-start sm:px-0 sm:text-base"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
             </Button>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 mb-16">
+          <div className="mb-12 grid grid-cols-1 items-start gap-10 sm:gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
             {/* Images */}
             <AnimatedSection animation="fadeLeft">
               <div className="flex flex-col gap-6">
                 <div className="space-y-4">
                   {/* Main Image */}
-                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-50">
+                  <div className="relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden rounded-2xl bg-gray-50 sm:aspect-[5/6] md:aspect-square">
                     <Image
                       src={product.images[selectedImageIndex] || "/placeholder.svg?height=600&width=600"}
                       alt={product.name}
                       fill
-                      className="object-cover"
+                      className="object-contain"
+                      sizes="(min-width: 1280px) 480px, (min-width: 1024px) 45vw, (min-width: 640px) 70vw, 92vw"
                     />
 
                     {/* Navigation Arrows */}
@@ -378,13 +383,16 @@ export default function ProductDetailPage() {
 
                   {/* Thumbnail Images */}
                   {product.images.length > 1 && (
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="flex gap-3 overflow-x-auto scrollbar-hide sm:grid sm:grid-cols-4 sm:gap-2 sm:overflow-visible">
                       {product.images.map((image, index) => (
                         <button
                           key={index}
                           onClick={() => setSelectedImageIndex(index)}
-                          className={`relative aspect-square overflow-hidden rounded-lg ${
-                            selectedImageIndex === index ? "ring-2 ring-blue-500" : "hover:opacity-80"
+                          type="button"
+                          className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-transparent bg-white/80 transition-all sm:h-auto sm:w-auto sm:aspect-square ${
+                            selectedImageIndex === index
+                              ? "ring-2 ring-blue-500"
+                              : "hover:border-gray-200 hover:opacity-90"
                           }`}
                         >
                           <Image
@@ -392,6 +400,7 @@ export default function ProductDetailPage() {
                             alt={`${product.name} ${index + 1}`}
                             fill
                             className="object-contain"
+                            sizes="96px"
                           />
                         </button>
                       ))}
@@ -411,11 +420,13 @@ export default function ProductDetailPage() {
             <AnimatedSection animation="fadeRight">
               <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-5 lg:gap-6">
-                  <h1 className="text-4xl font-bold leading-tight text-gray-900">{product.name}</h1>
+                  <h1 className="text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">{product.name}</h1>
 
-                  <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-                    <div className="flex items-baseline gap-4">
-                      <span className="text-4xl font-bold text-gray-900">${priceInPesos.toLocaleString("es-AR")}</span>
+                  <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
+                    <div className="flex flex-wrap items-baseline gap-3">
+                      <span className="text-3xl font-bold text-gray-900 sm:text-4xl">
+                        ${priceInPesos.toLocaleString("es-AR")}
+                      </span>
 
                       {originalPrice && (
                         <span className="text-2xl text-gray-400 line-through">
@@ -425,21 +436,25 @@ export default function ProductDetailPage() {
                     </div>
 
                     {priceInUSD !== null && (
-                      <div className="mt-1 text-sm text-gray-500">USD {priceInUSD.toLocaleString("es-AR")}</div>
+                      <div className="mt-1 text-sm text-gray-500 sm:text-base">
+                        USD {priceInUSD.toLocaleString("es-AR")}
+                      </div>
                     )}
 
                     <div className="mt-5 rounded-2xl border border-blue-200/70 bg-blue-50/70 p-4 sm:p-5">
                       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-base font-semibold text-blue-700">Opciones de financiacion disponibles</p>
+                        <p className="text-sm font-semibold text-blue-700 sm:text-base">
+                          Opciones de financiacion disponibles
+                        </p>
                         {hasInstallmentOptions && (
-                          <span className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-blue-600 sm:text-[0.7rem]">
                             Elegi la mas conveniente
                           </span>
                         )}
                       </div>
 
                       {hasInstallmentOptions ? (
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-4 space-y-2.5 sm:space-y-3">
                           {installmentGroups.map((group) => {
                             const hasOptionsForGroup = group.options.length > 0
                             const firstOption = hasOptionsForGroup ? group.options[0] : null
@@ -457,7 +472,7 @@ export default function ProductDetailPage() {
                                 <button
                                   type="button"
                                   onClick={() => toggleInstallmentCategory(group.category)}
-                                  className={`flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors ${
+                                  className={`flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors sm:px-5 sm:py-4 ${
                                     group.category === "naranja"
                                       ? "hover:bg-orange-100/80"
                                       : "hover:bg-blue-50/60"
@@ -465,14 +480,14 @@ export default function ProductDetailPage() {
                                 >
                                   <div>
                                     <p
-                                      className={`text-xs font-semibold uppercase tracking-wide ${
+                                      className={`text-[0.7rem] font-semibold uppercase tracking-wide ${
                                         group.category === "naranja" ? "text-orange-600" : "text-blue-600"
                                       }`}
                                     >
                                       {group.label}
                                     </p>
                                     <p
-                                      className={`mt-1 text-sm ${
+                                      className={`mt-1 text-sm leading-tight ${
                                         group.category === "naranja" ? "text-orange-900" : "text-blue-900"
                                       }`}
                                     >
@@ -505,7 +520,7 @@ export default function ProductDetailPage() {
                                         {group.options.map((option) => (
                                           <div
                                             key={`${group.category}-${option.months}`}
-                                            className="flex items-baseline justify-between gap-2"
+                                            className="flex items-baseline justify-between gap-2 text-sm sm:text-base"
                                           >
                                             <span>
                                               {option.months} {option.months === 1 ? "cuota" : "cuotas"}
@@ -561,22 +576,22 @@ export default function ProductDetailPage() {
 
           {/* Product Details */}
           <AnimatedSection animation="fadeUp">
-            <Card className="mb-16 border-0 shadow-sm">
-              <CardContent className="p-8">
+            <Card className="mb-12 border-0 shadow-sm sm:mb-16">
+              <CardContent className="p-5 sm:p-8">
                 <Tabs defaultValue="description" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
+                  <TabsList className="grid w-full grid-cols-2 rounded-xl bg-gray-100 p-1">
                     <TabsTrigger value="description">Descripcion</TabsTrigger>
                     <TabsTrigger value="specifications">Especificaciones</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="description" className="mt-6">
+                  <TabsContent value="description" className="mt-5 sm:mt-6">
                     <div className="prose max-w-none">
-                      <p className="text-gray-700 leading-relaxed text-lg">{product.description}</p>
+                      <p className="text-base leading-relaxed text-gray-700 sm:text-lg">{product.description}</p>
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="specifications" className="mt-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <TabsContent value="specifications" className="mt-5 sm:mt-6">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                       {Object.entries(product.specifications).map(([key, value]) => (
                         <div key={key} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                           <span className="font-medium text-gray-900">{key}</span>
@@ -593,22 +608,23 @@ export default function ProductDetailPage() {
           {/* Related Products */}
           {relatedProducts.length > 0 && (
             <AnimatedSection animation="fadeUp">
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Productos relacionados</h2>
+              <div className="mb-6 sm:mb-8">
+                <h2 className="mb-2 text-2xl font-bold text-gray-900 sm:text-3xl">Productos relacionados</h2>
                 <p className="text-gray-600">Otros productos que podrian interesarte</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
                 {relatedProducts.map((relatedProduct, index) => (
                   <AnimatedSection key={relatedProduct.id} animation="fadeUp" delay={index * 100}>
                     <Link href={`/productos/${relatedProduct.id}`}>
-                      <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-0 shadow-sm">
-                        <div className="relative aspect-square overflow-hidden rounded-t-lg">
+                      <Card className="group cursor-pointer border-0 shadow-sm transition-all duration-300 hover:shadow-lg">
+                        <div className="relative aspect-square overflow-hidden rounded-t-xl bg-gray-50">
                           <Image
                             src={relatedProduct.images[0] || "/placeholder.svg?height=300&width=300"}
                             alt={relatedProduct.name}
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-contain transition-transform duration-300 group-hover:scale-105"
+                            sizes="(min-width: 1024px) 210px, 40vw"
                           />
                         </div>
                         <CardContent className="p-4">
