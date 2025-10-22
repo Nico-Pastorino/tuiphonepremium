@@ -275,6 +275,44 @@
   }
 }
 
+/* Mobile centering for small screens */
+@media (max-width: 640px) {
+  .mobile-centered-body {
+    text-align: center;
+  }
+
+  .mobile-centered-body * {
+    text-align: inherit;
+  }
+
+  .mobile-centered-body [class*="text-left"] {
+    text-align: inherit !important;
+  }
+
+  .mobile-centered-body [class*="items-start"] {
+    align-items: center !important;
+  }
+
+  .mobile-centered-body [class*="justify-start"],
+  .mobile-centered-body [class*="justify-between"] {
+    justify-content: center !important;
+  }
+
+  .mobile-centered-body [class*="self-start"] {
+    align-self: center !important;
+  }
+
+  .mobile-centered-body [class*="items-end"],
+  .mobile-centered-body [class*="justify-end"] {
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .mobile-centered-body [class*="grid"] {
+    justify-items: center;
+  }
+}
+
 /* Safe area insets for mobile devices */
 @supports (padding: max(0px)) {
   .safe-area-inset-top {
