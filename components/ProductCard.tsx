@@ -55,7 +55,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
             src={product.images[0] || "/placeholder.svg"}
             alt={product.name}
             fill
-            className="object-contain drop-shadow-xl"
+            className="object-contain drop-shadow-xl transition-transform duration-500 scale-[1.12] group-hover:scale-[1.18]"
             sizes="(min-width: 1024px) 260px, (min-width: 640px) 45vw, 82vw"
           />
         </div>

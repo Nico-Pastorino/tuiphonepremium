@@ -339,13 +339,13 @@ export default function ProductDetailPage() {
               <div className="flex flex-col gap-6">
                 <div className="space-y-4">
                   {/* Main Image */}
-                  <div className="relative flex aspect-[3/4] w-full max-w-[380px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-100 to-white p-2.5 sm:aspect-[3/4] sm:max-w-none sm:p-4 md:aspect-[4/5]">
+                  <div className="relative flex aspect-[3/4] w-full max-w-[400px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-gray-100 to-white p-2 sm:aspect-[3/4] sm:max-w-none sm:p-4 md:aspect-[4/5]">
                     <Image
                       src={product.images[selectedImageIndex] || "/placeholder.svg?height=600&width=600"}
                       alt={product.name}
                       fill
                       priority
-                      className="object-contain drop-shadow-2xl"
+                      className="object-contain drop-shadow-2xl transition-transform duration-500 scale-[1.18] sm:scale-[1.08]"
                       sizes="(min-width: 1280px) 480px, (min-width: 1024px) 45vw, (min-width: 640px) 70vw, 92vw"
                     />
 

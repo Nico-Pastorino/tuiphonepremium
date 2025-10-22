@@ -52,7 +52,7 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
             src={product.images[0] || "/placeholder.svg?height=400&width=400"}
             alt={product.name}
             fill
-            className="object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-110"
+            className="object-contain drop-shadow-2xl transition-transform duration-500 scale-[1.1] group-hover:scale-[1.18]"
             sizes="(min-width: 1280px) 320px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 80vw"
           />
         </div>

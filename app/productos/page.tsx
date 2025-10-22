@@ -113,7 +113,7 @@ export default function ProductsPage() {
                 {loading ? (
                   <ProductsLoading />
                 ) : filteredProducts.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-2 sm:gap-6 md:gap-8 xl:grid-cols-3">
                     {filteredProducts.map((product: Product, index: number) => (
                       <AnimatedSection key={product.id} animation="fadeUp" delay={index * 60}>
                         <ModernProductCard product={product} />
