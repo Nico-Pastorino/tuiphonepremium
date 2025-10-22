@@ -322,7 +322,7 @@ export default function HomePage() {
               </Button>
             </div>
           ) : featuredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-6 md:gap-8 lg:grid-cols-3 xl:grid-cols-4">
               {featuredProducts.map((product, index) => (
                 <AnimatedSection key={product.id} animation="fadeUp" delay={index * 100}>
                   <ProductCard product={product} variant="default" />
