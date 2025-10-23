@@ -3,16 +3,49 @@ import type { Database } from "@/types/database"
 
 const isServer = typeof window === "undefined"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? null
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? null
-const supabaseServiceKey = isServer ? process.env.SUPABASE_SERVICE_ROLE_KEY ?? null : null
+type RuntimeEnv = { [key: string]: string | undefined }
+
+const getRuntimeEnv = (): RuntimeEnv | undefined => {
+  if (isServer) {
+    return undefined
+  }
+  const globalEnv = (globalThis as { __ENV__?: RuntimeEnv } | undefined)?.__ENV__
+  if (globalEnv && typeof globalEnv === "object") {
+    return globalEnv
+  }
+  return undefined
+}
+
+const readEnvValue = (name: string): string | null => {
+  const fromProcess =
+    typeof process !== "undefined" && process.env ? (process.env[name] as string | undefined) : undefined
+  if (fromProcess && fromProcess.length > 0) {
+    return fromProcess
+  }
+
+  const runtimeEnv = getRuntimeEnv()
+  const fromRuntime = runtimeEnv?.[name]
+  if (fromRuntime && fromRuntime.length > 0) {
+    return fromRuntime
+  }
+
+  return null
+}
+
+const supabaseUrl = readEnvValue("NEXT_PUBLIC_SUPABASE_URL")
+const supabaseAnonKey = readEnvValue("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+const supabaseServiceKey = isServer ? readEnvValue("SUPABASE_SERVICE_ROLE_KEY") : null
 
 // Valores por defecto para evitar que el cliente se rompa en desarrollo
 const defaultUrl = "https://placeholder.supabase.co"
 const defaultKey = "placeholder-key-for-development"
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Supabase no esta configurado correctamente. Se usaran datos de respaldo si es necesario.")
+const isConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+
+if (!isConfigured) {
+  console.warn(
+    "Supabase no esta configurado correctamente. Define NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+  )
 }
 
 // Usar valores por defecto si las variables no estan disponibles
@@ -39,7 +72,7 @@ export const supabaseAdmin = supabaseServiceKey
 
 // Funcion para verificar si Supabase esta configurado correctamente
 export function isSupabaseConfigured(): boolean {
-  return Boolean(supabaseUrl && supabaseAnonKey)
+  return isConfigured
 }
 
 // Funcion helper para verificar la conexion
