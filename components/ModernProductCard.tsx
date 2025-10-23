@@ -45,9 +45,6 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
     return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
   }, [whatsappNumber, product.name, product.condition])
 
-  const stockLabel = product.stock > 0 ? "Disponible" : "Sin stock"
-  const stockClass = product.stock > 0 ? "text-emerald-600" : "text-rose-500"
-
   return (
     <Card className="group h-full overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       <CardContent className="flex h-full flex-col p-0">
@@ -61,7 +58,7 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
           />
         </div>
         <div className="flex flex-1 flex-col gap-3 px-5 pb-5 pt-6 sm:gap-4 sm:px-6 sm:pb-6">
-          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide">
             <Badge
               variant="secondary"
               className={`rounded-full border-0 px-3 py-1 text-[11px] font-semibold ${
@@ -70,7 +67,6 @@ export function ModernProductCard({ product }: ModernProductCardProps) {
             >
               {product.condition === "seminuevo" ? "Seminuevo" : "Nuevo"}
             </Badge>
-            <span className={stockClass}>{stockLabel}</span>
           </div>
           <h3 className="text-lg font-semibold leading-tight text-gray-900 transition-colors line-clamp-2 group-hover:text-blue-600 sm:text-xl">
             {product.name}
