@@ -4,7 +4,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
 import type { Product, ProductFormData, ProductFilters } from "@/types/product"
 import type { ProductRow } from "@/types/database"
-import { supabase } from "@/lib/supabase"
+import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
 type ApiListResponse = { data?: ProductRow[]; error?: string }
 
@@ -116,6 +116,55 @@ const fallbackProducts: Product[] = [
   },
 ]
 
+const FETCH_TIMEOUT_MS = 6000
+
+type FetchInput = Parameters<typeof fetch>[0]
+type FetchInit = Parameters<typeof fetch>[1]
+
+const fetchWithTimeout = async (
+  input: FetchInput,
+  init: FetchInit = {},
+  timeoutMs = FETCH_TIMEOUT_MS,
+  source: string,
+): Promise<Response> => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => {
+    controller.abort()
+  }, timeoutMs)
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error(`Timeout al solicitar productos desde ${source}`)
+    }
+    if ((error as { name?: string })?.name === "AbortError") {
+      throw new Error(`Timeout al solicitar productos desde ${source}`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, source: string): Promise<T> => {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timeout al solicitar productos desde ${source}`))
+    }, timeoutMs)
+
+    promise
+      .then((value) => {
+        clearTimeout(timer)
+        resolve(value)
+      })
+      .catch((error) => {
+        clearTimeout(timer)
+        reject(error)
+      })
+  })
+}
+
 export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -134,9 +183,15 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
     type SourceName = "api" | "supabase"
     type SourceResult = { source: SourceName; products: Product[] }
+    const supabaseConfigured = isSupabaseConfigured()
 
     const fetchFromApi = async (): Promise<SourceResult> => {
-      const response = await fetch("/api/admin/products", { cache: "no-store" })
+      const response = await fetchWithTimeout(
+        "/api/admin/products",
+        { cache: "no-store" },
+        FETCH_TIMEOUT_MS,
+        "API",
+      )
       const result = (await response.json()) as ApiListResponse
 
       if (!response.ok) {
@@ -147,10 +202,11 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     }
 
     const fetchFromSupabase = async (): Promise<SourceResult> => {
-      const { data, error: supabaseError } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false })
+      const { data, error: supabaseError } = await withTimeout(
+        supabase.from("products").select("*").order("created_at", { ascending: false }),
+        FETCH_TIMEOUT_MS,
+        "Supabase",
+      )
 
       if (supabaseError) {
         throw supabaseError
@@ -183,7 +239,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         setSupabaseConnected(Boolean(apiResult || supabaseResult))
       }
 
-      await Promise.all([
+      const tasks: Array<Promise<void>> = [
         (async () => {
           try {
             const result = await fetchFromApi()
@@ -193,16 +249,25 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
             errors.push({ source: "api", error })
           }
         })(),
-        (async () => {
-          try {
-            const result = await fetchFromSupabase()
-            captureResult(result)
-          } catch (error) {
-            console.warn("Failed to load products directly from Supabase:", error)
-            errors.push({ source: "supabase", error })
-          }
-        })(),
-      ])
+      ]
+
+      if (supabaseConfigured) {
+        tasks.push(
+          (async () => {
+            try {
+              const result = await fetchFromSupabase()
+              captureResult(result)
+            } catch (error) {
+              console.warn("Failed to load products directly from Supabase:", error)
+              errors.push({ source: "supabase", error })
+            }
+          })(),
+        )
+      } else {
+        console.info("Supabase no esta configurado. Omitiendo la carga directa.")
+      }
+
+      await Promise.all(tasks)
 
       if (!firstResult) {
         const fallbackError = errors[0]?.error
