@@ -227,42 +227,36 @@ export default function HomePage() {
               {
                 icon: Smartphone,
                 name: "iPhone",
-                count: `${products.filter((p) => p.category === "iphone").length}+ modelos`,
                 href: "/productos?category=iphone",
                 description: "Los últimos lanzamientos",
               },
               {
                 icon: Tablet,
                 name: "iPad",
-                count: `${products.filter((p) => p.category === "ipad").length}+ modelos`,
                 href: "/productos?category=ipad",
                 description: "Herramientas versátiles para trabajar y crear",
               },
               {
                 icon: Laptop,
                 name: "Mac",
-                count: `${products.filter((p) => p.category === "mac").length}+ modelos`,
                 href: "/productos?category=mac",
                 description: "Potencia profesional para cualquier desafío",
               },
               {
                 icon: Watch,
                 name: "Apple Watch",
-                count: `${products.filter((p) => p.category === "watch").length}+ modelos`,
                 href: "/productos?category=watch",
                 description: "Tu bienestar siempre a mano",
               },
               {
                 icon: Headphones,
                 name: "AirPods",
-                count: `${products.filter((p) => p.category === "airpods").length}+ modelos`,
                 href: "/productos?category=airpods",
                 description: "Sonido envolvente para cada momento",
               },
               {
                 icon: Cable,
                 name: "Accesorios",
-                count: `${products.filter((p) => p.category === "accesorios").length}+ productos`,
                 href: "/productos?category=accesorios",
                 description: "Accesorios imprescindibles para tu ecosistema",
               },
@@ -270,12 +264,12 @@ export default function HomePage() {
               <AnimatedSection key={category.name} animation="scale" delay={index * 100}>
                 <Link href={category.href}>
                   <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-0 shadow-sm overflow-hidden rounded-xl sm:rounded-2xl h-full bg-white">
-                    <CardContent className="flex h-full flex-col justify-between p-3 text-left sm:p-4 md:p-6">
-                      <div className="flex items-start gap-3 sm:gap-4 md:gap-5">
+                    <CardContent className="flex h-full flex-col justify-center gap-4 p-3 sm:p-4 md:p-6">
+                      <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-lg sm:rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                           <category.icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-white" />
                         </div>
-                        <div>
+                        <div className="flex-1 text-center">
                           <h3 className="font-bold text-sm sm:text-base md:text-lg lg:text-xl text-gray-900 group-hover:text-blue-600 transition-colors mb-1 sm:mb-2">
                             {category.name}
                           </h3>
@@ -284,7 +278,6 @@ export default function HomePage() {
                           </p>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 font-medium sm:text-sm">{category.count}</p>
                     </CardContent>
                   </Card>
                 </Link>
