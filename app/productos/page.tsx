@@ -12,12 +12,16 @@ import { Filter } from "lucide-react"
 import { useProducts } from "@/contexts/ProductContext"
 import type { Product } from "@/types/product" // <-- Importa el tipo correcto
 
+const INITIAL_VISIBLE = 12
+const LOAD_INCREMENT = 12
+
 export default function ProductsPage() {
   const { products, loading } = useProducts() // El contexto ya provee el tipo correcto
   const searchParams = useSearchParams()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState<boolean>(false)
+  const [visibleCount, setVisibleCount] = useState<number>(INITIAL_VISIBLE)
 
   // Obtener filtros de la URL
   useEffect(() => {
@@ -27,6 +31,10 @@ export default function ProductsPage() {
     setSelectedCategory(category || null)
     setSelectedCondition(condition || null)
   }, [searchParams])
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE)
+  }, [selectedCategory, selectedCondition, products])
 
   // Filtrar y ordenar productos
   const filteredProducts = products
@@ -40,6 +48,7 @@ export default function ProductsPage() {
       (a: Product, b: Product) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
+  const visibleProducts = filteredProducts.slice(0, visibleCount)
 
   const handleFilterChange = (filters: { category?: string | null; condition?: string | null }) => {
     setSelectedCategory(filters.category ?? null)
@@ -108,7 +117,7 @@ export default function ProductsPage() {
                   <p className="text-sm text-gray-600 sm:text-base">
                     {loading
                       ? "Cargando productos..."
-                      : `Mostrando ${filteredProducts.length} de ${products.length} productos`}
+                      : `Mostrando ${visibleProducts.length} de ${filteredProducts.length} productos`}
                   </p>
                 </div>
 
@@ -117,7 +126,7 @@ export default function ProductsPage() {
                   <ProductsLoading />
                 ) : filteredProducts.length > 0 ? (
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-x-8 xl:gap-y-10">
-                    {filteredProducts.map((product: Product, index: number) => (
+                    {visibleProducts.map((product: Product, index: number) => (
                       <AnimatedSection key={product.id} animation="fadeUp" delay={index * 60}>
                         <ModernProductCard product={product} />
                       </AnimatedSection>
@@ -141,6 +150,19 @@ export default function ProductsPage() {
                   </div>
                 )}
               </AnimatedSection>
+              {!loading && visibleProducts.length < filteredProducts.length && (
+                <div className="mt-8 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      setVisibleCount((prev) => Math.min(prev + LOAD_INCREMENT, filteredProducts.length))
+                    }
+                    className="rounded-xl border-gray-200 px-6 py-3 text-sm font-semibold hover:border-gray-300 hover:bg-white"
+                  >
+                    Mostrar más productos
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Sidebar Filters */}
