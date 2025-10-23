@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react"
 import type { Product, ProductFormData, ProductFilters } from "@/types/product"
 import type { ProductRow } from "@/types/database"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
@@ -117,9 +117,35 @@ const fallbackProducts: Product[] = [
 ]
 
 const FETCH_TIMEOUT_MS = 6000
+const FALLBACK_DISPLAY_DELAY_MS = 2500
+const CACHE_KEY = "tuiphone_products_cache_v1"
+const CACHE_TTL_MS = 1000 * 60 * 5
 
 type FetchInput = Parameters<typeof fetch>[0]
 type FetchInit = Parameters<typeof fetch>[1]
+
+type ProductsCachePayload = {
+  products: Product[]
+  supabaseConnected: boolean
+  timestamp: number
+}
+
+const readProductsCache = (): ProductsCachePayload | null => {
+  if (typeof window === "undefined") {
+    return null
+  }
+
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as ProductsCachePayload | null
+    if (!parsed || !Array.isArray(parsed.products)) return null
+    return parsed
+  } catch (error) {
+    console.warn("No se pudo leer la cache de productos:", error)
+    return null
+  }
+}
 
 const fetchWithTimeout = async (
   input: FetchInput,
@@ -170,6 +196,8 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
+  const productsRef = useRef<Product[]>([])
+  const cacheHydratedRef = useRef(false)
 
   const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
@@ -177,116 +205,189 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
   const mapProducts = (rows?: ProductRow[]): Product[] => (rows ?? []).map(transformSupabaseProduct)
 
-  const loadProducts = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  const updateProductsState = useCallback(
+    (productsList: Product[], connected: boolean, persist = true) => {
+      setProducts(productsList)
+      productsRef.current = productsList
 
-    type SourceName = "api" | "supabase"
-    type SourceResult = { source: SourceName; products: Product[] }
-    const supabaseConfigured = isSupabaseConfigured()
-
-    const fetchFromApi = async (): Promise<SourceResult> => {
-      const response = await fetchWithTimeout(
-        "/api/admin/products",
-        { cache: "no-store" },
-        FETCH_TIMEOUT_MS,
-        "API",
-      )
-      const result = (await response.json()) as ApiListResponse
-
-      if (!response.ok) {
-        throw new Error(result?.error || `API responded with status ${response.status}`)
-      }
-
-      return { source: "api", products: mapProducts(result.data) }
-    }
-
-    const fetchFromSupabase = async (): Promise<SourceResult> => {
-      const { data, error: supabaseError } = await withTimeout(
-        supabase.from("products").select("*").order("created_at", { ascending: false }),
-        FETCH_TIMEOUT_MS,
-        "Supabase",
-      )
-
-      if (supabaseError) {
-        throw supabaseError
-      }
-
-      return { source: "supabase", products: mapProducts(data ?? []) }
-    }
-
-    try {
-      const errors: Array<{ source: SourceName; error: unknown }> = []
-      let firstResult: SourceResult | null = null
-      let apiResult: SourceResult | null = null
-      let supabaseResult: SourceResult | null = null
-
-      const captureResult = (result: SourceResult) => {
-        if (result.source === "api") {
-          apiResult = result
-        } else {
-          supabaseResult = result
-        }
-
-        if (!firstResult) {
-          firstResult = result
-          setProducts(result.products)
-        } else if (result.source === "supabase") {
-          // Prefer direct Supabase data when it becomes available.
-          setProducts(result.products)
-        }
-
-        setSupabaseConnected(Boolean(apiResult || supabaseResult))
-      }
-
-      const tasks: Array<Promise<void>> = [
-        (async () => {
-          try {
-            const result = await fetchFromApi()
-            captureResult(result)
-          } catch (error) {
-            console.warn("Failed to load products from API:", error)
-            errors.push({ source: "api", error })
+      if (persist && typeof window !== "undefined") {
+        try {
+          const payload: ProductsCachePayload = {
+            products: productsList,
+            supabaseConnected: connected,
+            timestamp: Date.now(),
           }
-        })(),
-      ]
+          window.localStorage.setItem(CACHE_KEY, JSON.stringify(payload))
+        } catch (error) {
+          console.warn("No se pudo guardar la cache de productos:", error)
+        }
+      }
+    },
+    [],
+  )
 
-      if (supabaseConfigured) {
-        tasks.push(
+  const hydrateFromCache = useCallback(() => {
+    if (cacheHydratedRef.current || typeof window === "undefined") {
+      return
+    }
+
+    const cached = readProductsCache()
+    cacheHydratedRef.current = true
+
+    if (!cached) {
+      return
+    }
+
+    const isFresh = Date.now() - cached.timestamp < CACHE_TTL_MS
+    if (!isFresh) {
+      window.localStorage.removeItem(CACHE_KEY)
+      return
+    }
+
+    updateProductsState(cached.products, cached.supabaseConnected, false)
+    setSupabaseConnected(cached.supabaseConnected)
+    setLoading(false)
+  }, [updateProductsState])
+
+  const loadProducts = useCallback(
+    async ({ force = false }: { force?: boolean } = {}) => {
+      const hasExistingProducts = productsRef.current.length > 0
+      if (force || !hasExistingProducts) {
+        setLoading(true)
+      }
+      setError(null)
+
+      type SourceName = "api" | "supabase"
+      type SourceResult = { source: SourceName; products: Product[] }
+      const supabaseConfigured = isSupabaseConfigured()
+
+      let fallbackTimer: ReturnType<typeof setTimeout> | null = null
+      const clearFallbackTimer = () => {
+        if (fallbackTimer) {
+          clearTimeout(fallbackTimer)
+          fallbackTimer = null
+        }
+      }
+
+      if (!hasExistingProducts) {
+        fallbackTimer = setTimeout(() => {
+          console.info("Mostrando productos de respaldo mientras se completa la carga remota.")
+          updateProductsState(fallbackProducts, false, false)
+          setLoading(false)
+        }, FALLBACK_DISPLAY_DELAY_MS)
+      }
+
+      const fetchFromApi = async (): Promise<SourceResult> => {
+        const response = await fetchWithTimeout(
+          "/api/admin/products",
+          { cache: "no-store" },
+          FETCH_TIMEOUT_MS,
+          "API",
+        )
+        const result = (await response.json()) as ApiListResponse
+
+        if (!response.ok) {
+          throw new Error(result?.error || `API responded with status ${response.status}`)
+        }
+
+        return { source: "api", products: mapProducts(result.data) }
+      }
+
+      const fetchFromSupabase = async (): Promise<SourceResult> => {
+        const { data, error: supabaseError } = await withTimeout(
+          supabase.from("products").select("*").order("created_at", { ascending: false }),
+          FETCH_TIMEOUT_MS,
+          "Supabase",
+        )
+
+        if (supabaseError) {
+          throw supabaseError
+        }
+
+        return { source: "supabase", products: mapProducts(data ?? []) }
+      }
+
+      try {
+        const errors: Array<{ source: SourceName; error: unknown }> = []
+        let firstResult: SourceResult | null = null
+        let apiResult: SourceResult | null = null
+        let supabaseResult: SourceResult | null = null
+
+        const captureResult = (result: SourceResult) => {
+          if (result.source === "api") {
+            apiResult = result
+          } else {
+            supabaseResult = result
+          }
+
+          const connected = Boolean(apiResult || supabaseResult)
+
+          if (!firstResult) {
+            firstResult = result
+            updateProductsState(result.products, connected)
+            setLoading(false)
+            clearFallbackTimer()
+          } else if (result.source === "supabase") {
+            // Prefer direct Supabase data cuando este disponible.
+            updateProductsState(result.products, connected)
+            clearFallbackTimer()
+          }
+
+          setSupabaseConnected(connected)
+        }
+
+        const tasks: Array<Promise<void>> = [
           (async () => {
             try {
-              const result = await fetchFromSupabase()
+              const result = await fetchFromApi()
               captureResult(result)
             } catch (error) {
-              console.warn("Failed to load products directly from Supabase:", error)
-              errors.push({ source: "supabase", error })
+              console.warn("Failed to load products from API:", error)
+              errors.push({ source: "api", error })
             }
           })(),
-        )
-      } else {
-        console.info("Supabase no esta configurado. Omitiendo la carga directa.")
-      }
+        ]
 
-      await Promise.all(tasks)
+        if (supabaseConfigured) {
+          tasks.push(
+            (async () => {
+              try {
+                const result = await fetchFromSupabase()
+                captureResult(result)
+              } catch (error) {
+                console.warn("Failed to load products directly from Supabase:", error)
+                errors.push({ source: "supabase", error })
+              }
+            })(),
+          )
+        } else {
+          console.info("Supabase no esta configurado. Omitiendo la carga directa.")
+        }
 
-      if (!firstResult) {
-        const fallbackError = errors[0]?.error
-        throw fallbackError instanceof Error ? fallbackError : new Error("No se pudo cargar productos")
+        await Promise.all(tasks)
+
+        if (!firstResult) {
+          const fallbackError = errors[0]?.error
+          throw fallbackError instanceof Error ? fallbackError : new Error("No se pudo cargar productos")
+        }
+      } catch (err) {
+        console.error("Error loading products:", err)
+        setError(err instanceof Error ? err.message : "Error desconocido")
+        updateProductsState(fallbackProducts, false)
+        setSupabaseConnected(false)
+        showToast("Usando datos de ejemplo. Verifica la configuracion de Supabase.", "warning")
+      } finally {
+        clearFallbackTimer()
+        setLoading(false)
       }
-    } catch (err) {
-      console.error("Error loading products:", err)
-      setError(err instanceof Error ? err.message : "Error desconocido")
-      setProducts(fallbackProducts)
-      setSupabaseConnected(false)
-      showToast("Usando datos de ejemplo. Verifica la configuracion de Supabase.", "warning")
-    } finally {
-      setLoading(false)
-    }
-  }, [showToast])
+    },
+    [showToast, updateProductsState],
+  )
 
   useEffect(() => {
+    hydrateFromCache()
     loadProducts()
-  }, [loadProducts])
+  }, [hydrateFromCache, loadProducts])
 
   const handleSuccess = (message: string) => {
     showToast(message, "success")
@@ -316,7 +417,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       }
 
       handleSuccess("Producto agregado exitosamente")
-      await loadProducts()
+      await loadProducts({ force: true })
       return true
     } catch (err) {
       return handleError("agregar", err)
@@ -340,7 +441,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       }
 
       handleSuccess("Producto actualizado exitosamente")
-      await loadProducts()
+      await loadProducts({ force: true })
       return true
     } catch (err) {
       return handleError("actualizar", err)
@@ -360,7 +461,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       }
 
       handleSuccess("Producto eliminado exitosamente")
-      await loadProducts()
+      await loadProducts({ force: true })
       return true
     } catch (err) {
       return handleError("eliminar", err)
@@ -401,7 +502,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   }
 
   const refreshProducts = async () => {
-    await loadProducts()
+    await loadProducts({ force: true })
   }
 
   const value: ProductContextType = {
