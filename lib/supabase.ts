@@ -3,44 +3,16 @@ import type { Database } from "@/types/database"
 
 const isServer = typeof window === "undefined"
 
-type RuntimeEnv = { [key: string]: string | undefined }
-
-const getRuntimeEnv = (): RuntimeEnv | undefined => {
-  if (isServer) {
-    return undefined
-  }
-  const globalEnv = (globalThis as { __ENV__?: RuntimeEnv } | undefined)?.__ENV__
-  if (globalEnv && typeof globalEnv === "object") {
-    return globalEnv
-  }
-  return undefined
-}
-
-const readEnvValue = (name: string): string | null => {
-  const fromProcess =
-    typeof process !== "undefined" && process.env ? (process.env[name] as string | undefined) : undefined
-  if (fromProcess && fromProcess.length > 0) {
-    return fromProcess
-  }
-
-  const runtimeEnv = getRuntimeEnv()
-  const fromRuntime = runtimeEnv?.[name]
-  if (fromRuntime && fromRuntime.length > 0) {
-    return fromRuntime
-  }
-
-  return null
-}
-
-const supabaseUrl = readEnvValue("NEXT_PUBLIC_SUPABASE_URL")
-const supabaseAnonKey = readEnvValue("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-const supabaseServiceKey = isServer ? readEnvValue("SUPABASE_SERVICE_ROLE_KEY") : null
+// Leer variables en tiempo de build para que Next.js las inyecte correctamente en el bundle del cliente.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+const supabaseServiceKey = isServer ? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "" : ""
 
 // Valores por defecto para evitar que el cliente se rompa en desarrollo
 const defaultUrl = "https://placeholder.supabase.co"
 const defaultKey = "placeholder-key-for-development"
 
-const isConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+const isConfigured = supabaseUrl.length > 0 && supabaseAnonKey.length > 0
 
 if (!isConfigured) {
   console.warn(
@@ -49,8 +21,9 @@ if (!isConfigured) {
 }
 
 // Usar valores por defecto si las variables no estan disponibles
-const finalUrl = supabaseUrl || defaultUrl
-const finalAnonKey = supabaseAnonKey || defaultKey
+const finalUrl = isConfigured ? supabaseUrl : defaultUrl
+const finalAnonKey = isConfigured ? supabaseAnonKey : defaultKey
+const finalServiceKey = supabaseServiceKey.length > 0 ? supabaseServiceKey : null
 
 // Cliente principal para operaciones publicas
 export const supabase = createClient<Database>(finalUrl, finalAnonKey, {
@@ -61,8 +34,8 @@ export const supabase = createClient<Database>(finalUrl, finalAnonKey, {
 })
 
 // Cliente para el servidor (solo si la service key esta disponible)
-export const supabaseAdmin = supabaseServiceKey
-  ? createClient<Database>(finalUrl, supabaseServiceKey, {
+export const supabaseAdmin = finalServiceKey
+  ? createClient<Database>(finalUrl, finalServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,

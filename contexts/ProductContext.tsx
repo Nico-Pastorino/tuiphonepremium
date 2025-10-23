@@ -15,6 +15,7 @@ interface ProductContextType {
   loading: boolean
   error: string | null
   supabaseConnected: boolean
+  usingFallback: boolean
   addProduct: (product: ProductFormData) => Promise<boolean>
   updateProduct: (id: string, product: Partial<ProductFormData>) => Promise<boolean>
   deleteProduct: (id: string) => Promise<boolean>
@@ -117,6 +118,8 @@ const fallbackProducts: Product[] = [
 ]
 
 const FETCH_TIMEOUT_MS = 6000
+const SUPABASE_TIMEOUT_MS = 4000
+const API_TIMEOUT_MS = 5000
 const FALLBACK_DISPLAY_DELAY_MS = 2500
 const CACHE_KEY = "tuiphone_products_cache_v1"
 const CACHE_TTL_MS = 1000 * 60 * 5
@@ -196,6 +199,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
+  const [usingFallback, setUsingFallback] = useState(false)
   const productsRef = useRef<Product[]>([])
   const cacheHydratedRef = useRef(false)
 
@@ -246,6 +250,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
     updateProductsState(cached.products, cached.supabaseConnected, false)
     setSupabaseConnected(cached.supabaseConnected)
+    setUsingFallback(false)
     setLoading(false)
   }, [updateProductsState])
 
@@ -256,9 +261,9 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         setLoading(true)
       }
       setError(null)
+      setUsingFallback(false)
 
       type SourceName = "api" | "supabase"
-      type SourceResult = { source: SourceName; products: Product[] }
       const supabaseConfigured = isSupabaseConfigured()
 
       let fallbackTimer: ReturnType<typeof setTimeout> | null = null
@@ -272,16 +277,16 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       if (!hasExistingProducts) {
         fallbackTimer = setTimeout(() => {
           console.info("Mostrando productos de respaldo mientras se completa la carga remota.")
+          setUsingFallback(true)
           updateProductsState(fallbackProducts, false, false)
-          setLoading(false)
         }, FALLBACK_DISPLAY_DELAY_MS)
       }
 
-      const fetchFromApi = async (): Promise<SourceResult> => {
+      const fetchFromApi = async () => {
         const response = await fetchWithTimeout(
           "/api/admin/products",
           { cache: "no-store" },
-          FETCH_TIMEOUT_MS,
+          API_TIMEOUT_MS,
           "API",
         )
         const result = (await response.json()) as ApiListResponse
@@ -290,13 +295,13 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           throw new Error(result?.error || `API responded with status ${response.status}`)
         }
 
-        return { source: "api", products: mapProducts(result.data) }
+        return { source: "api" as const, products: mapProducts(result.data) }
       }
 
-      const fetchFromSupabase = async (): Promise<SourceResult> => {
+      const fetchFromSupabase = async () => {
         const { data, error: supabaseError } = await withTimeout(
           supabase.from("products").select("*").order("created_at", { ascending: false }),
-          FETCH_TIMEOUT_MS,
+          SUPABASE_TIMEOUT_MS,
           "Supabase",
         )
 
@@ -304,44 +309,62 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           throw supabaseError
         }
 
-        return { source: "supabase", products: mapProducts(data ?? []) }
+        return { source: "supabase" as const, products: mapProducts(data ?? []) }
       }
 
       try {
         const errors: Array<{ source: SourceName; error: unknown }> = []
+        let resolvedSource: SourceName | null = null
+
+        const recordError = (source: SourceName, error: unknown) => {
+          console.warn(`Failed to load products from ${source}:`, error)
+          errors.push({ source, error })
+        }
+
+        const applyResult = (source: SourceName, productsList: Product[], connected: boolean) => {
+          const preferred =
+            resolvedSource === null || (source === "supabase" && resolvedSource !== "supabase")
+          if (!preferred) {
+            return
+          }
+
+          resolvedSource = source
+          updateProductsState(productsList, connected)
+          setSupabaseConnected(connected)
+          setUsingFallback(false)
+          clearFallbackTimer()
+          setLoading(false)
+        }
+
+        const fetchPromises: Promise<void>[] = []
 
         if (supabaseConfigured) {
-          try {
-            const result = await fetchFromSupabase()
-            updateProductsState(result.products, true)
-            setSupabaseConnected(true)
-            clearFallbackTimer()
-            return
-          } catch (error) {
-            console.warn("Failed to load products directly from Supabase:", error)
-            errors.push({ source: "supabase", error })
-          }
+          fetchPromises.push(
+            fetchFromSupabase()
+              .then(({ products: productsList }) => applyResult("supabase", productsList, true))
+              .catch((error) => recordError("supabase", error)),
+          )
         } else {
           console.info("Supabase no esta configurado. Se intentara cargar desde la API.")
         }
 
-        try {
-          const result = await fetchFromApi()
-          updateProductsState(result.products, false)
-          setSupabaseConnected(false)
-          clearFallbackTimer()
-          return
-        } catch (error) {
-          console.warn("Failed to load products from API:", error)
-          errors.push({ source: "api", error })
-        }
+        fetchPromises.push(
+          fetchFromApi()
+            .then(({ products: productsList }) => applyResult("api", productsList, false))
+            .catch((error) => recordError("api", error)),
+        )
 
-        const fallbackError = errors[0]?.error
-        throw fallbackError instanceof Error ? fallbackError : new Error("No se pudo cargar productos")
+        await Promise.all(fetchPromises)
+
+        if (resolvedSource === null) {
+          const fallbackError = errors[0]?.error
+          throw fallbackError instanceof Error ? fallbackError : new Error("No se pudo cargar productos")
+        }
       } catch (err) {
         console.error("Error loading products:", err)
         setError(err instanceof Error ? err.message : "Error desconocido")
-        updateProductsState(fallbackProducts, false)
+        setUsingFallback(true)
+        updateProductsState(fallbackProducts, false, false)
         setSupabaseConnected(false)
         showToast("Usando datos de ejemplo. Verifica la configuracion de Supabase.", "warning")
       } finally {
@@ -349,7 +372,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
       }
     },
-    [showToast, updateProductsState],
+    [mapProducts, showToast, updateProductsState],
   )
 
   useEffect(() => {
@@ -478,6 +501,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     loading,
     error,
     supabaseConnected,
+    usingFallback,
     addProduct,
     updateProduct,
     deleteProduct,
