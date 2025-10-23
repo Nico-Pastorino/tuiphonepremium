@@ -1,30 +1,25 @@
 import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
 
-// Función para obtener variables de entorno de manera segura
-function getEnvVar(name: string): string | null {
-  if (typeof window !== "undefined") {
-    // En el cliente, solo podemos acceder a variables que empiecen con NEXT_PUBLIC_
-    return (window as any).__ENV__?.[name] || process.env[name] || null
-  }
-  // En el servidor
-  return process.env[name] || null
-}
+const isServer = typeof window === "undefined"
 
-// Obtener variables de entorno
-const supabaseUrl = getEnvVar("NEXT_PUBLIC_SUPABASE_URL")
-const supabaseAnonKey = getEnvVar("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-const supabaseServiceKey = getEnvVar("SUPABASE_SERVICE_ROLE_KEY")
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? null
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? null
+const supabaseServiceKey = isServer ? process.env.SUPABASE_SERVICE_ROLE_KEY ?? null : null
 
-// Valores por defecto para desarrollo (estos no funcionarán pero evitarán el error)
+// Valores por defecto para evitar que el cliente se rompa en desarrollo
 const defaultUrl = "https://placeholder.supabase.co"
 const defaultKey = "placeholder-key-for-development"
 
-// Usar valores por defecto si las variables no están disponibles
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn("Supabase no esta configurado correctamente. Se usaran datos de respaldo si es necesario.")
+}
+
+// Usar valores por defecto si las variables no estan disponibles
 const finalUrl = supabaseUrl || defaultUrl
 const finalAnonKey = supabaseAnonKey || defaultKey
 
-// Cliente principal para operaciones públicas
+// Cliente principal para operaciones publicas
 export const supabase = createClient<Database>(finalUrl, finalAnonKey, {
   auth: {
     persistSession: true,
@@ -32,7 +27,7 @@ export const supabase = createClient<Database>(finalUrl, finalAnonKey, {
   },
 })
 
-// Cliente para el servidor (solo si la service key está disponible)
+// Cliente para el servidor (solo si la service key esta disponible)
 export const supabaseAdmin = supabaseServiceKey
   ? createClient<Database>(finalUrl, supabaseServiceKey, {
       auth: {
@@ -42,12 +37,12 @@ export const supabaseAdmin = supabaseServiceKey
     })
   : null
 
-// Función para verificar si Supabase está configurado correctamente
+// Funcion para verificar si Supabase esta configurado correctamente
 export function isSupabaseConfigured(): boolean {
-  return !!(supabaseUrl && supabaseAnonKey && supabaseUrl !== defaultUrl && supabaseAnonKey !== defaultKey)
+  return Boolean(supabaseUrl && supabaseAnonKey)
 }
 
-// Función helper para verificar la conexión
+// Funcion helper para verificar la conexion
 export async function testSupabaseConnection(): Promise<boolean> {
   if (!isSupabaseConfigured()) {
     console.warn("Supabase not configured - using fallback data")
@@ -55,7 +50,7 @@ export async function testSupabaseConnection(): Promise<boolean> {
   }
 
   try {
-    const { data, error } = await supabase.from("products").select("count").limit(1)
+    const { error } = await supabase.from("products").select("count").limit(1)
     if (error) {
       console.error("Supabase connection error:", error)
       return false
@@ -68,18 +63,18 @@ export async function testSupabaseConnection(): Promise<boolean> {
   }
 }
 
-// Función para obtener información de configuración
+// Funcion para obtener informacion de configuracion
 export function getSupabaseConfig() {
   return {
     url: finalUrl,
-    hasAnonKey: !!supabaseAnonKey,
-    hasServiceKey: !!supabaseServiceKey,
+    hasAnonKey: Boolean(supabaseAnonKey),
+    hasServiceKey: Boolean(supabaseServiceKey),
     isConfigured: isSupabaseConfigured(),
-    adminClientAvailable: !!supabaseAdmin,
+    adminClientAvailable: Boolean(supabaseAdmin),
   }
 }
 
-// Función helper para obtener el cliente correcto para operaciones admin
+// Funcion helper para obtener el cliente correcto para operaciones admin
 export function getAdminClient() {
   if (supabaseAdmin) {
     console.log("Using Supabase admin client")

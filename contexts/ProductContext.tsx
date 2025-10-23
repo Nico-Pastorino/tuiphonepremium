@@ -309,67 +309,35 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const errors: Array<{ source: SourceName; error: unknown }> = []
-        let firstResult: SourceResult | null = null
-        let apiResult: SourceResult | null = null
-        let supabaseResult: SourceResult | null = null
-
-        const captureResult = (result: SourceResult) => {
-          if (result.source === "api") {
-            apiResult = result
-          } else {
-            supabaseResult = result
-          }
-
-          const connected = Boolean(apiResult || supabaseResult)
-
-          if (!firstResult) {
-            firstResult = result
-            updateProductsState(result.products, connected)
-            setLoading(false)
-            clearFallbackTimer()
-          } else if (result.source === "supabase") {
-            // Prefer direct Supabase data cuando este disponible.
-            updateProductsState(result.products, connected)
-            clearFallbackTimer()
-          }
-
-          setSupabaseConnected(connected)
-        }
-
-        const tasks: Array<Promise<void>> = [
-          (async () => {
-            try {
-              const result = await fetchFromApi()
-              captureResult(result)
-            } catch (error) {
-              console.warn("Failed to load products from API:", error)
-              errors.push({ source: "api", error })
-            }
-          })(),
-        ]
 
         if (supabaseConfigured) {
-          tasks.push(
-            (async () => {
-              try {
-                const result = await fetchFromSupabase()
-                captureResult(result)
-              } catch (error) {
-                console.warn("Failed to load products directly from Supabase:", error)
-                errors.push({ source: "supabase", error })
-              }
-            })(),
-          )
+          try {
+            const result = await fetchFromSupabase()
+            updateProductsState(result.products, true)
+            setSupabaseConnected(true)
+            clearFallbackTimer()
+            return
+          } catch (error) {
+            console.warn("Failed to load products directly from Supabase:", error)
+            errors.push({ source: "supabase", error })
+          }
         } else {
-          console.info("Supabase no esta configurado. Omitiendo la carga directa.")
+          console.info("Supabase no esta configurado. Se intentara cargar desde la API.")
         }
 
-        await Promise.all(tasks)
-
-        if (!firstResult) {
-          const fallbackError = errors[0]?.error
-          throw fallbackError instanceof Error ? fallbackError : new Error("No se pudo cargar productos")
+        try {
+          const result = await fetchFromApi()
+          updateProductsState(result.products, false)
+          setSupabaseConnected(false)
+          clearFallbackTimer()
+          return
+        } catch (error) {
+          console.warn("Failed to load products from API:", error)
+          errors.push({ source: "api", error })
         }
+
+        const fallbackError = errors[0]?.error
+        throw fallbackError instanceof Error ? fallbackError : new Error("No se pudo cargar productos")
       } catch (err) {
         console.error("Error loading products:", err)
         setError(err instanceof Error ? err.message : "Error desconocido")
