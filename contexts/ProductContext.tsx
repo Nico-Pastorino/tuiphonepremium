@@ -234,9 +234,13 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         }
 
         const applyResult = (source: SourceName, productsList: Product[], connected: boolean) => {
-          const preferred =
-            resolvedSource === null || (source === "supabase" && resolvedSource !== "supabase")
-          if (!preferred) {
+          if (source === "supabase" && productsList.length === 0) {
+            console.warn("Supabase returned an empty product list. Waiting for API fallback before updating state.")
+            return
+          }
+
+          const supabaseAlreadyApplied = resolvedSource === "supabase" && productsRef.current.length > 0
+          if (source === "api" && supabaseAlreadyApplied) {
             return
           }
 
