@@ -15,7 +15,6 @@ interface ProductContextType {
   loading: boolean
   error: string | null
   supabaseConnected: boolean
-  usingFallback: boolean
   addProduct: (product: ProductFormData) => Promise<boolean>
   updateProduct: (id: string, product: Partial<ProductFormData>) => Promise<boolean>
   deleteProduct: (id: string) => Promise<boolean>
@@ -56,71 +55,8 @@ function transformSupabaseProduct(row: ProductRow): Product {
   }
 }
 
-const fallbackProducts: Product[] = [
-  {
-    id: "00000000-0000-0000-0000-000000000001",
-    name: "iPhone 15 Pro Max",
-    description: "El iPhone mas avanzado con chip A17 Pro y camara de 48MP",
-    price: 1_500_000,
-    originalPrice: 1_600_000,
-    priceUSD: 1299,
-    category: "iphone",
-    condition: "nuevo",
-    images: ["/placeholder.svg?height=400&width=400"],
-    specifications: {
-      storage: "256GB",
-      color: "Titanio Natural",
-      screen: "6.7 pulgadas",
-    },
-    stock: 5,
-    featured: true,
-    createdAt: "2024-01-01T00:00:00.000Z",
-  },
-  {
-    id: "00000000-0000-0000-0000-000000000002",
-    name: "MacBook Air M2",
-    description: "Ultraportatil con chip M2 y pantalla Liquid Retina de 13.6 pulgadas",
-    price: 1_200_000,
-    priceUSD: 1199,
-    category: "mac",
-    condition: "seminuevo",
-    images: ["/placeholder.svg?height=400&width=400"],
-    specifications: {
-      processor: "Apple M2",
-      memory: "8GB",
-      storage: "256GB SSD",
-      screen: "13.6 pulgadas",
-    },
-    stock: 3,
-    featured: true,
-    createdAt: "2024-01-01T00:00:00.000Z",
-  },
-  {
-    id: "00000000-0000-0000-0000-000000000003",
-    name: "iPad Pro 12.9\"",
-    description: "iPad Pro con chip M2 y pantalla Liquid Retina XDR",
-    price: 800_000,
-    originalPrice: 900_000,
-    priceUSD: 799,
-    category: "ipad",
-    condition: "nuevo",
-    images: ["/placeholder.svg?height=400&width=400"],
-    specifications: {
-      processor: "Apple M2",
-      storage: "128GB",
-      screen: "12.9 pulgadas",
-      connectivity: "Wi-Fi",
-    },
-    stock: 7,
-    featured: false,
-    createdAt: "2024-01-01T00:00:00.000Z",
-  },
-]
-
-const FETCH_TIMEOUT_MS = 6000
-const SUPABASE_TIMEOUT_MS = 4000
-const API_TIMEOUT_MS = 5000
-const FALLBACK_DISPLAY_DELAY_MS = 2500
+const SUPABASE_TIMEOUT_MS = 10_000
+const API_TIMEOUT_MS = 12_000
 const CACHE_KEY = "tuiphone_products_cache_v1"
 const CACHE_TTL_MS = 1000 * 60 * 5
 
@@ -153,7 +89,7 @@ const readProductsCache = (): ProductsCachePayload | null => {
 const fetchWithTimeout = async (
   input: FetchInput,
   init: FetchInit = {},
-  timeoutMs = FETCH_TIMEOUT_MS,
+  timeoutMs = API_TIMEOUT_MS,
   source: string,
 ): Promise<Response> => {
   const controller = new AbortController()
@@ -199,7 +135,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(false)
-  const [usingFallback, setUsingFallback] = useState(false)
   const productsRef = useRef<Product[]>([])
   const cacheHydratedRef = useRef(false)
 
@@ -207,7 +142,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     console.log(`[${type.toUpperCase()}] ${message}`)
   }, [])
 
-  const mapProducts = (rows?: ProductRow[]): Product[] => (rows ?? []).map(transformSupabaseProduct)
+  const mapProducts = useCallback((rows?: ProductRow[]): Product[] => (rows ?? []).map(transformSupabaseProduct), [])
 
   const updateProductsState = useCallback(
     (productsList: Product[], connected: boolean, persist = true) => {
@@ -250,7 +185,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
     updateProductsState(cached.products, cached.supabaseConnected, false)
     setSupabaseConnected(cached.supabaseConnected)
-    setUsingFallback(false)
     setLoading(false)
   }, [updateProductsState])
 
@@ -261,34 +195,12 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         setLoading(true)
       }
       setError(null)
-      setUsingFallback(false)
 
       type SourceName = "api" | "supabase"
       const supabaseConfigured = isSupabaseConfigured()
 
-      let fallbackTimer: ReturnType<typeof setTimeout> | null = null
-      const clearFallbackTimer = () => {
-        if (fallbackTimer) {
-          clearTimeout(fallbackTimer)
-          fallbackTimer = null
-        }
-      }
-
-      if (!hasExistingProducts) {
-        fallbackTimer = setTimeout(() => {
-          console.info("Mostrando productos de respaldo mientras se completa la carga remota.")
-          setUsingFallback(true)
-          updateProductsState(fallbackProducts, false, false)
-        }, FALLBACK_DISPLAY_DELAY_MS)
-      }
-
       const fetchFromApi = async () => {
-        const response = await fetchWithTimeout(
-          "/api/admin/products",
-          { cache: "no-store" },
-          API_TIMEOUT_MS,
-          "API",
-        )
+        const response = await fetchWithTimeout("/api/admin/products", { cache: "no-store" }, API_TIMEOUT_MS, "API")
         const result = (await response.json()) as ApiListResponse
 
         if (!response.ok) {
@@ -331,9 +243,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           resolvedSource = source
           updateProductsState(productsList, connected)
           setSupabaseConnected(connected)
-          setUsingFallback(false)
-          clearFallbackTimer()
-          setLoading(false)
         }
 
         const fetchPromises: Promise<void>[] = []
@@ -360,15 +269,17 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           const fallbackError = errors[0]?.error
           throw fallbackError instanceof Error ? fallbackError : new Error("No se pudo cargar productos")
         }
+
       } catch (err) {
         console.error("Error loading products:", err)
         setError(err instanceof Error ? err.message : "Error desconocido")
-        setUsingFallback(true)
-        updateProductsState(fallbackProducts, false, false)
+        if (!hasExistingProducts) {
+          setProducts([])
+          productsRef.current = []
+        }
         setSupabaseConnected(false)
-        showToast("Usando datos de ejemplo. Verifica la configuracion de Supabase.", "warning")
+        showToast("No se pudieron cargar los productos. Verifica la configuracion remota.", "warning")
       } finally {
-        clearFallbackTimer()
         setLoading(false)
       }
     },
@@ -501,7 +412,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     loading,
     error,
     supabaseConnected,
-    usingFallback,
     addProduct,
     updateProduct,
     deleteProduct,

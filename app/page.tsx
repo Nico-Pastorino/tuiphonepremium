@@ -48,7 +48,7 @@ const DEFAULT_SECTION_LABELS: Record<HomeSectionId, string> = DEFAULT_HOME_CONFI
 )
 
 export default function HomePage() {
-  const { products, loading, error, supabaseConnected, refreshProducts } = useProducts()
+  const { products, loading, error, refreshProducts } = useProducts()
   const { homeConfig, tradeInConfig } = useAdmin()
   const sectionLabels = useMemo(() => {
     const labels: Record<HomeSectionId, string> = { ...DEFAULT_SECTION_LABELS }
@@ -311,13 +311,13 @@ export default function HomePage() {
 
           {loading ? (
             <ProductsLoading />
-          ) : error && !supabaseConnected ? (
+          ) : error ? (
             <div className="text-center py-12 sm:py-16">
               <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <AlertCircle className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-gray-400" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Usando datos de ejemplo</h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">Para ver datos reales, configura Supabase</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No pudimos cargar los productos</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">{error}</p>
               <Button onClick={refreshProducts} variant="outline" className="border-gray-300 bg-transparent">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Reintentar conexión
