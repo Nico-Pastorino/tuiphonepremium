@@ -19,6 +19,7 @@ interface ProductContextType {
   updateProduct: (id: string, product: Partial<ProductFormData>) => Promise<boolean>
   deleteProduct: (id: string) => Promise<boolean>
   getProductById: (id: string) => Product | undefined
+  ensureProductById: (id: string) => Promise<Product | null>
   getProductsByCategory: (category: string) => Product[]
   getFeaturedProducts: () => Product[]
   searchProducts: (query: string) => Product[]
@@ -191,10 +192,18 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
   const loadProducts = useCallback(
     async ({ force = false }: { force?: boolean } = {}) => {
       const hasExistingProducts = productsRef.current.length > 0
-      if (force || !hasExistingProducts) {
+      const shouldShowLoading = force || !hasExistingProducts
+      if (shouldShowLoading) {
         setLoading(true)
       }
       setError(null)
+      let loadingCleared = !shouldShowLoading
+      const clearLoading = () => {
+        if (!loadingCleared) {
+          loadingCleared = true
+          setLoading(false)
+        }
+      }
 
       type SourceName = "api" | "supabase"
       const supabaseConfigured = isSupabaseConfigured()
@@ -247,6 +256,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
           resolvedSource = source
           updateProductsState(productsList, connected)
           setSupabaseConnected(connected)
+          clearLoading()
         }
 
         const fetchPromises: Promise<void>[] = []
@@ -284,7 +294,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         setSupabaseConnected(false)
         showToast("No se pudieron cargar los productos. Verifica la configuracion remota.", "warning")
       } finally {
-        setLoading(false)
+        clearLoading()
       }
     },
     [mapProducts, showToast, updateProductsState],
@@ -407,6 +417,66 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
+  const ensureProductById = useCallback(
+    async (id: string): Promise<Product | null> => {
+      const existing = productsRef.current.find((item) => item.id === id)
+      if (existing) {
+        return existing
+      }
+
+      if (isSupabaseConfigured()) {
+        try {
+          const { data, error } = await withTimeout(
+            supabase.from("products").select("*").eq("id", id).maybeSingle(),
+            SUPABASE_TIMEOUT_MS,
+            "Supabase",
+          )
+
+          if (error) {
+            throw error
+          }
+
+          if (data) {
+            const product = transformSupabaseProduct(data)
+            const updatedProducts = [...productsRef.current.filter((item) => item.id !== id), product].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            )
+            updateProductsState(updatedProducts, true)
+            setSupabaseConnected(true)
+            return product
+          }
+        } catch (error) {
+          console.warn(`No se pudo cargar el producto ${id} desde Supabase:`, error)
+        }
+      }
+
+      try {
+        const response = await fetchWithTimeout("/api/admin/products", { cache: "no-store" }, API_TIMEOUT_MS, "API")
+        const result = (await response.json()) as ApiListResponse
+
+        if (!response.ok) {
+          throw new Error(result?.error || `API responded with status ${response.status}`)
+        }
+
+        const fallbackProduct = (result.data ? mapProducts(result.data) : []).find((item) => item.id === id) ?? null
+
+        if (fallbackProduct) {
+          const updatedProducts = [...productsRef.current.filter((item) => item.id !== id), fallbackProduct].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          )
+          updateProductsState(updatedProducts, false)
+          setSupabaseConnected(false)
+          return fallbackProduct
+        }
+      } catch (error) {
+        console.error(`Error al obtener el producto ${id} desde la API:`, error)
+      }
+
+      return null
+    },
+    [mapProducts, updateProductsState, setSupabaseConnected],
+  )
+
   const refreshProducts = async () => {
     await loadProducts({ force: true })
   }
@@ -420,6 +490,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     updateProduct,
     deleteProduct,
     getProductById,
+    ensureProductById,
     getProductsByCategory,
     getFeaturedProducts,
     searchProducts,

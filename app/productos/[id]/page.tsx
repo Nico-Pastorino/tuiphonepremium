@@ -70,24 +70,61 @@ const buildInstallmentGroups = (priceInPesos: number, installmentPlans: Installm
 export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { getProductById, products } = useProducts()
+  const { getProductById, ensureProductById, products } = useProducts()
   const { installmentPlans, getEffectiveDollarRate, homeConfig } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isLoadingProduct, setIsLoadingProduct] = useState(true)
   useEffect(() => {
-    if (!params.id) {
-      setProduct(null)
+    let active = true
+
+    const loadProduct = async () => {
+      if (!params.id) {
+        if (active) {
+          setProduct(null)
+          setIsLoadingProduct(false)
+        }
+        return
+      }
+
+      const productId = params.id as string
+      const existing = getProductById(productId)
+
+      if (existing) {
+        if (active) {
+          setProduct(existing)
+          setIsLoadingProduct(false)
+        }
+        // keep syncing with Supabase in the background in case data changed
+        ensureProductById(productId).then((fresh) => {
+          if (fresh && active) {
+            setProduct(fresh)
+          }
+        })
+        return
+      }
+
+      if (active) {
+        setIsLoadingProduct(true)
+      }
+
+      const fetched = await ensureProductById(productId)
+
+      if (!active) {
+        return
+      }
+
+      setProduct(fetched)
       setIsLoadingProduct(false)
-      return
     }
 
-    setIsLoadingProduct(true)
-    const foundProduct = getProductById(params.id as string)
-    setProduct(foundProduct || null)
-    setIsLoadingProduct(false)
-  }, [params.id, getProductById])
+    void loadProduct()
+
+    return () => {
+      active = false
+    }
+  }, [ensureProductById, getProductById, params.id])
 
   const [openInstallmentCategory, setOpenInstallmentCategory] = useState<InstallmentCategory | null>(null)
 
