@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { invalidateProductsCache } from "@/lib/product-cache"
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductUpdate } from "@/types/database"
 
@@ -41,6 +42,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 
+    invalidateProductsCache()
+
     return NextResponse.json({ data })
   } catch (error) {
     console.error("API PUT error:", error)
@@ -56,6 +59,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
       console.error("API DELETE error:", error)
       return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
+
+    invalidateProductsCache()
 
     return NextResponse.json({ data })
   } catch (error) {

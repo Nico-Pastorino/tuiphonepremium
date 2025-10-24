@@ -58,6 +58,8 @@ function transformSupabaseProduct(row: ProductRow): Product {
 
 const SUPABASE_TIMEOUT_MS = 10_000
 const API_TIMEOUT_MS = 12_000
+const API_MAX_ATTEMPTS = 2
+const API_RETRY_DELAY_MS = 300
 const CACHE_KEY = "tuiphone_products_cache_v1"
 const CACHE_TTL_MS = 1000 * 60 * 5
 
@@ -69,6 +71,8 @@ type ProductsCachePayload = {
   supabaseConnected: boolean
   timestamp: number
 }
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const readProductsCache = (): ProductsCachePayload | null => {
   if (typeof window === "undefined") {
@@ -181,7 +185,6 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     const isFresh = Date.now() - cached.timestamp < CACHE_TTL_MS
     if (!isFresh) {
       window.localStorage.removeItem(CACHE_KEY)
-      return
     }
 
     updateProductsState(cached.products, cached.supabaseConnected, false)
@@ -208,15 +211,26 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
       type SourceName = "api" | "supabase"
       const supabaseConfigured = isSupabaseConfigured()
 
-      const fetchFromApi = async () => {
-        const response = await fetchWithTimeout("/api/admin/products", { cache: "no-store" }, API_TIMEOUT_MS, "API")
-        const result = (await response.json()) as ApiListResponse
+      const apiUrl = force ? "/api/admin/products?refresh=1" : "/api/admin/products"
 
-        if (!response.ok) {
-          throw new Error(result?.error || `API responded with status ${response.status}`)
+      const fetchFromApi = async (attempt = 1): Promise<{ source: SourceName; products: Product[] }> => {
+        try {
+          const response = await fetchWithTimeout(apiUrl, { cache: "no-store" }, API_TIMEOUT_MS, "API")
+          const result = (await response.json()) as ApiListResponse
+
+          if (!response.ok) {
+            throw new Error(result?.error || `API responded with status ${response.status}`)
+          }
+
+          return { source: "api" as const, products: mapProducts(result.data) }
+        } catch (error) {
+          if (attempt < API_MAX_ATTEMPTS) {
+            console.warn(`Retrying product API fetch (attempt ${attempt + 1})`, error)
+            await sleep(API_RETRY_DELAY_MS * attempt)
+            return fetchFromApi(attempt + 1)
+          }
+          throw error
         }
-
-        return { source: "api" as const, products: mapProducts(result.data) }
       }
 
       const fetchFromSupabase = async () => {

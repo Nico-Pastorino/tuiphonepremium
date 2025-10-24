@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { getProductsCached, invalidateProductsCache } from "@/lib/product-cache"
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductInsert } from "@/types/database"
 
@@ -18,18 +19,15 @@ const buildProductInsert = (body: Record<string, unknown>): ProductInsert => ({
 
 const getErrorMessage = (error: Error) => error.message || "Unexpected error"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { data, error } = await ProductAdminService.getAllProducts()
-
-    if (error) {
-      return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
-    }
-
+    const forceRefresh = request.nextUrl.searchParams.get("refresh") === "1"
+    const data = await getProductsCached({ force: forceRefresh })
     return NextResponse.json({ data })
   } catch (error) {
     console.error("API GET error:", error)
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
+    const message = error instanceof Error ? error.message : "Error interno del servidor"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
@@ -68,6 +66,8 @@ export async function POST(request: NextRequest) {
       console.error("API POST error:", error)
       return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
+
+    invalidateProductsCache()
 
     return NextResponse.json({ data }, { status: 201 })
   } catch (error) {
