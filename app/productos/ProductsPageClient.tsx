@@ -50,6 +50,7 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
 
   const [products, setProducts] = useState<ProductSummary[]>(initialData.items)
   const [total, setTotal] = useState(initialData.total)
+  const [supabaseConnected, setSupabaseConnected] = useState(initialData.supabaseConnected)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadingInitial, setLoadingInitial] = useState(initialData.items.length === 0)
   const [error, setError] = useState<string | null>(null)
@@ -104,6 +105,7 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
         .then((data) => {
           setProducts(data.items)
           setTotal(data.total)
+          setSupabaseConnected(data.supabaseConnected)
         })
         .catch((err) => {
           console.error("No se pudieron cargar los productos iniciales:", err)
@@ -159,6 +161,7 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
       const data = await fetchCatalogProducts(products.length, effectivePageSize)
       setProducts((prev) => [...prev, ...data.items])
       setTotal(data.total)
+      setSupabaseConnected(data.supabaseConnected)
       setVisibleCount((prev) => prev + data.items.length)
     } catch (err) {
       console.error("No se pudieron cargar mas productos:", err)

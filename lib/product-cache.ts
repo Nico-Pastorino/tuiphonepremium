@@ -6,6 +6,7 @@ type CacheState = {
   data: ProductRow[] | null
   expiresAt: number
   fetchedAt: number
+  connected: boolean
   inFlight: Promise<ProductRow[]> | null
 }
 
@@ -36,6 +37,7 @@ const resolveCacheState = (): CacheState => {
       data: null,
       expiresAt: 0,
       fetchedAt: 0,
+      connected: false,
       inFlight: null,
     }
   }
@@ -48,6 +50,7 @@ export const invalidateProductsCache = (): void => {
   cache.data = null
   cache.expiresAt = 0
   cache.fetchedAt = 0
+  cache.connected = false
 }
 
 export type GetProductsOptions = {
@@ -57,20 +60,31 @@ export type GetProductsOptions = {
 type ProductsSnapshot = {
   data: ProductRow[]
   fetchedAt: number
+  connected: boolean
 }
 
-const fetchAndStoreProducts = async (cache: CacheState): Promise<ProductRow[]> => {
-  const { data, error } = await ProductAdminService.getAllProducts()
+const fetchAndStoreProducts = async (cache: CacheState): Promise<ProductsSnapshot> => {
+  try {
+    const { data, error } = await ProductAdminService.getAllProducts()
 
-  if (error) {
-    throw error instanceof Error ? error : new Error("Unable to load products from Supabase")
+    if (error) {
+      throw error instanceof Error ? error : new Error("Unable to load products from Supabase")
+    }
+
+    const products = data ?? []
+    cache.data = products
+    cache.fetchedAt = Date.now()
+    cache.expiresAt = cache.fetchedAt + getCacheTtl()
+    cache.connected = true
+    return { data: products, fetchedAt: cache.fetchedAt, connected: true }
+  } catch (error) {
+    console.warn("Fallo al obtener productos desde Supabase:", error)
+    cache.data = []
+    cache.fetchedAt = Date.now()
+    cache.expiresAt = cache.fetchedAt + getCacheTtl()
+    cache.connected = false
+    return { data: [], fetchedAt: cache.fetchedAt, connected: false }
   }
-
-  const products = data ?? []
-  cache.data = products
-  cache.fetchedAt = Date.now()
-  cache.expiresAt = cache.fetchedAt + getCacheTtl()
-  return products
 }
 
 export const getProductsSnapshot = async ({ force = false }: GetProductsOptions = {}): Promise<ProductsSnapshot> => {
@@ -78,20 +92,19 @@ export const getProductsSnapshot = async ({ force = false }: GetProductsOptions 
   const now = Date.now()
 
   if (!force && cache.data && cache.expiresAt > now) {
-    return { data: cache.data, fetchedAt: cache.fetchedAt }
+    return { data: cache.data, fetchedAt: cache.fetchedAt, connected: cache.connected }
   }
 
   if (cache.inFlight) {
     await cache.inFlight
-    return { data: cache.data ?? [], fetchedAt: cache.fetchedAt }
+    return { data: cache.data ?? [], fetchedAt: cache.fetchedAt, connected: cache.connected }
   }
 
   const fetchPromise = fetchAndStoreProducts(cache)
   cache.inFlight = fetchPromise
 
   try {
-    const data = await fetchPromise
-    return { data, fetchedAt: cache.fetchedAt }
+    return await fetchPromise
   } finally {
     if (cache.inFlight === fetchPromise) {
       cache.inFlight = null
@@ -131,7 +144,7 @@ export const getCatalogProducts = async ({
   force = false,
 }: CatalogQueryOptions = {}): Promise<CatalogProductsResponse> => {
   const snapshot = await getProductsSnapshot({ force })
-  const { data, fetchedAt } = snapshot
+  const { data, fetchedAt, connected } = snapshot
   const total = data.length
 
   const normalizedOffset = Math.max(0, Number.isFinite(offset) ? offset : 0)
@@ -143,7 +156,7 @@ export const getCatalogProducts = async ({
   return {
     items,
     total,
-    supabaseConnected: true,
+    supabaseConnected: connected,
     timestamp: fetchedAt,
   }
 }
