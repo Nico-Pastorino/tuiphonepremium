@@ -5,7 +5,6 @@ import Link from "next/link"
 import Image from "next/image"
 import {
   AlertCircle,
-  ArrowDown,
   ArrowLeftRight,
   ArrowRight,
   Award,
@@ -201,9 +200,6 @@ export default function HomePage() {
 
   const featuredProducts = useMemo(() => products.filter((product) => product.featured).slice(0, 8), [products])
   const enabledSections = homeConfig.sections.filter((section) => section.enabled)
-  const firstSectionId = enabledSections[0]?.id
-
-  const heroImage = homeConfig.heroImage || "/portada.jpg"
   const instagramUrl = "https://www.instagram.com/tuiphonepremium"
   const tiktokUrl = "https://www.tiktok.com/@tu.iphone.premium?_t=ZS-90ljWaLjkxh&_r=1"
   const contactEmail = "tuiphonepremium@gmail.com"
@@ -576,69 +572,6 @@ const ctaSection = (
   return (
     <div className="min-h-screen bg-white">
       <MinimalNavbar />
-
-      <section className="relative w-full overflow-hidden">
-        <div className="relative w-full h-screen min-h-[600px] max-h-[900px] sm:min-h-[700px] md:min-h-[800px]">
-          <div className="absolute inset-0">
-            <Image
-              src={heroImage || "/placeholder.svg"}
-              alt="Lineup de iPhone sobre fondo espacial oscuro"
-              fill
-              className="object-cover hero-image"
-              priority
-              quality={90}
-              sizes="100vw"
-            />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10 sm:bg-gradient-to-t sm:from-black/60 sm:via-black/20 sm:to-transparent md:bg-gradient-to-r md:from-black/60 md:via-black/30 md:to-transparent"></div>
-        </div>
-
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-center">
-            <div className="w-full max-w-4xl mx-auto text-center">
-              <AnimatedSection animation="fadeUp">
-                <div className="space-y-4 sm:space-y-6 md:space-y-8">
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-[1.1] sm:leading-tight">
-                    {homeConfig.heroHeadline}
-                  </h1>
-                  <div className="max-w-2xl mx-auto">
-                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/95 leading-relaxed">
-                      {homeConfig.heroSubheadline}
-                      <span className="text-blue-300 font-medium block sm:inline mt-1 sm:mt-0">
-                        {homeConfig.promoMessage}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-2 sm:pt-4">
-                    <Button
-                      size="lg"
-                      className="w-full sm:w-auto bg-white text-gray-900 hover:bg-gray-50 font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-xl transition-all duration-300 shadow-lg text-base sm:text-lg min-h-[48px]"
-                      asChild
-                    >
-                      <Link href="/productos">
-                        Explorar productos
-                        <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
-                      </Link>
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full sm:w-auto border-2 border-white text-white hover:bg-white hover:text-gray-900 font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-xl transition-all duration-300 text-base sm:text-lg bg-white/20 backdrop-blur-sm min-h-[48px]"
-                      asChild
-                    >
-                      <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
-                        Consultar por WhatsApp
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              </AnimatedSection>
-            </div>
-          </div>
-        </div>
-
-      </section>
 
       {enabledSections.map((section) => (
         <div key={section.id} data-home-section={section.id}>
