@@ -67,13 +67,17 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
               <div className="text-xs text-gray-500 sm:text-sm">USD {priceInDollars.toLocaleString("es-AR")}</div>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button className="flex-1 py-2 text-sm sm:py-3 sm:text-base" asChild>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button className="w-full py-2 text-sm sm:flex-1 sm:py-3 sm:text-base" asChild>
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                 Consultar
               </a>
             </Button>
-            <Button variant="outline" className="px-4 py-2 text-sm sm:px-5 sm:py-3 sm:text-base" asChild>
+            <Button
+              variant="outline"
+              className="w-full px-4 py-2 text-sm sm:w-auto sm:px-5 sm:py-3 sm:text-base"
+              asChild
+            >
               <Link href={`/productos/${product.id}`}>Ver mas</Link>
             </Button>
           </div>
