@@ -182,12 +182,18 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
   const [loading, setLoading] = useState(initialProducts.length === 0)
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(initialSupabaseConnected)
+  const supabaseConnectedRef = useRef(initialSupabaseConnected)
   const productsRef = useRef<Product[]>(initialProducts)
   const cacheHydratedRef = useRef(initialProducts.length > 0)
   const initialPersistedRef = useRef(false)
   const storageAvailableRef = useRef(true)
   const storageDisabledLoggedRef = useRef(false)
   const lastUpdateRef = useRef(initialData?.timestamp ?? (initialProducts.length > 0 ? Date.now() : 0))
+
+  const updateSupabaseState = useCallback((value: boolean) => {
+    setSupabaseConnected(value)
+    supabaseConnectedRef.current = value
+  }, [])
 
   const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
@@ -198,6 +204,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
       setProducts(productsList)
       productsRef.current = productsList
       lastUpdateRef.current = updatedAt ?? Date.now()
+      updateSupabaseState(connected)
 
       if (persist && storageAvailableRef.current && typeof window !== "undefined") {
         try {
@@ -257,7 +264,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
     }
 
     updateProductsState(cached.products, cached.supabaseConnected, false, cached.timestamp)
-    setSupabaseConnected(cached.supabaseConnected)
+    updateSupabaseState(cached.supabaseConnected)
     setLoading(false)
   }, [updateProductsState])
 
@@ -265,7 +272,8 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
     async ({ force = false }: { force?: boolean } = {}) => {
       const hasExistingProducts = productsRef.current.length > 0
       const lastUpdated = lastUpdateRef.current
-      if (!force && hasExistingProducts && lastUpdated > 0 && Date.now() - lastUpdated < CLIENT_DATA_TTL_MS) {
+      const isReliableData = supabaseConnectedRef.current
+      if (!force && hasExistingProducts && isReliableData && lastUpdated > 0 && Date.now() - lastUpdated < CLIENT_DATA_TTL_MS) {
         return
       }
 
@@ -363,7 +371,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
           resolvedSource = source
           resolvedPriority = priority
           updateProductsState(productsList, connected)
-          setSupabaseConnected(connected)
+          updateSupabaseState(connected)
           clearLoading()
         }
 
@@ -405,7 +413,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
           setProducts([])
           productsRef.current = []
         }
-        setSupabaseConnected(false)
+        updateSupabaseState(false)
         showToast("No se pudieron cargar los productos. Verifica la configuracion remota.", "warning")
       } finally {
         clearLoading()
@@ -556,7 +564,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
               (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
             )
             updateProductsState(updatedProducts, true)
-            setSupabaseConnected(true)
+            updateSupabaseState(true)
             return product
           }
         } catch (error) {
@@ -579,7 +587,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           )
           updateProductsState(updatedProducts, false)
-          setSupabaseConnected(false)
+          updateSupabaseState(false)
           return fallbackProduct
         }
       } catch (error) {
@@ -622,3 +630,7 @@ export function useProducts() {
   }
   return context
 }
+
+
+
+
