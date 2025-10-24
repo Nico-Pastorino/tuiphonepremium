@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import dynamic from "next/dynamic"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { ModernProductCard } from "@/components/ModernProductCard"
 import { ProductsLoading } from "@/components/ProductsLoading"
@@ -13,13 +13,29 @@ import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
 
 const ProductFilters = dynamic(() => import("@/components/ProductFilters").then((mod) => mod.ProductFilters))
 
+type FiltersState = {
+  category: string | null
+  condition: string | null
+}
+
 interface ProductsPageClientProps {
   initialData: CatalogProductsResponse
   pageSize: number
+  initialFilters: FiltersState
 }
 
-const fetchCatalogProducts = async (offset: number, limit: number): Promise<CatalogProductsResponse> => {
-  const response = await fetch(`/api/catalog/products?offset=${offset}&limit=${limit}`, {
+const fetchCatalogProducts = async (
+  offset: number,
+  limit: number,
+  filters: FiltersState,
+): Promise<CatalogProductsResponse> => {
+  const params = new URLSearchParams()
+  params.set("offset", String(offset))
+  params.set("limit", String(limit))
+  if (filters.category) params.set("category", filters.category)
+  if (filters.condition) params.set("condition", filters.condition)
+
+  const response = await fetch(`/api/catalog/products?${params.toString()}`, {
     headers: {
       "Cache-Control": "no-cache",
     },
@@ -32,33 +48,19 @@ const fetchCatalogProducts = async (offset: number, limit: number): Promise<Cata
   return (await response.json()) as CatalogProductsResponse
 }
 
-const applyFilters = (
-  products: ProductSummary[],
-  category: string | null,
-  condition: string | null,
-): ProductSummary[] => {
-  return products.filter((product) => {
-    const matchesCategory = !category || product.category === category
-    const matchesCondition = !condition || product.condition === condition
-    return matchesCategory && matchesCondition
-  })
-}
-
-export function ProductsPageClient({ initialData, pageSize }: ProductsPageClientProps) {
-  const searchParams = useSearchParams()
+export function ProductsPageClient({ initialData, pageSize, initialFilters }: ProductsPageClientProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
+  const [filters, setFilters] = useState<FiltersState>(initialFilters)
   const [products, setProducts] = useState<ProductSummary[]>(initialData.items)
   const [total, setTotal] = useState(initialData.total)
-  const [supabaseConnected, setSupabaseConnected] = useState(initialData.supabaseConnected)
+  const [loadingInitial, setLoadingInitial] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [loadingInitial, setLoadingInitial] = useState(initialData.items.length === 0)
   const [error, setError] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedCondition, setSelectedCondition] = useState<string | null>(null)
-  const [showFilters, setShowFilters] = useState(false)
-  const [visibleCount, setVisibleCount] = useState(pageSize)
   const [isMobile, setIsMobile] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const initialLoadRef = useRef(true)
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -85,91 +87,96 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
     }
   }, [])
 
-  const effectivePageSize = useMemo(() => (isMobile ? Math.min(pageSize, 9) : pageSize), [isMobile, pageSize])
-
   useEffect(() => {
-    const category = searchParams.get("category")
-    const condition = searchParams.get("condition")
-    setSelectedCategory(category || null)
-    setSelectedCondition(condition || null)
+    const categoryParam = searchParams.get("category")
+    const conditionParam = searchParams.get("condition")
+    const nextFilters: FiltersState = {
+      category: categoryParam || null,
+      condition: conditionParam || null,
+    }
+
+    setFilters((prev) => {
+      if (prev.category === nextFilters.category && prev.condition === nextFilters.condition) {
+        return prev
+      }
+      return nextFilters
+    })
   }, [searchParams])
 
-  useEffect(() => {
-    setVisibleCount(effectivePageSize)
-  }, [effectivePageSize, selectedCategory, selectedCondition, products.length])
-
-  useEffect(() => {
-    if (initialData.items.length === 0) {
-      setLoadingInitial(true)
-      fetchCatalogProducts(0, effectivePageSize)
-        .then((data) => {
-          setProducts(data.items)
-          setTotal(data.total)
-          setSupabaseConnected(data.supabaseConnected)
-        })
-        .catch((err) => {
-          console.error("No se pudieron cargar los productos iniciales:", err)
-          setError("No se pudieron cargar los productos. Intenta nuevamente.")
-        })
-        .finally(() => setLoadingInitial(false))
-    }
-  }, [effectivePageSize, initialData.items.length])
-
-  const filteredProducts = useMemo(
-    () => applyFilters(products, selectedCategory, selectedCondition),
-    [products, selectedCategory, selectedCondition],
-  )
-
-  const visibleProducts = useMemo(
-    () => filteredProducts.slice(0, visibleCount),
-    [filteredProducts, visibleCount],
-  )
-
-  const hasMore = products.length < total
+  const effectivePageSize = useMemo(() => (isMobile ? Math.min(pageSize, 9) : pageSize), [isMobile, pageSize])
   const priorityCount = useMemo(() => (isMobile ? 2 : 3), [isMobile])
 
-  const handleFilterChange = useCallback(
-    (filters: { category?: string | null; condition?: string | null }) => {
-      const { category = null, condition = null } = filters
-      setSelectedCategory(category)
-      setSelectedCondition(condition)
-
-      const params = new URLSearchParams(searchParams.toString())
-      if (category) {
-        params.set("category", category)
+  const loadProductsForFilters = useCallback(
+    async (filtersToLoad: FiltersState, offset: number, append: boolean) => {
+      setError(null)
+      if (append) {
+        setLoadingMore(true)
       } else {
-        params.delete("category")
-      }
-      if (condition) {
-        params.set("condition", condition)
-      } else {
-        params.delete("condition")
+        setLoadingInitial(true)
       }
 
-      router.replace(`/productos?${params.toString()}`, { scroll: false })
+      try {
+        const data = await fetchCatalogProducts(offset, effectivePageSize, filtersToLoad)
+        setTotal(data.total)
+        if (append) {
+          setProducts((prev) => [...prev, ...data.items])
+        } else {
+          setProducts(data.items)
+        }
+      } catch (err) {
+        console.error("No se pudieron cargar los productos:", err)
+        setError("No se pudieron cargar los productos. Intenta nuevamente.")
+        if (!append) {
+          setProducts([])
+          setTotal(0)
+        }
+      } finally {
+        if (append) {
+          setLoadingMore(false)
+        } else {
+          setLoadingInitial(false)
+        }
+      }
     },
-    [router, searchParams],
+    [effectivePageSize],
   )
 
-  const handleLoadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) {
+  useEffect(() => {
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false
       return
     }
-    setLoadingMore(true)
-    setError(null)
-    try {
-      const data = await fetchCatalogProducts(products.length, effectivePageSize)
-      setProducts((prev) => [...prev, ...data.items])
-      setTotal(data.total)
-      setSupabaseConnected(data.supabaseConnected)
-      setVisibleCount((prev) => prev + data.items.length)
-    } catch (err) {
-      console.error("No se pudieron cargar mas productos:", err)
-      setError("No se pudieron cargar mas productos. Verifica tu conexion e intenta nuevamente.")
-    } finally {
-      setLoadingMore(false)
+    loadProductsForFilters(filters, 0, false)
+  }, [filters, loadProductsForFilters])
+
+  const handleFilterChange = useCallback(
+    (next: { category?: string | null; condition?: string | null }) => {
+      const nextFilters: FiltersState = {
+        category: next.category ?? null,
+        condition: next.condition ?? null,
+      }
+
+      setFilters(nextFilters)
+
+      const params = new URLSearchParams()
+      if (nextFilters.category) params.set("category", nextFilters.category)
+      if (nextFilters.condition) params.set("condition", nextFilters.condition)
+
+      const queryString = params.toString()
+      router.replace(queryString ? `/productos?${queryString}` : "/productos", { scroll: false })
+      setShowFilters(false)
+    },
+    [router],
+  )
+
+  const handleLoadMore = useCallback(() => {
+    if (loadingMore || products.length >= total) {
+      return
     }
-  }, [effectivePageSize, hasMore, loadingMore, products.length])
+    loadProductsForFilters(filters, products.length, true)
+  }, [filters, loadProductsForFilters, loadingMore, products.length, total])
+
+  const statsText = loadingInitial ? "Cargando productos..." : `Mostrando ${products.length} de ${total} productos`
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -180,7 +187,7 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
           <AnimatedSection animation="fadeUp">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-blue-500 sm:text-xs">Catálogo completo</p>
+                <p className="text-sm font-semibold uppercase tracking-wide text-blue-500 sm:text-xs">Catalogo completo</p>
                 <h1 className="mb-2 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">Productos Apple</h1>
                 <p className="text-sm text-gray-600 sm:text-base">
                   Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos
@@ -210,8 +217,8 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
                   </div>
                   <div className="flex-1 overflow-y-auto p-5">
                     <ProductFilters
-                      category={selectedCategory}
-                      condition={selectedCondition}
+                      category={filters.category}
+                      condition={filters.condition}
                       onFilterChange={handleFilterChange}
                     />
                   </div>
@@ -224,11 +231,7 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
             <div className="flex-1">
               <AnimatedSection animation="fadeRight">
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-gray-600 sm:text-base">
-                    {loadingInitial
-                      ? "Cargando productos..."
-                      : `Mostrando ${visibleProducts.length} de ${filteredProducts.length} productos`}
-                  </p>
+                  <p className="text-sm text-gray-600 sm:text-base">{statsText}</p>
                 </div>
 
                 {error && (
@@ -237,11 +240,11 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
                   </div>
                 )}
 
-                {loadingInitial ? (
+                {loadingInitial && products.length === 0 ? (
                   <ProductsLoading />
-                ) : filteredProducts.length > 0 ? (
+                ) : products.length > 0 ? (
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-x-8 xl:gap-y-10">
-                    {visibleProducts.map((product, index) => (
+                    {products.map((product, index) => (
                       <AnimatedSection key={product.id} animation="fadeUp" delay={isMobile ? 0 : index * 60}>
                         <ModernProductCard product={product} priority={index < priorityCount} />
                       </AnimatedSection>
@@ -264,7 +267,7 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
                   </div>
                 )}
               </AnimatedSection>
-              {hasMore && (
+              {products.length < total && (
                 <div className="mt-8 flex justify-center">
                   <Button
                     variant="outline"
@@ -281,8 +284,8 @@ export function ProductsPageClient({ initialData, pageSize }: ProductsPageClient
             <div className="hidden lg:block lg:w-80">
               <AnimatedSection animation="fadeLeft" className="lg:sticky lg:top-32">
                 <ProductFilters
-                  category={selectedCategory}
-                  condition={selectedCondition}
+                  category={filters.category}
+                  condition={filters.condition}
                   onFilterChange={handleFilterChange}
                 />
               </AnimatedSection>

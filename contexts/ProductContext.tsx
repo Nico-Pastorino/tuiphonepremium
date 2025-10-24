@@ -2,7 +2,13 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react"
-import type { Product, ProductFormData, ProductFilters } from "@/types/product"
+import type {
+  Product,
+  ProductFormData,
+  ProductFilters,
+  ProductSummary,
+  CatalogProductsResponse,
+} from "@/types/product"
 import type { ProductRow } from "@/types/database"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
@@ -60,6 +66,24 @@ function mapProducts(rows?: ProductRow[]): Product[] {
   return (rows ?? []).map(transformSupabaseProduct)
 }
 
+function summaryToProduct(summary: ProductSummary): Product {
+  return {
+    id: summary.id,
+    name: summary.name,
+    description: summary.description ?? "",
+    price: summary.price,
+    originalPrice: summary.originalPrice ?? undefined,
+    priceUSD: summary.priceUSD ?? undefined,
+    category: summary.category,
+    condition: summary.condition,
+    images: summary.images ?? [],
+    specifications: {},
+    stock: summary.stock,
+    featured: summary.featured,
+    createdAt: summary.createdAt,
+    updatedAt: undefined,
+  }
+}
 const SUPABASE_TIMEOUT_MS = 10_000
 const API_TIMEOUT_MS = 12_000
 const API_MAX_ATTEMPTS = 2
@@ -258,29 +282,42 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
       }
 
-      type SourceName = "api" | "supabase"
+      type SourceName = "admin" | "supabase" | "catalog"
       const supabaseConfigured = isSupabaseConfigured()
 
-      const apiUrl = force ? "/api/admin/products?refresh=1" : "/api/admin/products"
+      const adminUrl = force ? "/api/admin/products?refresh=1" : "/api/admin/products"
+      const catalogUrl = `/api/catalog/products?limit=200${force ? "&refresh=1" : ""}`
 
-      const fetchFromApi = async (attempt = 1): Promise<{ source: SourceName; products: Product[] }> => {
+      const fetchFromAdmin = async (attempt = 1): Promise<{ source: SourceName; products: Product[] }> => {
         try {
-          const response = await fetchWithTimeout(apiUrl, { cache: "no-store" }, API_TIMEOUT_MS, "API")
+          const response = await fetchWithTimeout(adminUrl, { cache: "no-store" }, API_TIMEOUT_MS, "Admin API")
           const result = (await response.json()) as ApiListResponse
 
           if (!response.ok) {
             throw new Error(result?.error || `API responded with status ${response.status}`)
           }
 
-          return { source: "api" as const, products: mapProducts(result.data) }
+          return { source: "admin" as const, products: mapProducts(result.data) }
         } catch (error) {
           if (attempt < API_MAX_ATTEMPTS) {
             console.warn(`Retrying product API fetch (attempt ${attempt + 1})`, error)
             await sleep(API_RETRY_DELAY_MS * attempt)
-            return fetchFromApi(attempt + 1)
+            return fetchFromAdmin(attempt + 1)
           }
           throw error
         }
+      }
+
+      const fetchFromCatalog = async (): Promise<{ source: SourceName; products: Product[] }> => {
+        const response = await fetchWithTimeout(catalogUrl, { cache: "no-store" }, API_TIMEOUT_MS, "Catalog API")
+        const result = (await response.json()) as CatalogProductsResponse & { error?: string }
+
+        if (!response.ok) {
+          throw new Error(result?.error || `Catalog API responded with status ${response.status}`)
+        }
+
+        const productsList = (result.items ?? []).map(summaryToProduct)
+        return { source: "catalog" as const, products: productsList }
       }
 
       const fetchFromSupabase = async () => {
@@ -300,6 +337,12 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
       try {
         const errors: Array<{ source: SourceName; error: unknown }> = []
         let resolvedSource: SourceName | null = null
+        let resolvedPriority = 0
+        const sourcePriority: Record<SourceName, number> = {
+          catalog: 1,
+          admin: 2,
+          supabase: 3,
+        }
 
         const recordError = (source: SourceName, error: unknown) => {
           console.warn(`Failed to load products from ${source}:`, error)
@@ -312,12 +355,13 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
             return
           }
 
-          const supabaseAlreadyApplied = resolvedSource === "supabase" && productsRef.current.length > 0
-          if (source === "api" && supabaseAlreadyApplied) {
+          const priority = sourcePriority[source]
+          if (priority < resolvedPriority && productsRef.current.length > 0) {
             return
           }
 
           resolvedSource = source
+          resolvedPriority = priority
           updateProductsState(productsList, connected)
           setSupabaseConnected(connected)
           clearLoading()
@@ -336,9 +380,15 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
 
         fetchPromises.push(
-          fetchFromApi()
-            .then(({ products: productsList }) => applyResult("api", productsList, false))
-            .catch((error) => recordError("api", error)),
+          fetchFromAdmin()
+            .then(({ products: productsList }) => applyResult("admin", productsList, false))
+            .catch((error) => recordError("admin", error)),
+        )
+
+        fetchPromises.push(
+          fetchFromCatalog()
+            .then(({ products: productsList }) => applyResult("catalog", productsList, false))
+            .catch((error) => recordError("catalog", error)),
         )
 
         await Promise.all(fetchPromises)

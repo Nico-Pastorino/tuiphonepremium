@@ -2,12 +2,18 @@ import { ProductAdminService } from "@/lib/supabase-admin"
 import type { ProductRow } from "@/types/database"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
 
+type ProductsSnapshot = {
+  data: ProductRow[]
+  fetchedAt: number
+  connected: boolean
+}
+
 type CacheState = {
   data: ProductRow[] | null
   expiresAt: number
   fetchedAt: number
   connected: boolean
-  inFlight: Promise<ProductRow[]> | null
+  inFlight: Promise<ProductsSnapshot> | null
 }
 
 type GlobalWithCache = typeof globalThis & {
@@ -15,6 +21,7 @@ type GlobalWithCache = typeof globalThis & {
 }
 
 const DEFAULT_TTL_MS = 30_000
+const MAX_LIMIT = 60
 
 const getCacheTtl = (): number => {
   const raw = process.env.PRODUCTS_CACHE_TTL_MS
@@ -51,16 +58,11 @@ export const invalidateProductsCache = (): void => {
   cache.expiresAt = 0
   cache.fetchedAt = 0
   cache.connected = false
+  cache.inFlight = null
 }
 
 export type GetProductsOptions = {
   force?: boolean
-}
-
-type ProductsSnapshot = {
-  data: ProductRow[]
-  fetchedAt: number
-  connected: boolean
 }
 
 const fetchAndStoreProducts = async (cache: CacheState): Promise<ProductsSnapshot> => {
@@ -96,8 +98,7 @@ export const getProductsSnapshot = async ({ force = false }: GetProductsOptions 
   }
 
   if (cache.inFlight) {
-    await cache.inFlight
-    return { data: cache.data ?? [], fetchedAt: cache.fetchedAt, connected: cache.connected }
+    return cache.inFlight
   }
 
   const fetchPromise = fetchAndStoreProducts(cache)
@@ -132,30 +133,52 @@ const mapRowToSummary = (row: ProductRow): ProductSummary => ({
   createdAt: row.created_at,
 })
 
+const applyFilters = (
+  rows: ProductRow[],
+  filters: { category?: string | null; condition?: string | null },
+): ProductRow[] => {
+  const normalizedCategory = filters.category?.toLowerCase() ?? null
+  const normalizedCondition = filters.condition?.toLowerCase() ?? null
+
+  if (!normalizedCategory && !normalizedCondition) {
+    return rows
+  }
+
+  return rows.filter((row) => {
+    const categoryMatches = !normalizedCategory || row.category.toLowerCase() === normalizedCategory
+    const conditionMatches = !normalizedCondition || row.condition.toLowerCase() === normalizedCondition
+    return categoryMatches && conditionMatches
+  })
+}
+
 export type CatalogQueryOptions = {
   limit?: number
   offset?: number
   force?: boolean
+  category?: string | null
+  condition?: string | null
 }
 
 export const getCatalogProducts = async ({
   limit = 12,
   offset = 0,
   force = false,
+  category = null,
+  condition = null,
 }: CatalogQueryOptions = {}): Promise<CatalogProductsResponse> => {
   const snapshot = await getProductsSnapshot({ force })
   const { data, fetchedAt, connected } = snapshot
-  const total = data.length
 
+  const filtered = applyFilters(data, { category, condition })
   const normalizedOffset = Math.max(0, Number.isFinite(offset) ? offset : 0)
-  const normalizedLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 12, 60))
+  const normalizedLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 12, MAX_LIMIT))
 
-  const slice = data.slice(normalizedOffset, normalizedOffset + normalizedLimit)
+  const slice = filtered.slice(normalizedOffset, normalizedOffset + normalizedLimit)
   const items = slice.map(mapRowToSummary)
 
   return {
     items,
-    total,
+    total: filtered.length,
     supabaseConnected: connected,
     timestamp: fetchedAt,
   }
