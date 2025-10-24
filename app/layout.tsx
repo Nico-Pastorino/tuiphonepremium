@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { ProductProvider } from "@/contexts/ProductContext"
 import { AdminProvider } from "@/contexts/AdminContext"
 import { ToastContainer } from "@/components/ui/toast"
+import { ServiceWorkerManager } from "@/components/ServiceWorkerManager"
 import { getProductsCached } from "@/lib/product-cache"
 import "./globals.css"
 
@@ -47,6 +48,7 @@ export default async function RootLayout({
           <ProductProvider initialData={initialData}>
             {children}
             <ToastContainer />
+            <ServiceWorkerManager />
           </ProductProvider>
         </AdminProvider>
       </body>

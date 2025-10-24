@@ -15,6 +15,12 @@ export interface Product {
   featured: boolean
 }
 
+export interface ProductSummary
+  extends Pick<
+    Product,
+    "id" | "name" | "description" | "category" | "condition" | "price" | "originalPrice" | "priceUSD" | "images" | "stock" | "featured" | "createdAt"
+  > {}
+
 export interface ProductFormData {
   name: string
   description: string
@@ -39,5 +45,12 @@ export interface ProductFilters {
 
 export type ProductInsert = Omit<Product, "id" | "createdAt" | "updatedAt">
 export type ProductUpdate = Partial<ProductInsert>
+
+export interface CatalogProductsResponse {
+  items: ProductSummary[]
+  total: number
+  supabaseConnected: boolean
+  timestamp: number
+}
 
 
