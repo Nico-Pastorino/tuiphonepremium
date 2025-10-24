@@ -23,6 +23,7 @@ type GlobalWithCache = typeof globalThis & {
 
 const DEFAULT_TTL_MS = 30_000
 const MAX_LIMIT = 60
+const SUPABASE_FETCH_TIMEOUT_MS = 4_000
 
 const getCacheTtl = (): number => {
   const raw = process.env.PRODUCTS_CACHE_TTL_MS
@@ -68,7 +69,22 @@ export type GetProductsOptions = {
 
 const fetchAndStoreProducts = async (cache: CacheState): Promise<ProductsSnapshot> => {
   try {
-    const { data, error } = await ProductAdminService.getAllProducts()
+    const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+      return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("Supabase admin fetch timeout")), timeoutMs)
+        promise
+          .then((value) => {
+            clearTimeout(timer)
+            resolve(value)
+          })
+          .catch((error) => {
+            clearTimeout(timer)
+            reject(error)
+          })
+      })
+    }
+
+    const { data, error } = await withTimeout(ProductAdminService.getAllProducts(), SUPABASE_FETCH_TIMEOUT_MS)
 
     if (error) {
       throw error instanceof Error ? error : new Error("Unable to load products from Supabase")
@@ -99,19 +115,43 @@ export const getProductsSnapshot = async ({ force = false }: GetProductsOptions 
   }
 
   if (cache.inFlight) {
+    if (!force && cache.data) {
+      return { data: cache.data, fetchedAt: cache.fetchedAt, connected: cache.connected }
+    }
     return cache.inFlight
   }
 
-  const fetchPromise = fetchAndStoreProducts(cache)
-  cache.inFlight = fetchPromise
+  if (force) {
+    const fetchPromise = fetchAndStoreProducts(cache)
+    cache.inFlight = fetchPromise.finally(() => {
+      if (cache.inFlight === fetchPromise) {
+        cache.inFlight = null
+      }
+    })
+    return cache.inFlight
+  }
 
-  try {
-    return await fetchPromise
-  } finally {
+  if (!cache.data || cache.data.length === 0) {
+    cache.data = FALLBACK_PRODUCTS
+    cache.connected = false
+  }
+  cache.fetchedAt = cache.fetchedAt || now
+  cache.expiresAt = now + getCacheTtl()
+
+  const snapshot: ProductsSnapshot = {
+    data: cache.data,
+    fetchedAt: cache.fetchedAt,
+    connected: cache.connected,
+  }
+
+  const fetchPromise = fetchAndStoreProducts(cache)
+  cache.inFlight = fetchPromise.finally(() => {
     if (cache.inFlight === fetchPromise) {
       cache.inFlight = null
     }
-  }
+  })
+
+  return snapshot
 }
 
 export const getProductsCached = async (options?: GetProductsOptions): Promise<ProductRow[]> => {
