@@ -156,7 +156,6 @@ export class ProductAdminService {
         .from("products")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(200)
 
       if (error) {
         throw error

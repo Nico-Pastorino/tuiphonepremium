@@ -1,7 +1,6 @@
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { ProductRow } from "@/types/database"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
-import { FALLBACK_PRODUCTS } from "@/data/fallback-products"
 
 type ProductsSnapshot = {
   data: ProductRow[]
@@ -23,7 +22,6 @@ type GlobalWithCache = typeof globalThis & {
 
 const DEFAULT_TTL_MS = 30_000
 const MAX_LIMIT = 60
-const SUPABASE_FETCH_TIMEOUT_MS = 4_000
 
 const getCacheTtl = (): number => {
   const raw = process.env.PRODUCTS_CACHE_TTL_MS
@@ -68,42 +66,18 @@ export type GetProductsOptions = {
 }
 
 const fetchAndStoreProducts = async (cache: CacheState): Promise<ProductsSnapshot> => {
-  try {
-    const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
-      return new Promise<T>((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error("Supabase admin fetch timeout")), timeoutMs)
-        promise
-          .then((value) => {
-            clearTimeout(timer)
-            resolve(value)
-          })
-          .catch((error) => {
-            clearTimeout(timer)
-            reject(error)
-          })
-      })
-    }
+  const { data, error } = await ProductAdminService.getAllProducts()
 
-    const { data, error } = await withTimeout(ProductAdminService.getAllProducts(), SUPABASE_FETCH_TIMEOUT_MS)
-
-    if (error) {
-      throw error instanceof Error ? error : new Error("Unable to load products from Supabase")
-    }
-
-    const products = data && data.length > 0 ? data : FALLBACK_PRODUCTS
-    cache.data = products
-    cache.fetchedAt = Date.now()
-    cache.expiresAt = cache.fetchedAt + getCacheTtl()
-    cache.connected = true
-    return { data: products, fetchedAt: cache.fetchedAt, connected: true }
-  } catch (error) {
-    console.warn("Fallo al obtener productos desde Supabase:", error)
-    cache.data = FALLBACK_PRODUCTS
-    cache.fetchedAt = Date.now()
-    cache.expiresAt = cache.fetchedAt + getCacheTtl()
-    cache.connected = false
-    return { data: FALLBACK_PRODUCTS, fetchedAt: cache.fetchedAt, connected: false }
+  if (error) {
+    throw error instanceof Error ? error : new Error("Unable to load products from Supabase")
   }
+
+  const products = data ?? []
+  cache.data = products
+  cache.fetchedAt = Date.now()
+  cache.expiresAt = cache.fetchedAt + getCacheTtl()
+  cache.connected = true
+  return { data: products, fetchedAt: cache.fetchedAt, connected: true }
 }
 
 export const getProductsSnapshot = async ({ force = false }: GetProductsOptions = {}): Promise<ProductsSnapshot> => {
@@ -115,43 +89,19 @@ export const getProductsSnapshot = async ({ force = false }: GetProductsOptions 
   }
 
   if (cache.inFlight) {
-    if (!force && cache.data) {
-      return { data: cache.data, fetchedAt: cache.fetchedAt, connected: cache.connected }
-    }
     return cache.inFlight
-  }
-
-  if (force) {
-    const fetchPromise = fetchAndStoreProducts(cache)
-    cache.inFlight = fetchPromise.finally(() => {
-      if (cache.inFlight === fetchPromise) {
-        cache.inFlight = null
-      }
-    })
-    return cache.inFlight
-  }
-
-  if (!cache.data || cache.data.length === 0) {
-    cache.data = FALLBACK_PRODUCTS
-    cache.connected = false
-  }
-  cache.fetchedAt = cache.fetchedAt || now
-  cache.expiresAt = now + getCacheTtl()
-
-  const snapshot: ProductsSnapshot = {
-    data: cache.data,
-    fetchedAt: cache.fetchedAt,
-    connected: cache.connected,
   }
 
   const fetchPromise = fetchAndStoreProducts(cache)
-  cache.inFlight = fetchPromise.finally(() => {
+  cache.inFlight = fetchPromise
+
+  try {
+    return await fetchPromise
+  } finally {
     if (cache.inFlight === fetchPromise) {
       cache.inFlight = null
     }
-  })
-
-  return snapshot
+  }
 }
 
 export const getProductsCached = async (options?: GetProductsOptions): Promise<ProductRow[]> => {

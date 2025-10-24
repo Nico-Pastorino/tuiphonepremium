@@ -84,8 +84,8 @@ function summaryToProduct(summary: ProductSummary): Product {
     updatedAt: undefined,
   }
 }
-const SUPABASE_TIMEOUT_MS = 6_000
-const API_TIMEOUT_MS = 10_000
+const SUPABASE_TIMEOUT_MS = 10_000
+const API_TIMEOUT_MS = 12_000
 const API_MAX_ATTEMPTS = 2
 const API_RETRY_DELAY_MS = 300
 const CLIENT_DATA_TTL_MS = 60_000
@@ -233,7 +233,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
       }
     },
-    [],
+    [updateSupabaseState],
   )
 
   useEffect(() => {
@@ -419,7 +419,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         clearLoading()
       }
     },
-    [showToast, updateProductsState],
+    [showToast, updateProductsState, updateSupabaseState],
   )
 
   useEffect(() => {
