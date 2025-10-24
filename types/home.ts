@@ -7,10 +7,6 @@ export interface HomeSectionConfig {
 }
 
 export interface HomeConfig {
-  heroImage: string
-  heroHeadline: string
-  heroSubheadline: string
-  promoMessage: string
   whatsappNumber: string
   tradeInTitle: string
   tradeInSubtitle: string

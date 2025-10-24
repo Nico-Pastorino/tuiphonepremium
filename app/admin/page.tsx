@@ -28,7 +28,7 @@ import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
 import type { HomeConfig, InstallmentPlan } from "@/contexts/AdminContext"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
-import { cloneHomeConfig, DEFAULT_HOME_CONFIG } from "@/lib/home-config"
+import { cloneHomeConfig } from "@/lib/home-config"
 import { cloneTradeInConfig } from "@/lib/trade-in-config"
 import Image from "next/image"
 import type { Product } from "@/types/product"
@@ -47,8 +47,6 @@ import {
   ArrowLeftRight,
   ArrowUp,
   ArrowDown,
-  RotateCcw,
-  Image as ImageIcon,
 } from "lucide-react"
 import type { TradeInConditionId, TradeInStorageId, TradeInRow } from "@/types/trade-in"
 
@@ -144,8 +142,6 @@ function AdminDashboard() {
 
   const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
   const [savingHomeConfig, setSavingHomeConfig] = useState(false)
-  const [isHeroLibraryOpen, setIsHeroLibraryOpen] = useState(false)
-  const [heroLibraryFilter, setHeroLibraryFilter] = useState<string>("todos")
 
   const [tradeInForm, setTradeInForm] = useState(() => cloneTradeInConfig(tradeInConfig))
   const [savingTradeInConfig, setSavingTradeInConfig] = useState(false)
@@ -164,39 +160,6 @@ function AdminDashboard() {
   useEffect(() => {
     setTradeInForm(cloneTradeInConfig(tradeInConfig))
   }, [tradeInConfig])
-
-  const heroImagePreview = (homeForm.heroImage ?? "").trim() || DEFAULT_HOME_CONFIG.heroImage
-
-  const heroLibraryImages = useMemo(() => {
-    if (heroLibraryFilter === "todos") {
-      return imageLibrary
-    }
-    return imageLibrary.filter((item) => item.category === heroLibraryFilter)
-  }, [heroLibraryFilter, imageLibrary])
-
-  useEffect(() => {
-    if (!isHeroLibraryOpen) {
-      setHeroLibraryFilter("todos")
-    }
-  }, [isHeroLibraryOpen])
-
-  const handleSelectHeroImage = useCallback((imageUrl: string) => {
-    if (!imageUrl) {
-      return
-    }
-    setHomeForm((prev) => ({
-      ...prev,
-      heroImage: imageUrl,
-    }))
-    setIsHeroLibraryOpen(false)
-  }, [])
-
-  const handleResetHeroImage = useCallback(() => {
-    setHomeForm((prev) => ({
-      ...prev,
-      heroImage: DEFAULT_HOME_CONFIG.heroImage,
-    }))
-  }, [])
 
   const computeDisplayPrice = (product: Product) => {
     if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveAdminRate) {
@@ -473,10 +436,6 @@ function AdminDashboard() {
       const tradeInLabel = homeForm.tradeInTitle.trim().length > 0 ? homeForm.tradeInTitle.trim() : "Plan canje"
 
       await updateHomeConfig({
-        heroImage: homeForm.heroImage,
-        heroHeadline: homeForm.heroHeadline,
-        heroSubheadline: homeForm.heroSubheadline,
-        promoMessage: homeForm.promoMessage,
         whatsappNumber: homeForm.whatsappNumber,
         tradeInTitle: homeForm.tradeInTitle,
         tradeInSubtitle: homeForm.tradeInSubtitle,
@@ -1315,33 +1274,6 @@ function AdminDashboard() {
                   <div className="grid gap-6 xl:grid-cols-[3fr,2fr]">
                     <div className="space-y-5">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Titulo principal</label>
-                        <Input
-                          value={homeForm.heroHeadline}
-                          onChange={(event) => setHomeForm((prev) => ({ ...prev, heroHeadline: event.target.value }))}
-                          placeholder="Ej: Productos Apple premium en Argentina"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Subtitulo</label>
-                        <Textarea
-                          value={homeForm.heroSubheadline}
-                          onChange={(event) =>
-                            setHomeForm((prev) => ({ ...prev, heroSubheadline: event.target.value }))
-                          }
-                          rows={3}
-                          placeholder="Describe la propuesta de valor de la portada"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Mensaje promocional</label>
-                        <Input
-                          value={homeForm.promoMessage}
-                          onChange={(event) => setHomeForm((prev) => ({ ...prev, promoMessage: event.target.value }))}
-                          placeholder="Ej: Envios rapidos y garantia incluida"
-                        />
-                      </div>
-                      <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">WhatsApp (solo numeros)</label>
                         <Input
                           value={homeForm.whatsappNumber}
@@ -1384,146 +1316,7 @@ function AdminDashboard() {
                         <p className="text-xs text-gray-500">Los cambios se aplican de inmediato en la portada.</p>
                       </div>
                     </div>
-                    <div className="space-y-5">
-                      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-                        <div className="border-b border-gray-200 px-4 py-3">
-                          <h4 className="text-sm font-semibold text-gray-800">Imagen de portada</h4>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Actualiza la imagen principal que se muestra en la home.
-                          </p>
-                        </div>
-                        <div className="space-y-4 p-4">
-                          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-gray-100 shadow-inner">
-                            <Image
-                              src={heroImagePreview || "/placeholder.svg"}
-                              alt="Vista previa de la portada"
-                              fill
-                              className="object-cover"
-                              sizes="(min-width: 1024px) 480px, (min-width: 768px) 50vw, 100vw"
-                              unoptimized
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">URL de la portada</label>
-                            <Input
-                              value={homeForm.heroImage || ""}
-                              onChange={(event) =>
-                                setHomeForm((prev) => ({
-                                  ...prev,
-                                  heroImage: event.target.value,
-                                }))
-                              }
-                              placeholder="https://tuservidor.com/portada.jpg"
-                            />
-                            <p className="text-xs text-gray-500">
-                              Pega una URL directa o elige una opcion de la biblioteca.
-                            </p>
-                          </div>
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                            <Dialog open={isHeroLibraryOpen} onOpenChange={setIsHeroLibraryOpen}>
-                              <DialogTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="justify-center gap-2 sm:w-auto"
-                                  disabled={imageLibrary.length === 0}
-                                >
-                                  <ImageIcon className="h-4 w-4" />
-                                  {imageLibrary.length === 0 ? "Biblioteca sin imagenes" : "Elegir de la biblioteca"}
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-3xl">
-                                <DialogHeader>
-                                  <DialogTitle>Elegir imagen de portada</DialogTitle>
-                                </DialogHeader>
-                                {imageLibrary.length === 0 ? (
-                                  <p className="text-sm text-gray-500">
-                                    Todavia no cargaste imagenes en la biblioteca. Agrega nuevas imagenes desde el
-                                    gestor para poder seleccionarlas.
-                                  </p>
-                                ) : (
-                                  <div className="space-y-5">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                      <div>
-                                        <p className="text-sm font-medium text-gray-800">Biblioteca de imagenes</p>
-                                        <p className="text-xs text-gray-500">
-                                          Selecciona la imagen que se mostrara en la portada principal.
-                                        </p>
-                                      </div>
-                                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                        <Select value={heroLibraryFilter} onValueChange={setHeroLibraryFilter}>
-                                          <SelectTrigger className="w-[200px]">
-                                            <SelectValue placeholder="Filtrar por categoria" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="todos">Todas las categorias</SelectItem>
-                                            {imageLibraryCategories.map((category) => (
-                                              <SelectItem key={category} value={category} className="capitalize">
-                                                {category}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                        <Button
-                                          type="button"
-                                          variant="outline"
-                                          onClick={() => setHeroLibraryFilter("todos")}
-                                        >
-                                          Ver todas
-                                        </Button>
-                                      </div>
-                                    </div>
-                                    {heroLibraryImages.length === 0 ? (
-                                      <p className="text-sm text-gray-500">
-                                        No hay imagenes para la categoria seleccionada.
-                                      </p>
-                                    ) : (
-                                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                        {heroLibraryImages.map((image) => (
-                                          <button
-                                            key={image.id}
-                                            type="button"
-                                            onClick={() => handleSelectHeroImage(image.url)}
-                                            className="group relative overflow-hidden rounded-lg border-2 border-transparent bg-white text-left shadow-sm transition-all hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                          >
-                                            <div className="relative h-32 w-full bg-gray-100">
-                                              <Image
-                                                src={image.url || "/placeholder.svg"}
-                                                alt={image.label}
-                                                fill
-                                                className="object-cover transition-transform group-hover:scale-105"
-                                                sizes="240px"
-                                                unoptimized
-                                              />
-                                              <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
-                                            </div>
-                                            <div className="p-3 space-y-1">
-                                              <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
-                                              <p className="text-xs text-gray-500 capitalize">{image.category}</p>
-                                              <p className="text-xs font-medium text-blue-600 group-hover:text-blue-700">
-                                                Usar como portada
-                                              </p>
-                                            </div>
-                                          </button>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </DialogContent>
-                            </Dialog>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              className="justify-center gap-2 sm:w-auto"
-                              onClick={handleResetHeroImage}
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                              Restaurar imagen base
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
+                  <div className="space-y-5">
                       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
                         <div className="border-b border-gray-200 px-4 py-3">
                           <h4 className="text-sm font-semibold text-gray-800">Secciones visibles</h4>

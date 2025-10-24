@@ -1,23 +1,17 @@
-﻿import type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
+import type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 
 export const HOME_SECTIONS_ORDER: HomeSectionId[] = ["categories", "featured", "benefits", "trade-in", "cta"]
 
 export const DEFAULT_HOME_CONFIG: HomeConfig = {
-  
-  heroImage: "/portada.jpg",
-  heroHeadline: "Los mejores productos Apple de Argentina",
-  heroSubheadline: "Descubrí nuestra selección premium de iPhone, iPad, Mac y accesorios con garantía oficial.",
-  
-  promoMessage: "Productos nuevos y seminuevos con garantía y entrega inmediata.",
   whatsappNumber: "5491112345678",
   tradeInTitle: "Plan canje",
   tradeInSubtitle: "Tomamos tu Apple usado y te ayudamos a renovar tu equipo.",
   sections: [
-    { id: "categories", label: "Explorar por categoría", enabled: true },
+    { id: "categories", label: "Explorar por categoria", enabled: true },
     { id: "featured", label: "Productos destacados", enabled: true },
     { id: "benefits", label: "Beneficios", enabled: true },
     { id: "trade-in", label: "Plan canje", enabled: true },
-    { id: "cta", label: "Llamado a la acción", enabled: true },
+    { id: "cta", label: "Llamado a la accion", enabled: true },
   ],
 }
 
@@ -65,10 +59,6 @@ export function mergeHomeConfig(base: HomeConfig, partial?: Partial<HomeConfig> 
   }
 
   return {
-    heroImage: trimOrFallback(partial.heroImage, base.heroImage),
-    heroHeadline: trimOrFallback(partial.heroHeadline, base.heroHeadline),
-    heroSubheadline: trimOrFallback(partial.heroSubheadline, base.heroSubheadline),
-    promoMessage: trimOrFallback(partial.promoMessage, base.promoMessage),
     whatsappNumber: trimOrFallback(partial.whatsappNumber, base.whatsappNumber),
     tradeInTitle: trimOrFallback(partial.tradeInTitle, base.tradeInTitle),
     tradeInSubtitle: trimOrFallback(partial.tradeInSubtitle, base.tradeInSubtitle),

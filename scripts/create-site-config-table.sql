@@ -38,10 +38,6 @@ INSERT INTO site_config (key, value, updated_at)
 SELECT
   'home',
   jsonb_build_object(
-    'heroImage', '/portada.jpg',
-    'heroHeadline', 'Los mejores productos Apple de Argentina',
-    'heroSubheadline', 'Descubre nuestra seleccion premium de iPhone, iPad, Mac y accesorios con garantia oficial.',
-    'promoMessage', 'Productos nuevos y seminuevos con garantia y entrega inmediata.',
     'whatsappNumber', '5491112345678',
     'tradeInTitle', 'Plan canje',
     'tradeInSubtitle', 'Tomamos tu Apple usado y te ayudamos a renovar tu equipo.',

@@ -573,8 +573,12 @@ const ctaSection = (
     <div className="min-h-screen bg-white">
       <MinimalNavbar />
 
-      {enabledSections.map((section) => (
-        <div key={section.id} data-home-section={section.id}>
+      {enabledSections.map((section, index) => (
+        <div
+          key={section.id}
+          data-home-section={section.id}
+          className={index === 0 ? "mt-24 sm:mt-28" : undefined}
+        >
           {sectionMap[section.id]}
         </div>
       ))}
