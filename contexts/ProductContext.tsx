@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react"
+import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react"
 import type { Product, ProductFormData, ProductFilters } from "@/types/product"
 import type { ProductRow } from "@/types/database"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
@@ -56,6 +56,10 @@ function transformSupabaseProduct(row: ProductRow): Product {
   }
 }
 
+function mapProducts(rows?: ProductRow[]): Product[] {
+  return (rows ?? []).map(transformSupabaseProduct)
+}
+
 const SUPABASE_TIMEOUT_MS = 10_000
 const API_TIMEOUT_MS = 12_000
 const API_MAX_ATTEMPTS = 2
@@ -70,6 +74,17 @@ type ProductsCachePayload = {
   products: Product[]
   supabaseConnected: boolean
   timestamp: number
+}
+
+type InitialProductsPayload = {
+  products: ProductRow[]
+  supabaseConnected: boolean
+  timestamp: number
+}
+
+type ProductProviderProps = {
+  children: React.ReactNode
+  initialData?: InitialProductsPayload | null
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -135,19 +150,21 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, source: string):
   })
 }
 
-export function ProductProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+export function ProductProvider({ children, initialData = null }: ProductProviderProps) {
+  const initialProducts = useMemo(() => (initialData ? mapProducts(initialData.products) : []), [initialData])
+  const initialSupabaseConnected = initialData?.supabaseConnected ?? false
+  const initialTimestamp = initialData?.timestamp ?? Date.now()
+  const [products, setProducts] = useState<Product[]>(() => initialProducts)
+  const [loading, setLoading] = useState(initialProducts.length === 0)
   const [error, setError] = useState<string | null>(null)
-  const [supabaseConnected, setSupabaseConnected] = useState(false)
-  const productsRef = useRef<Product[]>([])
-  const cacheHydratedRef = useRef(false)
+  const [supabaseConnected, setSupabaseConnected] = useState(initialSupabaseConnected)
+  const productsRef = useRef<Product[]>(initialProducts)
+  const cacheHydratedRef = useRef(initialProducts.length > 0)
+  const initialPersistedRef = useRef(false)
 
   const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
   }, [])
-
-  const mapProducts = useCallback((rows?: ProductRow[]): Product[] => (rows ?? []).map(transformSupabaseProduct), [])
 
   const updateProductsState = useCallback(
     (productsList: Product[], connected: boolean, persist = true) => {
@@ -169,6 +186,15 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   )
+
+  useEffect(() => {
+    if (initialProducts.length === 0 || initialPersistedRef.current) {
+      return
+    }
+    initialPersistedRef.current = true
+
+    updateProductsState(initialProducts, initialSupabaseConnected)
+  }, [initialProducts, initialSupabaseConnected, updateProductsState])
 
   const hydrateFromCache = useCallback(() => {
     if (cacheHydratedRef.current || typeof window === "undefined") {
@@ -311,7 +337,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         clearLoading()
       }
     },
-    [mapProducts, showToast, updateProductsState],
+    [showToast, updateProductsState],
   )
 
   useEffect(() => {
@@ -488,7 +514,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
       return null
     },
-    [mapProducts, updateProductsState, setSupabaseConnected],
+    [updateProductsState, setSupabaseConnected],
   )
 
   const refreshProducts = async () => {
