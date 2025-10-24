@@ -44,9 +44,8 @@ export default function ProductsPage() {
 
       return matchesCategory && matchesCondition
     })
-    .sort(
-      (a: Product, b: Product) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    .sort((a: Product, b: Product) =>
+      (a.name ?? "").localeCompare(b.name ?? "", "es", { sensitivity: "base" }),
     )
   const visibleProducts = filteredProducts.slice(0, visibleCount)
 
