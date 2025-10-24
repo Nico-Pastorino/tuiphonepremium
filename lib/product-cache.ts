@@ -1,6 +1,7 @@
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { ProductRow } from "@/types/database"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
+import { FALLBACK_PRODUCTS } from "@/data/fallback-products"
 
 type ProductsSnapshot = {
   data: ProductRow[]
@@ -73,7 +74,7 @@ const fetchAndStoreProducts = async (cache: CacheState): Promise<ProductsSnapsho
       throw error instanceof Error ? error : new Error("Unable to load products from Supabase")
     }
 
-    const products = data ?? []
+    const products = data && data.length > 0 ? data : FALLBACK_PRODUCTS
     cache.data = products
     cache.fetchedAt = Date.now()
     cache.expiresAt = cache.fetchedAt + getCacheTtl()
@@ -81,11 +82,11 @@ const fetchAndStoreProducts = async (cache: CacheState): Promise<ProductsSnapsho
     return { data: products, fetchedAt: cache.fetchedAt, connected: true }
   } catch (error) {
     console.warn("Fallo al obtener productos desde Supabase:", error)
-    cache.data = []
+    cache.data = FALLBACK_PRODUCTS
     cache.fetchedAt = Date.now()
     cache.expiresAt = cache.fetchedAt + getCacheTtl()
     cache.connected = false
-    return { data: [], fetchedAt: cache.fetchedAt, connected: false }
+    return { data: FALLBACK_PRODUCTS, fetchedAt: cache.fetchedAt, connected: false }
   }
 }
 
