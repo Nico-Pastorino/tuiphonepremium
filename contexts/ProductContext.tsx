@@ -153,7 +153,6 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, source: string):
 export function ProductProvider({ children, initialData = null }: ProductProviderProps) {
   const initialProducts = useMemo(() => (initialData ? mapProducts(initialData.products) : []), [initialData])
   const initialSupabaseConnected = initialData?.supabaseConnected ?? false
-  const initialTimestamp = initialData?.timestamp ?? Date.now()
   const [products, setProducts] = useState<Product[]>(() => initialProducts)
   const [loading, setLoading] = useState(initialProducts.length === 0)
   const [error, setError] = useState<string | null>(null)
@@ -161,6 +160,8 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
   const productsRef = useRef<Product[]>(initialProducts)
   const cacheHydratedRef = useRef(initialProducts.length > 0)
   const initialPersistedRef = useRef(false)
+  const storageAvailableRef = useRef(true)
+  const storageDisabledLoggedRef = useRef(false)
 
   const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
@@ -171,16 +172,30 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
       setProducts(productsList)
       productsRef.current = productsList
 
-      if (persist && typeof window !== "undefined") {
+      if (persist && storageAvailableRef.current && typeof window !== "undefined") {
         try {
           const payload: ProductsCachePayload = {
             products: productsList,
             supabaseConnected: connected,
             timestamp: Date.now(),
           }
-          window.localStorage.setItem(CACHE_KEY, JSON.stringify(payload))
+          const serialized = JSON.stringify(payload)
+          if (serialized.length > 2_500_000) {
+            storageAvailableRef.current = false
+            window.localStorage.removeItem(CACHE_KEY)
+            if (!storageDisabledLoggedRef.current) {
+              console.warn("Cache de productos desactivada: el tamaño excede el limite permitido en localStorage")
+              storageDisabledLoggedRef.current = true
+            }
+            return
+          }
+          window.localStorage.setItem(CACHE_KEY, serialized)
         } catch (error) {
-          console.warn("No se pudo guardar la cache de productos:", error)
+          storageAvailableRef.current = false
+          if (!storageDisabledLoggedRef.current) {
+            console.warn("No se pudo guardar la cache de productos. Se deshabilita el almacenamiento local:", error)
+            storageDisabledLoggedRef.current = true
+          }
         }
       }
     },
@@ -193,7 +208,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
     }
     initialPersistedRef.current = true
 
-    updateProductsState(initialProducts, initialSupabaseConnected)
+    updateProductsState(initialProducts, initialSupabaseConnected, false)
   }, [initialProducts, initialSupabaseConnected, updateProductsState])
 
   const hydrateFromCache = useCallback(() => {
