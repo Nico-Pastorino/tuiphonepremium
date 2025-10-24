@@ -64,6 +64,7 @@ const SUPABASE_TIMEOUT_MS = 10_000
 const API_TIMEOUT_MS = 12_000
 const API_MAX_ATTEMPTS = 2
 const API_RETRY_DELAY_MS = 300
+const CLIENT_DATA_TTL_MS = 60_000
 const CACHE_KEY = "tuiphone_products_cache_v1"
 const CACHE_TTL_MS = 1000 * 60 * 5
 
@@ -162,22 +163,24 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
   const initialPersistedRef = useRef(false)
   const storageAvailableRef = useRef(true)
   const storageDisabledLoggedRef = useRef(false)
+  const lastUpdateRef = useRef(initialData?.timestamp ?? (initialProducts.length > 0 ? Date.now() : 0))
 
   const showToast = useCallback((message: string, type: "success" | "error" | "warning" = "success") => {
     console.log(`[${type.toUpperCase()}] ${message}`)
   }, [])
 
   const updateProductsState = useCallback(
-    (productsList: Product[], connected: boolean, persist = true) => {
+    (productsList: Product[], connected: boolean, persist = true, updatedAt?: number) => {
       setProducts(productsList)
       productsRef.current = productsList
+      lastUpdateRef.current = updatedAt ?? Date.now()
 
       if (persist && storageAvailableRef.current && typeof window !== "undefined") {
         try {
           const payload: ProductsCachePayload = {
             products: productsList,
             supabaseConnected: connected,
-            timestamp: Date.now(),
+            timestamp: lastUpdateRef.current,
           }
           const serialized = JSON.stringify(payload)
           if (serialized.length > 2_500_000) {
@@ -208,8 +211,8 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
     }
     initialPersistedRef.current = true
 
-    updateProductsState(initialProducts, initialSupabaseConnected, false)
-  }, [initialProducts, initialSupabaseConnected, updateProductsState])
+    updateProductsState(initialProducts, initialSupabaseConnected, false, initialData?.timestamp)
+  }, [initialProducts, initialSupabaseConnected, initialData?.timestamp, updateProductsState])
 
   const hydrateFromCache = useCallback(() => {
     if (cacheHydratedRef.current || typeof window === "undefined") {
@@ -226,9 +229,10 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
     const isFresh = Date.now() - cached.timestamp < CACHE_TTL_MS
     if (!isFresh) {
       window.localStorage.removeItem(CACHE_KEY)
+      return
     }
 
-    updateProductsState(cached.products, cached.supabaseConnected, false)
+    updateProductsState(cached.products, cached.supabaseConnected, false, cached.timestamp)
     setSupabaseConnected(cached.supabaseConnected)
     setLoading(false)
   }, [updateProductsState])
@@ -236,6 +240,11 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
   const loadProducts = useCallback(
     async ({ force = false }: { force?: boolean } = {}) => {
       const hasExistingProducts = productsRef.current.length > 0
+      const lastUpdated = lastUpdateRef.current
+      if (!force && hasExistingProducts && lastUpdated > 0 && Date.now() - lastUpdated < CLIENT_DATA_TTL_MS) {
+        return
+      }
+
       const shouldShowLoading = force || !hasExistingProducts
       if (shouldShowLoading) {
         setLoading(true)
