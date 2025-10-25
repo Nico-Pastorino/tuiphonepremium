@@ -142,12 +142,19 @@ export const getProductsCached = async (options?: GetProductsOptions): Promise<P
   return snapshot.data
 }
 
+const normalizeCondition = (condition: string | null): "nuevo" | "seminuevo" => {
+  const normalized = condition?.trim().toLowerCase()
+  if (normalized === "nuevo") return "nuevo"
+  if (normalized === "seminuevo") return "seminuevo"
+  return "seminuevo"
+}
+
 export const toProductSummary = (row: ProductRow): ProductSummary => ({
   id: row.id,
   name: row.name,
   description: row.description ?? "",
   category: row.category,
-  condition: row.condition === "nuevo" ? "nuevo" : "seminuevo",
+  condition: normalizeCondition(row.condition),
   price: row.price,
   originalPrice: row.original_price ?? null,
   priceUSD: row.price_usd ?? null,
