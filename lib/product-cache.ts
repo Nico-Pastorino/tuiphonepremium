@@ -148,10 +148,15 @@ export const getProductsCached = async (options?: GetProductsOptions): Promise<P
 
 const normalizeCondition = (condition: string | null): "nuevo" | "seminuevo" => {
   const normalized = condition?.trim().toLowerCase() ?? ""
-  if (normalized.includes("semi")) return "seminuevo"
-  if (normalized.startsWith("nuevo")) return "nuevo"
-  if (normalized.includes("nuevo")) return "nuevo"
-  return normalized.length === 0 ? "nuevo" : "seminuevo"
+  if (normalized.length === 0) return "nuevo"
+
+  const sanitized = normalized.replace(/\s+/g, "")
+  const semiIndicators = ["semi", "usado", "reacond", "refurb", "abierto", "demo"]
+  if (semiIndicators.some((indicator) => sanitized.includes(indicator))) {
+    return "seminuevo"
+  }
+
+  return "nuevo"
 }
 
 export const toProductSummary = (row: ProductRow): ProductSummary => ({
@@ -218,6 +223,12 @@ export const getCatalogProducts = async ({
     const conditionPriorityB = CONDITION_PRIORITY.get(normalizeCondition(b.condition)) ?? CONDITION_PRIORITY.size
     if (conditionPriorityA !== conditionPriorityB) {
       return conditionPriorityA - conditionPriorityB
+    }
+
+    const priceA = Number.isFinite(a.price) ? a.price : 0
+    const priceB = Number.isFinite(b.price) ? b.price : 0
+    if (priceA !== priceB) {
+      return priceB - priceA
     }
 
     const priorityA = CATEGORY_PRIORITY.get(a.category.toLowerCase()) ?? CATEGORY_PRIORITY.size

@@ -36,18 +36,18 @@ const sortProducts = (items: ProductSummary[]): ProductSummary[] => {
       return normalizedPriorityA - normalizedPriorityB
     }
 
+    const priceA = a.price ?? 0
+    const priceB = b.price ?? 0
+    if (priceA !== priceB) {
+      return priceB - priceA
+    }
+
     const parsedCreatedA = new Date(a.createdAt ?? "").getTime()
     const parsedCreatedB = new Date(b.createdAt ?? "").getTime()
     const createdA = Number.isFinite(parsedCreatedA) ? parsedCreatedA : 0
     const createdB = Number.isFinite(parsedCreatedB) ? parsedCreatedB : 0
     if (createdA !== createdB) {
       return createdB - createdA
-    }
-
-    const priceA = a.price ?? 0
-    const priceB = b.price ?? 0
-    if (priceA !== priceB) {
-      return priceB - priceA
     }
 
     return (a.name ?? "").localeCompare(b.name ?? "")
