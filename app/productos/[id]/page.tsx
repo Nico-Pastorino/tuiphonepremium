@@ -145,8 +145,7 @@ export default function ProductDetailPage() {
       if (current && groups.some((group) => group.category === current && group.options.length > 0)) {
         return current
       }
-      const firstGroupWithOptions = groups.find((group) => group.options.length > 0)
-      return firstGroupWithOptions ? firstGroupWithOptions.category : null
+      return null
     })
   }, [product, installmentPlans, effectiveDollarRate])
 

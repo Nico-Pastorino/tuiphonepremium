@@ -252,8 +252,8 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
         </div>
 
         <div className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
+          <div className="grid gap-4 text-center sm:grid-cols-2">
+            <div className="space-y-1">
               <p className="text-xs uppercase tracking-widest text-blue-500">Valor estimado de tu usado</p>
               <p className="text-xl font-semibold text-blue-700">
                 {tradeInValueUSD !== null ? `USD ${tradeInValueUSD.toLocaleString("es-AR")}` : "Sin estimacion"}
@@ -264,13 +264,13 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
                 </p>
               )}
             </div>
-            <div>
-              <p className="text-right text-xs uppercase tracking-widest text-blue-500">Pagas por el iPhone</p>
-              <p className="text-right text-xl font-semibold text-blue-700">
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-widest text-blue-500">Pagas por el iPhone</p>
+              <p className="text-xl font-semibold text-blue-700">
                 {finalPriceUSD !== null ? `USD ${finalPriceUSD.toLocaleString("es-AR")}` : "Consulta"}
               </p>
               {finalPriceARS !== null && (
-                <p className="text-right text-sm text-blue-600">
+                <p className="text-sm text-blue-600">
                   ${finalPriceARS.toLocaleString("es-AR")} ARS
                 </p>
               )}
