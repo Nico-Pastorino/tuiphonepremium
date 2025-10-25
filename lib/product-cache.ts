@@ -29,6 +29,10 @@ const DEFAULT_TTL_MS = 30_000
 const MAX_LIMIT = 60
 const CATEGORY_PRIORITY_ORDER = ["iphone", "ipad", "mac", "watch", "airpods", "accesorios"]
 const CATEGORY_PRIORITY = new Map(CATEGORY_PRIORITY_ORDER.map((value, index) => [value, index]))
+const CONDITION_PRIORITY = new Map<"nuevo" | "seminuevo", number>([
+  ["nuevo", 0],
+  ["seminuevo", 1],
+])
 
 const getCacheTtlMs = (): number => {
   const raw = process.env.PRODUCTS_CACHE_TTL_MS
@@ -143,10 +147,11 @@ export const getProductsCached = async (options?: GetProductsOptions): Promise<P
 }
 
 const normalizeCondition = (condition: string | null): "nuevo" | "seminuevo" => {
-  const normalized = condition?.trim().toLowerCase()
-  if (normalized === "nuevo") return "nuevo"
-  if (normalized === "seminuevo") return "seminuevo"
-  return "seminuevo"
+  const normalized = condition?.trim().toLowerCase() ?? ""
+  if (normalized.includes("semi")) return "seminuevo"
+  if (normalized.startsWith("nuevo")) return "nuevo"
+  if (normalized.includes("nuevo")) return "nuevo"
+  return normalized.length === 0 ? "nuevo" : "seminuevo"
 }
 
 export const toProductSummary = (row: ProductRow): ProductSummary => ({
@@ -169,7 +174,7 @@ const applyFilters = (
   filters: { category?: string | null; condition?: string | null; featured?: boolean | null },
 ): ProductRow[] => {
   const normalizedCategory = filters.category?.toLowerCase() ?? null
-  const normalizedCondition = filters.condition?.toLowerCase() ?? null
+  const normalizedCondition = filters.condition ? normalizeCondition(filters.condition) : null
   const normalizedFeatured = typeof filters.featured === "boolean" ? filters.featured : null
 
   if (!normalizedCategory && !normalizedCondition && normalizedFeatured === null) {
@@ -178,7 +183,7 @@ const applyFilters = (
 
   return rows.filter((row) => {
     const categoryMatches = !normalizedCategory || row.category.toLowerCase() === normalizedCategory
-    const conditionMatches = !normalizedCondition || row.condition.toLowerCase() === normalizedCondition
+    const conditionMatches = !normalizedCondition || normalizeCondition(row.condition) === normalizedCondition
     const featuredMatches = normalizedFeatured === null || row.featured === normalizedFeatured
     return categoryMatches && conditionMatches && featuredMatches
   })
@@ -209,11 +214,18 @@ export const getCatalogProducts = async ({
   const normalizedLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 12, MAX_LIMIT))
 
   const sorted = filtered.slice().sort((a, b) => {
+    const conditionPriorityA = CONDITION_PRIORITY.get(normalizeCondition(a.condition)) ?? CONDITION_PRIORITY.size
+    const conditionPriorityB = CONDITION_PRIORITY.get(normalizeCondition(b.condition)) ?? CONDITION_PRIORITY.size
+    if (conditionPriorityA !== conditionPriorityB) {
+      return conditionPriorityA - conditionPriorityB
+    }
+
     const priorityA = CATEGORY_PRIORITY.get(a.category.toLowerCase()) ?? CATEGORY_PRIORITY.size
     const priorityB = CATEGORY_PRIORITY.get(b.category.toLowerCase()) ?? CATEGORY_PRIORITY.size
     if (priorityA !== priorityB) {
       return priorityA - priorityB
     }
+
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   })
 
