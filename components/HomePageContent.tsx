@@ -48,11 +48,10 @@ const DEFAULT_SECTION_LABELS: Record<HomeSectionId, string> = DEFAULT_HOME_CONFI
 type HomePageContentProps = {
   initialProducts: ProductSummary[]
   homeConfig: HomeConfig
-  tradeInConfig: TradeInConfig
 }
 
 async function fetchCatalogFeatured(): Promise<CatalogProductsResponse> {
-  const response = await fetch("/api/catalog/products?limit=60&refresh=1", {
+  const response = await fetch("/api/catalog/products?limit=16&refresh=1", {
     cache: "no-store",
     headers: { "Content-Type": "application/json" },
   })
@@ -64,10 +63,32 @@ async function fetchCatalogFeatured(): Promise<CatalogProductsResponse> {
   return (await response.json()) as CatalogProductsResponse
 }
 
-export function HomePageContent({ initialProducts, homeConfig, tradeInConfig }: HomePageContentProps) {
+async function fetchTradeInConfig(): Promise<TradeInConfig> {
+  const response = await fetch("/api/admin/trade-in", {
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Trade-in fetch failed with status ${response.status}`)
+  }
+
+  const result = (await response.json()) as { data?: TradeInConfig }
+  if (!result.data) {
+    throw new Error("Trade-in config payload vacío")
+  }
+
+  return result.data
+}
+
+export function HomePageContent({ initialProducts, homeConfig }: HomePageContentProps) {
   const [products, setProducts] = useState<ProductSummary[]>(initialProducts)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [tradeInConfigState, setTradeInConfigState] = useState<TradeInConfig | null>(null)
+  const [tradeInLoading, setTradeInLoading] = useState(true)
+  const [tradeInError, setTradeInError] = useState<string | null>(null)
+  const [tradeInReloadToken, setTradeInReloadToken] = useState(0)
 
   const refreshProducts = useCallback(async () => {
     setLoading(true)
@@ -75,7 +96,12 @@ export function HomePageContent({ initialProducts, homeConfig, tradeInConfig }: 
 
     try {
       const data = await fetchCatalogFeatured()
-      setProducts(data.items)
+      const trimmed = data.items.map((item) => ({
+        ...item,
+        description: item.description ?? "",
+        images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
+      }))
+      setProducts(trimmed)
     } catch (err) {
       console.error("No se pudieron actualizar los productos destacados:", err)
       setError("No se pudieron cargar los productos. Intenta nuevamente.")
@@ -90,6 +116,42 @@ export function HomePageContent({ initialProducts, homeConfig, tradeInConfig }: 
     }
   }, [initialProducts.length, refreshProducts])
 
+  useEffect(() => {
+    let active = true
+
+    const loadTradeIn = async () => {
+      setTradeInLoading(true)
+      setTradeInError(null)
+
+      try {
+        const data = await fetchTradeInConfig()
+        if (active) {
+          setTradeInConfigState(data)
+        }
+      } catch (err) {
+        console.error("No se pudo cargar la configuracion de plan canje:", err)
+        if (active) {
+          setTradeInError("No se pudo cargar la tabla de canje.")
+          setTradeInConfigState(null)
+        }
+      } finally {
+        if (active) {
+          setTradeInLoading(false)
+        }
+      }
+    }
+
+    void loadTradeIn()
+
+    return () => {
+      active = false
+    }
+  }, [tradeInReloadToken])
+
+  const handleTradeInRetry = useCallback(() => {
+    setTradeInReloadToken((value) => value + 1)
+  }, [])
+
   const sectionLabels = useMemo(() => {
     const labels: Record<HomeSectionId, string> = { ...DEFAULT_SECTION_LABELS }
     homeConfig.sections.forEach((section) => {
@@ -97,6 +159,8 @@ export function HomePageContent({ initialProducts, homeConfig, tradeInConfig }: 
     })
     return labels
   }, [homeConfig.sections])
+
+  const tradeInConfig = tradeInConfigState ?? ({ updatedAt: "", sections: [] } as TradeInConfig)
 
   const tradeInConditionLabels: Record<TradeInConditionId, string> = {
     under90: "-90%",
@@ -108,7 +172,7 @@ export function HomePageContent({ initialProducts, homeConfig, tradeInConfig }: 
       tradeInConfig.sections.flatMap((section) =>
         section.rows.map((row) => ({
           value: `${section.id}::${row.id}`,
-          label: `${section.title} · ${row.label}`,
+          label: `${section.title} - ${row.label}`,
           sectionId: section.id,
           rowId: row.id,
         })),
@@ -239,7 +303,14 @@ export function HomePageContent({ initialProducts, homeConfig, tradeInConfig }: 
   const tradeInWhatsappMessage = tradeInWhatsappLines.join("\n")
   const tradeInWhatsappLink = `${whatsappLink}?text=${encodeURIComponent(tradeInWhatsappMessage)}`
 
-  const featuredProducts = useMemo(() => products.filter((product) => product.featured).slice(0, 8), [products])
+  const featuredProducts = useMemo(() => {
+    const featuredList = products.filter((product) => product.featured)
+    if (featuredList.length >= 8) {
+      return featuredList.slice(0, 8)
+    }
+    const fallbackList = products.filter((product) => !product.featured)
+    return [...featuredList, ...fallbackList].slice(0, 8)
+  }, [products])
   const enabledSections = homeConfig.sections.filter((section) => section.enabled)
   const instagramUrl = "https://www.instagram.com/tuiphonepremium"
   const tiktokUrl = "https://www.tiktok.com/@tu.iphone.premium?_t=ZS-90ljWaLjkxh&_r=1"
@@ -462,15 +533,15 @@ export function HomePageContent({ initialProducts, homeConfig, tradeInConfig }: 
       <section className="py-12 sm:py-16 md:py-20 bg-blue-50" data-anchor="trade-in">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[1.2fr,1fr]">
-            <div className="space-y-4 sm:space-y-5">
-              <span className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600">
+            <div className="space-y-4 sm:space-y-5 text-center lg:text-left">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 justify-center lg:justify-start mx-auto lg:mx-0">
                 <ArrowLeftRight className="w-4 h-4" />
                 Plan canje
               </span>
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900">
                 {homeConfig.tradeInTitle || "Plan canje"}
               </h2>
-              <p className="text-base sm:text-lg text-gray-600 max-w-xl">
+              <p className="text-base sm:text-lg text-gray-600 max-w-xl mx-auto lg:mx-0">
                 {homeConfig.tradeInSubtitle || "Tomamos tu Apple usado y te ayudamos a renovar tu equipo."}
               </p>
               <div className="rounded-2xl border border-blue-100 bg-white p-4 sm:p-5 shadow-sm">
@@ -482,12 +553,28 @@ export function HomePageContent({ initialProducts, homeConfig, tradeInConfig }: 
             </div>
             <Card className="border-0 shadow-lg">
               <CardContent className="p-6 sm:p-8 space-y-5">
-                {tradeInOptions.length === 0 ? (
+                {tradeInLoading ? (
+                  <div className="flex flex-col items-center gap-3 text-center text-blue-600">
+                    <RefreshCw className="h-10 w-10 animate-spin text-blue-500" />
+                    <p className="text-sm text-blue-600">Cargando cotizaciones de canje...</p>
+                  </div>
+                ) : tradeInError ? (
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <AlertCircle className="w-10 h-10 text-red-500" />
+                    <div>
+                      <p className="text-base font-semibold text-gray-700">No se pudo cargar la tabla de canje</p>
+                      <p className="text-sm text-gray-500">Intenta nuevamente en unos segundos.</p>
+                    </div>
+                    <Button variant="outline" onClick={handleTradeInRetry} className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                      Reintentar
+                    </Button>
+                  </div>
+                ) : tradeInOptions.length === 0 ? (
                   <div className="flex flex-col items-center text-center gap-3 text-gray-500">
                     <AlertCircle className="w-10 h-10 text-gray-400" />
-                    <p className="text-base font-semibold text-gray-700">Valores próximamente</p>
+                    <p className="text-base font-semibold text-gray-700">Valores proximamente</p>
                     <p className="text-sm">
-                      Estamos preparando la información de canje para tus equipos. Vuelve a intentarlo en unas horas.
+                      Estamos preparando la informacion de canje para tus equipos. Vuelve a intentarlo en unas horas.
                     </p>
                   </div>
                 ) : (
@@ -547,7 +634,7 @@ export function HomePageContent({ initialProducts, homeConfig, tradeInConfig }: 
                         </Select>
                       </div>
                     </div>
-                    <div className="rounded-2xl bg-gray-900 text-white p-6 space-y-2">
+                    <div className="rounded-2xl bg-gray-900 text-white p-6 space-y-2 text-center">
                       <p className="text-xs uppercase tracking-widest text-white/60">Valor estimado</p>
                       <p className="text-3xl sm:text-4xl font-semibold">
                         {formattedTradeInValue ?? "No disponible"}

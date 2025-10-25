@@ -4,7 +4,6 @@ import { ProductProvider } from "@/contexts/ProductContext"
 import { AdminProvider } from "@/contexts/AdminContext"
 import { ToastContainer } from "@/components/ui/toast"
 import { ServiceWorkerManager } from "@/components/ServiceWorkerManager"
-import { getProductsCached } from "@/lib/product-cache"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -21,23 +20,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  let initialData: {
-    products: Awaited<ReturnType<typeof getProductsCached>>
-    supabaseConnected: boolean
-    timestamp: number
-  } | null = null
-
-  try {
-    const products = await getProductsCached()
-    initialData = {
-      products,
-      supabaseConnected: true,
-      timestamp: Date.now(),
-    }
-  } catch (error) {
-    console.error("No se pudo precargar la lista de productos:", error)
-  }
-
   return (
     <html lang="es">
       <head>
@@ -45,7 +27,7 @@ export default async function RootLayout({
       </head>
       <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
         <AdminProvider>
-          <ProductProvider initialData={initialData}>
+          <ProductProvider>
             {children}
             <ToastContainer />
             <ServiceWorkerManager />
