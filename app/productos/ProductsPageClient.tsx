@@ -53,7 +53,16 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   const searchParams = useSearchParams()
 
   const [filters, setFilters] = useState<FiltersState>(initialFilters)
-  const [products, setProducts] = useState<ProductSummary[]>(initialData.items)
+  const [products, setProducts] = useState<ProductSummary[]>(() => {
+    return [...initialData.items].sort((a, b) => {
+      const categoryA = a.category?.toLowerCase() ?? ""
+      const categoryB = b.category?.toLowerCase() ?? ""
+      if (categoryA === categoryB) {
+        return (b.price ?? 0) - (a.price ?? 0)
+      }
+      return categoryA.localeCompare(categoryB)
+    })
+  })
   const [total, setTotal] = useState(initialData.total)
   const [loadingInitial, setLoadingInitial] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -119,10 +128,18 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
       try {
         const data = await fetchCatalogProducts(offset, effectivePageSize, filtersToLoad)
         setTotal(data.total)
+        const sortedItems = [...data.items].sort((a, b) => {
+          const categoryA = a.category?.toLowerCase() ?? ""
+          const categoryB = b.category?.toLowerCase() ?? ""
+          if (categoryA === categoryB) {
+            return (b.price ?? 0) - (a.price ?? 0)
+          }
+          return categoryA.localeCompare(categoryB)
+        })
         if (append) {
-          setProducts((prev) => [...prev, ...data.items])
+          setProducts((prev) => [...prev, ...sortedItems])
         } else {
-          setProducts(data.items)
+          setProducts(sortedItems)
         }
       } catch (err) {
         console.error("No se pudieron cargar los productos:", err)
@@ -191,37 +208,23 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
       <div className="section-padding">
         <div className="inner-container px-4 sm:px-6 lg:px-0">
           <AnimatedSection animation="fadeUp">
-            {initialLoadingEmpty ? (
-              <div className="flex justify-center">
-                <div className="flex w-full max-w-xl flex-col items-center gap-3 rounded-3xl border border-blue-100 bg-white px-6 py-12 text-center shadow-sm">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
-                    <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
-                  </div>
-                  <p className="text-lg font-semibold text-gray-900">Cargando productos...</p>
-                  <p className="text-sm text-blue-600">
-                    Estamos preparando el catalogo completo para mostrarte las mejores opciones.
-                  </p>
-                </div>
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-blue-500 sm:text-xs">Catalogo completo</p>
+                <h1 className="mb-2 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">Productos Apple</h1>
+                <p className="text-sm text-gray-600 sm:text-base">
+                  Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos
+                </p>
               </div>
-            ) : (
-              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-wide text-blue-500 sm:text-xs">Catalogo completo</p>
-                  <h1 className="mb-2 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">Productos Apple</h1>
-                  <p className="text-sm text-gray-600 sm:text-base">
-                    Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowFilters((prev) => !prev)}
-                  className="w-full justify-center gap-2 rounded-xl border-gray-200 text-sm hover:border-gray-300 hover:bg-white sm:hidden"
-                >
-                  <Filter className="w-4 h-4" />
-                  Filtros
-                </Button>
-              </div>
-            )}
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters((prev) => !prev)}
+                className="w-full justify-center gap-2 rounded-xl border-gray-200 text-sm hover:border-gray-300 hover:bg-white sm:hidden"
+              >
+                <Filter className="w-4 h-4" />
+                Filtros
+              </Button>
+            </div>
           </AnimatedSection>
 
           {showFilters && !initialLoadingEmpty && (
@@ -254,14 +257,24 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
                   <p className="text-sm text-gray-600 sm:text-base">{statsText}</p>
                 </div>
 
-                {error && (
+                {error && !initialLoadingEmpty && (
                   <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     {error}
                   </div>
                 )}
 
-                {loadingInitial && products.length === 0 ? (
-                  <ProductsLoading />
+                {initialLoadingEmpty ? (
+                  <div className="flex justify-center py-16">
+                    <div className="flex w-full max-w-lg flex-col items-center gap-4 rounded-3xl border border-blue-100 bg-white px-6 py-12 text-center shadow-sm">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+                        <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
+                      </div>
+                      <p className="text-lg font-semibold text-gray-900">Cargando productos...</p>
+                      <p className="text-sm text-blue-600">
+                        Estamos preparando el catalogo completo para mostrarte las mejores opciones.
+                      </p>
+                    </div>
+                  </div>
                 ) : products.length > 0 ? (
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-x-8 xl:gap-y-10">
                     {products.map((product, index) => (
