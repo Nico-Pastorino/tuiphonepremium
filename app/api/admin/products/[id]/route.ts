@@ -42,7 +42,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 
-    invalidateProductsCache()
+    await invalidateProductsCache()
 
     return NextResponse.json({ data })
   } catch (error) {
@@ -60,7 +60,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
       return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 
-    invalidateProductsCache()
+    await invalidateProductsCache()
 
     return NextResponse.json({ data })
   } catch (error) {

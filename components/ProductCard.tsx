@@ -5,11 +5,11 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import type { Product } from "@/types/product"
+import type { ProductSummary } from "@/types/product"
 import { useAdmin } from "@/contexts/AdminContext"
 
 interface ProductCardProps {
-  product: Product
+  product: ProductSummary
   variant?: "default" | "compact"
 }
 

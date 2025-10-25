@@ -1,3 +1,5 @@
+import { revalidateTag, unstable_cache } from "next/cache"
+
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { ProductRow } from "@/types/database"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
@@ -20,10 +22,13 @@ type GlobalWithCache = typeof globalThis & {
   __TUIPHONE_PRODUCTS_CACHE__?: CacheState
 }
 
+export const PRODUCTS_CACHE_TAG = "products"
+
+const PRODUCTS_CACHE_KEY = "products-snapshot"
 const DEFAULT_TTL_MS = 30_000
 const MAX_LIMIT = 60
 
-const getCacheTtl = (): number => {
+const getCacheTtlMs = (): number => {
   const raw = process.env.PRODUCTS_CACHE_TTL_MS
   if (!raw) {
     return DEFAULT_TTL_MS
@@ -36,6 +41,8 @@ const getCacheTtl = (): number => {
 
   return parsed
 }
+
+const getCacheTtlSeconds = (): number => Math.max(1, Math.floor(getCacheTtlMs() / 1000))
 
 const resolveCacheState = (): CacheState => {
   const globalObject = globalThis as GlobalWithCache
@@ -52,8 +59,7 @@ const resolveCacheState = (): CacheState => {
   return globalObject.__TUIPHONE_PRODUCTS_CACHE__
 }
 
-export const invalidateProductsCache = (): void => {
-  const cache = resolveCacheState()
+const resetCacheState = (cache: CacheState): void => {
   cache.data = null
   cache.expiresAt = 0
   cache.fetchedAt = 0
@@ -61,11 +67,24 @@ export const invalidateProductsCache = (): void => {
   cache.inFlight = null
 }
 
+const updateCacheState = (cache: CacheState, snapshot: ProductsSnapshot): void => {
+  cache.data = snapshot.data
+  cache.fetchedAt = snapshot.fetchedAt
+  cache.connected = snapshot.connected
+  cache.expiresAt = snapshot.fetchedAt + getCacheTtlMs()
+}
+
+export const invalidateProductsCache = async (): Promise<void> => {
+  const cache = resolveCacheState()
+  resetCacheState(cache)
+  await revalidateTag(PRODUCTS_CACHE_TAG)
+}
+
 export type GetProductsOptions = {
   force?: boolean
 }
 
-const fetchAndStoreProducts = async (cache: CacheState): Promise<ProductsSnapshot> => {
+const fetchProductsSnapshot = async (): Promise<ProductsSnapshot> => {
   const { data, error } = await ProductAdminService.getAllProducts()
 
   if (error) {
@@ -73,12 +92,14 @@ const fetchAndStoreProducts = async (cache: CacheState): Promise<ProductsSnapsho
   }
 
   const products = data ?? []
-  cache.data = products
-  cache.fetchedAt = Date.now()
-  cache.expiresAt = cache.fetchedAt + getCacheTtl()
-  cache.connected = true
-  return { data: products, fetchedAt: cache.fetchedAt, connected: true }
+  const fetchedAt = Date.now()
+  return { data: products, fetchedAt, connected: true }
 }
+
+const cachedProductsSnapshot = unstable_cache(fetchProductsSnapshot, [PRODUCTS_CACHE_KEY], {
+  revalidate: getCacheTtlSeconds(),
+  tags: [PRODUCTS_CACHE_TAG],
+})
 
 export const getProductsSnapshot = async ({ force = false }: GetProductsOptions = {}): Promise<ProductsSnapshot> => {
   const cache = resolveCacheState()
@@ -88,15 +109,25 @@ export const getProductsSnapshot = async ({ force = false }: GetProductsOptions 
     return { data: cache.data, fetchedAt: cache.fetchedAt, connected: cache.connected }
   }
 
+  if (force) {
+    resetCacheState(cache)
+    await revalidateTag(PRODUCTS_CACHE_TAG)
+    const snapshot = await fetchProductsSnapshot()
+    updateCacheState(cache, snapshot)
+    return snapshot
+  }
+
   if (cache.inFlight) {
     return cache.inFlight
   }
 
-  const fetchPromise = fetchAndStoreProducts(cache)
+  const fetchPromise = cachedProductsSnapshot()
   cache.inFlight = fetchPromise
 
   try {
-    return await fetchPromise
+    const snapshot = await fetchPromise
+    updateCacheState(cache, snapshot)
+    return snapshot
   } finally {
     if (cache.inFlight === fetchPromise) {
       cache.inFlight = null
@@ -109,7 +140,7 @@ export const getProductsCached = async (options?: GetProductsOptions): Promise<P
   return snapshot.data
 }
 
-const mapRowToSummary = (row: ProductRow): ProductSummary => ({
+export const toProductSummary = (row: ProductRow): ProductSummary => ({
   id: row.id,
   name: row.name,
   description: row.description ?? "",
@@ -165,7 +196,7 @@ export const getCatalogProducts = async ({
   const normalizedLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 12, MAX_LIMIT))
 
   const slice = filtered.slice(normalizedOffset, normalizedOffset + normalizedLimit)
-  const items = slice.map(mapRowToSummary)
+  const items = slice.map(toProductSummary)
 
   return {
     items,

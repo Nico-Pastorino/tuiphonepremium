@@ -4,6 +4,7 @@ import { SiteConfigService, SITE_CONFIG_TABLE_NOT_FOUND } from "@/lib/supabase-a
 import { DEFAULT_TRADE_IN_CONFIG, mergeTradeInConfig } from "@/lib/trade-in-config"
 import type { TradeInConfig } from "@/types/trade-in"
 import type { Json } from "@/types/database"
+import { invalidateTradeInConfigCache } from "@/lib/site-config-cache"
 
 const TRADE_IN_CONFIG_KEY = "trade-in"
 
@@ -74,6 +75,8 @@ async function handleUpdate(request: NextRequest) {
       }
       return buildErrorResponse("No se pudo guardar la configuracion de canje")
     }
+
+    await invalidateTradeInConfigCache()
 
     return NextResponse.json({ data: mergedConfig })
   } catch (error) {

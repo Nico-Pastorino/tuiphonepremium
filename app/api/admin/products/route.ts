@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
     }
 
-    invalidateProductsCache()
+    await invalidateProductsCache()
 
     return NextResponse.json({ data }, { status: 201 })
   } catch (error) {

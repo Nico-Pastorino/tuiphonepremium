@@ -4,6 +4,7 @@ import { SiteConfigService, SITE_CONFIG_TABLE_NOT_FOUND } from "@/lib/supabase-a
 import { DEFAULT_HOME_CONFIG, mergeHomeConfig } from "@/lib/home-config"
 import type { HomeConfig } from "@/types/home"
 import type { Json } from "@/types/database"
+import { invalidateHomeConfigCache } from "@/lib/site-config-cache"
 
 const HOME_CONFIG_KEY = "home"
 
@@ -74,6 +75,8 @@ async function handleUpdate(request: NextRequest) {
       }
       return buildErrorResponse("No se pudo guardar la configuracion de la portada")
     }
+
+    await invalidateHomeConfigCache()
 
     return NextResponse.json({ data: mergedConfig })
   } catch (error) {
