@@ -51,7 +51,7 @@ type HomePageContentProps = {
 }
 
 async function fetchCatalogFeatured(): Promise<CatalogProductsResponse> {
-  const response = await fetch("/api/catalog/products?limit=16&refresh=1", {
+  const response = await fetch("/api/catalog/products?limit=16&refresh=1&featured=1", {
     cache: "no-store",
     headers: { "Content-Type": "application/json" },
   })
@@ -96,11 +96,13 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
 
     try {
       const data = await fetchCatalogFeatured()
-      const trimmed = data.items.map((item) => ({
-        ...item,
-        description: item.description ?? "",
-        images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
-      }))
+      const trimmed = data.items
+        .filter((item) => item.featured)
+        .map((item) => ({
+          ...item,
+          description: item.description ?? "",
+          images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
+        }))
       setProducts(trimmed)
     } catch (err) {
       console.error("No se pudieron actualizar los productos destacados:", err)
@@ -303,14 +305,10 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
   const tradeInWhatsappMessage = tradeInWhatsappLines.join("\n")
   const tradeInWhatsappLink = `${whatsappLink}?text=${encodeURIComponent(tradeInWhatsappMessage)}`
 
-  const featuredProducts = useMemo(() => {
-    const featuredList = products.filter((product) => product.featured)
-    if (featuredList.length >= 8) {
-      return featuredList.slice(0, 8)
-    }
-    const fallbackList = products.filter((product) => !product.featured)
-    return [...featuredList, ...fallbackList].slice(0, 8)
-  }, [products])
+  const featuredProducts = useMemo(
+    () => products.filter((product) => product.featured).slice(0, 8),
+    [products],
+  )
   const enabledSections = homeConfig.sections.filter((section) => section.enabled)
   const instagramUrl = "https://www.instagram.com/tuiphonepremium"
   const tiktokUrl = "https://www.tiktok.com/@tu.iphone.premium?_t=ZS-90ljWaLjkxh&_r=1"

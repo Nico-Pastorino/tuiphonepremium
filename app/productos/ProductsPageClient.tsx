@@ -104,9 +104,6 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   const initialLoadingEmpty = loadingInitial && products.length === 0
 
   useEffect(() => {
-    loadProductsForFilters(filters, 0, false)
-  }
-  }, [filters, loadProductsForFilters])
     const media = window.matchMedia("(max-width: 768px)")
     const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
       setIsMobile(event.matches)

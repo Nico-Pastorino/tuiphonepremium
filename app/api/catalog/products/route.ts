@@ -13,6 +13,14 @@ const parseNumberParam = (value: string | null, fallback: number, max: number) =
   return Math.min(parsed, max)
 }
 
+const parseBooleanParam = (value: string | null): boolean | null => {
+  if (!value) return null
+  const normalized = value.trim().toLowerCase()
+  if (normalized === "1" || normalized === "true") return true
+  if (normalized === "0" || normalized === "false") return false
+  return null
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
@@ -21,6 +29,7 @@ export async function GET(request: NextRequest) {
     const force = searchParams.get("refresh") === "1"
     const category = searchParams.get("category")
     const condition = searchParams.get("condition")
+    const featured = parseBooleanParam(searchParams.get("featured"))
 
     const data = await getCatalogProducts({
       limit,
@@ -28,6 +37,7 @@ export async function GET(request: NextRequest) {
       force,
       category: category && category.trim().length > 0 ? category.trim() : null,
       condition: condition && condition.trim().length > 0 ? condition.trim() : null,
+      featured,
     })
     return NextResponse.json(data)
   } catch (error) {

@@ -10,9 +10,7 @@ export default async function HomePage() {
     getHomeConfigCached(),
   ])
 
-  const featuredRows = snapshot.data.filter((row) => row.featured)
-  const fallbackRows = snapshot.data.filter((row) => !row.featured)
-  const selectedRows = [...featuredRows, ...fallbackRows].slice(0, 12)
+  const selectedRows = snapshot.data.filter((row) => row.featured).slice(0, 12)
 
   const products = selectedRows.map((row) => {
     const summary = toProductSummary(row)

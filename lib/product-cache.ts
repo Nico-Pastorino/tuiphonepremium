@@ -159,19 +159,21 @@ export const toProductSummary = (row: ProductRow): ProductSummary => ({
 
 const applyFilters = (
   rows: ProductRow[],
-  filters: { category?: string | null; condition?: string | null },
+  filters: { category?: string | null; condition?: string | null; featured?: boolean | null },
 ): ProductRow[] => {
   const normalizedCategory = filters.category?.toLowerCase() ?? null
   const normalizedCondition = filters.condition?.toLowerCase() ?? null
+  const normalizedFeatured = typeof filters.featured === "boolean" ? filters.featured : null
 
-  if (!normalizedCategory && !normalizedCondition) {
+  if (!normalizedCategory && !normalizedCondition && normalizedFeatured === null) {
     return rows
   }
 
   return rows.filter((row) => {
     const categoryMatches = !normalizedCategory || row.category.toLowerCase() === normalizedCategory
     const conditionMatches = !normalizedCondition || row.condition.toLowerCase() === normalizedCondition
-    return categoryMatches && conditionMatches
+    const featuredMatches = normalizedFeatured === null || row.featured === normalizedFeatured
+    return categoryMatches && conditionMatches && featuredMatches
   })
 }
 
@@ -181,6 +183,7 @@ export type CatalogQueryOptions = {
   force?: boolean
   category?: string | null
   condition?: string | null
+  featured?: boolean | null
 }
 
 export const getCatalogProducts = async ({
@@ -189,11 +192,12 @@ export const getCatalogProducts = async ({
   force = false,
   category = null,
   condition = null,
+  featured = null,
 }: CatalogQueryOptions = {}): Promise<CatalogProductsResponse> => {
   const snapshot = await getProductsSnapshot({ force })
   const { data, fetchedAt, connected } = snapshot
 
-  const filtered = applyFilters(data, { category, condition })
+  const filtered = applyFilters(data, { category, condition, featured })
   const normalizedOffset = Math.max(0, Number.isFinite(offset) ? offset : 0)
   const normalizedLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 12, MAX_LIMIT))
 
