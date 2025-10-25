@@ -1,17 +1,58 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { useRouter, useSearchParams } from "next/navigation"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { ModernProductCard } from "@/components/ModernProductCard"
-import { ProductsLoading } from "@/components/ProductsLoading"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
 import { Filter, RefreshCw } from "lucide-react"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
 
 const ProductFilters = dynamic(() => import("@/components/ProductFilters").then((mod) => mod.ProductFilters))
+
+const CATEGORY_PRIORITY = ["iphone", "ipad", "mac", "watch", "airpods", "accesorios"]
+const CONDITION_PRIORITY: Record<ProductSummary["condition"], number> = {
+  nuevo: 0,
+  seminuevo: 1,
+}
+
+const sortProducts = (items: ProductSummary[]): ProductSummary[] => {
+  return [...items].sort((a, b) => {
+    const conditionA = CONDITION_PRIORITY[a.condition] ?? 99
+    const conditionB = CONDITION_PRIORITY[b.condition] ?? 99
+    if (conditionA !== conditionB) {
+      return conditionA - conditionB
+    }
+
+    const categoryA = a.category?.toLowerCase() ?? ""
+    const categoryB = b.category?.toLowerCase() ?? ""
+    const priorityA = CATEGORY_PRIORITY.indexOf(categoryA)
+    const priorityB = CATEGORY_PRIORITY.indexOf(categoryB)
+    const normalizedPriorityA = priorityA >= 0 ? priorityA : CATEGORY_PRIORITY.length
+    const normalizedPriorityB = priorityB >= 0 ? priorityB : CATEGORY_PRIORITY.length
+    if (normalizedPriorityA !== normalizedPriorityB) {
+      return normalizedPriorityA - normalizedPriorityB
+    }
+
+    const parsedCreatedA = new Date(a.createdAt ?? "").getTime()
+    const parsedCreatedB = new Date(b.createdAt ?? "").getTime()
+    const createdA = Number.isFinite(parsedCreatedA) ? parsedCreatedA : 0
+    const createdB = Number.isFinite(parsedCreatedB) ? parsedCreatedB : 0
+    if (createdA !== createdB) {
+      return createdB - createdA
+    }
+
+    const priceA = a.price ?? 0
+    const priceB = b.price ?? 0
+    if (priceA !== priceB) {
+      return priceB - priceA
+    }
+
+    return (a.name ?? "").localeCompare(b.name ?? "")
+  })
+}
 
 type FiltersState = {
   category: string | null
@@ -53,29 +94,19 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   const searchParams = useSearchParams()
 
   const [filters, setFilters] = useState<FiltersState>(initialFilters)
-  const [products, setProducts] = useState<ProductSummary[]>(() => {
-    return [...initialData.items].sort((a, b) => {
-      const categoryA = a.category?.toLowerCase() ?? ""
-      const categoryB = b.category?.toLowerCase() ?? ""
-      if (categoryA === categoryB) {
-        return (b.price ?? 0) - (a.price ?? 0)
-      }
-      return categoryA.localeCompare(categoryB)
-    })
-  })
+  const [products, setProducts] = useState<ProductSummary[]>(() => sortProducts(initialData.items))
   const [total, setTotal] = useState(initialData.total)
-  const [loadingInitial, setLoadingInitial] = useState(false)
+  const [loadingInitial, setLoadingInitial] = useState(initialData.items.length === 0)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const initialLoadRef = useRef(true)
   const initialLoadingEmpty = loadingInitial && products.length === 0
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return
-    }
+    loadProductsForFilters(filters, 0, false)
+  }
+  }, [filters, loadProductsForFilters])
     const media = window.matchMedia("(max-width: 768px)")
     const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
       setIsMobile(event.matches)
@@ -128,16 +159,9 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
       try {
         const data = await fetchCatalogProducts(offset, effectivePageSize, filtersToLoad)
         setTotal(data.total)
-        const sortedItems = [...data.items].sort((a, b) => {
-          const categoryA = a.category?.toLowerCase() ?? ""
-          const categoryB = b.category?.toLowerCase() ?? ""
-          if (categoryA === categoryB) {
-            return (b.price ?? 0) - (a.price ?? 0)
-          }
-          return categoryA.localeCompare(categoryB)
-        })
+        const sortedItems = sortProducts(data.items)
         if (append) {
-          setProducts((prev) => [...prev, ...sortedItems])
+          setProducts((prev) => sortProducts([...prev, ...data.items]))
         } else {
           setProducts(sortedItems)
         }
@@ -160,10 +184,6 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   )
 
   useEffect(() => {
-    if (initialLoadRef.current) {
-      initialLoadRef.current = false
-      return
-    }
     loadProductsForFilters(filters, 0, false)
   }, [filters, loadProductsForFilters])
 

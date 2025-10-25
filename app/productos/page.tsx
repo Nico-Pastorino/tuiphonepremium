@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import { getCatalogProducts } from "@/lib/product-cache"
 import { ProductsPageClient } from "./ProductsPageClient"
 
 const INITIAL_PAGE_SIZE = 12
@@ -24,15 +23,16 @@ const getParam = (searchParams: PageProps["searchParams"], key: string): string 
   return value ?? null
 }
 
-export default async function ProductsPage({ searchParams }: PageProps) {
+export default function ProductsPage({ searchParams }: PageProps) {
   const category = getParam(searchParams, "category")
   const condition = getParam(searchParams, "condition")
 
-  const initialData = await getCatalogProducts({
-    limit: INITIAL_PAGE_SIZE,
-    category,
-    condition,
-  })
+  const initialData = {
+    items: [],
+    total: 0,
+    supabaseConnected: false,
+    timestamp: Date.now(),
+  }
 
   return (
     <ProductsPageClient
