@@ -8,7 +8,7 @@ import { ModernProductCard } from "@/components/ModernProductCard"
 import { ProductsLoading } from "@/components/ProductsLoading"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
-import { Filter } from "lucide-react"
+import { Filter, RefreshCw } from "lucide-react"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
 
 const ProductFilters = dynamic(() => import("@/components/ProductFilters").then((mod) => mod.ProductFilters))
@@ -61,6 +61,7 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   const [isMobile, setIsMobile] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const initialLoadRef = useRef(true)
+  const initialLoadingEmpty = loadingInitial && products.length === 0
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -177,6 +178,11 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   }, [filters, loadProductsForFilters, loadingMore, products.length, total])
 
   const statsText = loadingInitial ? "Cargando productos..." : `Mostrando ${products.length} de ${total} productos`
+  useEffect(() => {
+    if (initialLoadingEmpty) {
+      setShowFilters(false)
+    }
+  }, [initialLoadingEmpty])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -185,26 +191,40 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
       <div className="section-padding">
         <div className="inner-container px-4 sm:px-6 lg:px-0">
           <AnimatedSection animation="fadeUp">
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-blue-500 sm:text-xs">Catalogo completo</p>
-                <h1 className="mb-2 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">Productos Apple</h1>
-                <p className="text-sm text-gray-600 sm:text-base">
-                  Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos
-                </p>
+            {initialLoadingEmpty ? (
+              <div className="flex justify-center">
+                <div className="flex w-full max-w-xl flex-col items-center gap-3 rounded-3xl border border-blue-100 bg-white px-6 py-12 text-center shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+                    <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900">Cargando productos...</p>
+                  <p className="text-sm text-blue-600">
+                    Estamos preparando el catalogo completo para mostrarte las mejores opciones.
+                  </p>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters((prev) => !prev)}
-                className="w-full justify-center gap-2 rounded-xl border-gray-200 text-sm hover:border-gray-300 hover:bg-white sm:hidden"
-              >
-                <Filter className="w-4 h-4" />
-                Filtros
-              </Button>
-            </div>
+            ) : (
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-blue-500 sm:text-xs">Catalogo completo</p>
+                  <h1 className="mb-2 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">Productos Apple</h1>
+                  <p className="text-sm text-gray-600 sm:text-base">
+                    Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowFilters((prev) => !prev)}
+                  className="w-full justify-center gap-2 rounded-xl border-gray-200 text-sm hover:border-gray-300 hover:bg-white sm:hidden"
+                >
+                  <Filter className="w-4 h-4" />
+                  Filtros
+                </Button>
+              </div>
+            )}
           </AnimatedSection>
 
-          {showFilters && (
+          {showFilters && !initialLoadingEmpty && (
             <div className="fixed inset-0 z-[60] lg:hidden">
               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowFilters(false)} />
               <div className="absolute inset-y-0 left-0 flex w-full max-w-sm px-4">
@@ -281,15 +301,17 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
               )}
             </div>
 
-            <div className="hidden lg:block lg:w-80">
-              <AnimatedSection animation="fadeLeft" className="lg:sticky lg:top-32">
-                <ProductFilters
-                  category={filters.category}
-                  condition={filters.condition}
-                  onFilterChange={handleFilterChange}
-                />
-              </AnimatedSection>
-            </div>
+            {!initialLoadingEmpty && (
+              <div className="hidden lg:block lg:w-80">
+                <AnimatedSection animation="fadeLeft" className="lg:sticky lg:top-32">
+                  <ProductFilters
+                    category={filters.category}
+                    condition={filters.condition}
+                    onFilterChange={handleFilterChange}
+                  />
+                </AnimatedSection>
+              </div>
+            )}
           </div>
         </div>
       </div>

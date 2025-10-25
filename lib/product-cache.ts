@@ -27,6 +27,8 @@ export const PRODUCTS_CACHE_TAG = "products"
 const PRODUCTS_CACHE_KEY = "products-snapshot"
 const DEFAULT_TTL_MS = 30_000
 const MAX_LIMIT = 60
+const CATEGORY_PRIORITY_ORDER = ["iphone", "ipad", "mac", "watch", "airpods", "accesorios"]
+const CATEGORY_PRIORITY = new Map(CATEGORY_PRIORITY_ORDER.map((value, index) => [value, index]))
 
 const getCacheTtlMs = (): number => {
   const raw = process.env.PRODUCTS_CACHE_TTL_MS
@@ -195,7 +197,16 @@ export const getCatalogProducts = async ({
   const normalizedOffset = Math.max(0, Number.isFinite(offset) ? offset : 0)
   const normalizedLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 12, MAX_LIMIT))
 
-  const slice = filtered.slice(normalizedOffset, normalizedOffset + normalizedLimit)
+  const sorted = filtered.slice().sort((a, b) => {
+    const priorityA = CATEGORY_PRIORITY.get(a.category.toLowerCase()) ?? CATEGORY_PRIORITY.size
+    const priorityB = CATEGORY_PRIORITY.get(b.category.toLowerCase()) ?? CATEGORY_PRIORITY.size
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
+
+  const slice = sorted.slice(normalizedOffset, normalizedOffset + normalizedLimit)
   const items = slice.map(toProductSummary)
 
   return {
