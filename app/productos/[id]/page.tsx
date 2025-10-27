@@ -216,6 +216,9 @@ export default function ProductDetailPage() {
     product.condition === "nuevo" && product.originalPrice !== undefined && product.originalPrice !== null
       ? product.originalPrice
       : null
+  const conditionLabel = product.condition === "seminuevo" ? "Seminuevo" : "Nuevo"
+  const conditionBadgeClass =
+    product.condition === "seminuevo" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
 
   const installmentGroups = buildInstallmentGroups(priceInPesos, installmentPlans)
   const hasInstallmentOptions = installmentGroups.some((group) => group.options.length > 0)
@@ -461,6 +464,9 @@ export default function ProductDetailPage() {
             <AnimatedSection animation="fadeRight">
               <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-5 lg:gap-6">
+                  <Badge variant="secondary" className={`w-fit rounded-full border-0 px-3 py-1 text-xs font-semibold ${conditionBadgeClass}`}>
+                    {conditionLabel}
+                  </Badge>
                   <h1 className="text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">{product.name}</h1>
 
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
