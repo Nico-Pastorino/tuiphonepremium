@@ -85,15 +85,15 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
               <div className="text-sm text-gray-500 sm:text-base">USD {priceInDollars.toLocaleString("es-AR")}</div>
             )}
           </div>
-          <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <Button className="flex-1 justify-center py-2 text-sm sm:py-3 sm:text-base" asChild>
+          <div className="mt-auto grid gap-2 sm:grid-cols-2 sm:gap-3">
+            <Button className="w-full justify-center py-2 text-sm sm:py-3 sm:text-base" asChild>
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                 Consultar
               </a>
             </Button>
             <Button
               variant="outline"
-              className="justify-center px-4 py-2 text-sm sm:flex-1 sm:px-5 sm:py-3 sm:text-base"
+              className="w-full justify-center px-4 py-2 text-sm sm:px-5 sm:py-3 sm:text-base"
               asChild
             >
               <Link href={`/productos/${product.id}`}>Ver mas</Link>
