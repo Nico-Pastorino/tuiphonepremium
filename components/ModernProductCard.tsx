@@ -86,14 +86,14 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
             )}
           </div>
           <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:gap-3">
-            <Button className="justify-center py-2 text-sm sm:flex-1 sm:py-3 sm:text-base" asChild>
+            <Button className="justify-center py-2 text-sm sm:flex-1 sm:min-w-0 sm:py-3 sm:px-6 sm:text-base" asChild>
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                 Consultar
               </a>
             </Button>
             <Button
               variant="outline"
-              className="justify-center px-4 py-2 text-sm sm:flex-none sm:min-w-[140px] sm:px-6 sm:py-3 sm:text-base"
+              className="justify-center px-4 py-2 text-sm sm:flex-1 sm:min-w-0 sm:px-6 sm:py-3 sm:text-base"
               asChild
             >
               <Link href={`/productos/${product.id}`}>Ver mas</Link>
