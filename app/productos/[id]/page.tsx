@@ -547,7 +547,11 @@ export default function ProductDetailPage() {
                                 <p className="text-sm font-semibold text-purple-900 sm:text-base">{promotion.name}</p>
                                 <p className="text-xs text-purple-600 sm:text-sm">
                                   {promotion.months} {promotion.months === 1 ? "cuota" : "cuotas"}
-                                  {promotion.interestRate === 0 ? " sin interes" : " con interes"}
+                                  {promotion.interestRate === 0 && (
+                                    <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                                      Sin interes
+                                    </span>
+                                  )}
                                 </p>
                               </div>
                               <div className="text-right">

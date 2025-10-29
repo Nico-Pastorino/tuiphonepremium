@@ -39,39 +39,19 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
   }, [product.price, product.priceUSD, effectiveDollarRate])
 
   const activePromotions = getActiveInstallmentPromotions()
-  const highlightedPromotion = useMemo(() => {
-    if (!Number.isFinite(priceInPesos) || priceInPesos <= 0 || activePromotions.length === 0) {
-      return null
-    }
-
-    const entries: Array<{
-      name: string
-      months: number
-      interestRate: number
-      monthlyAmount: number
-    }> = []
-
+  const { hasAnyPromotion, hasZeroInterestPromotion } = useMemo(() => {
+    const flags = { hasAnyPromotion: false, hasZeroInterestPromotion: false }
     for (const promotion of activePromotions) {
-      for (const term of promotion.terms) {
-        const totalAmount = priceInPesos * (1 + term.interestRate / 100)
-        const monthlyAmount = term.months > 0 ? totalAmount / term.months : totalAmount
-        entries.push({
-          name: promotion.name,
-          months: term.months,
-          interestRate: term.interestRate,
-          monthlyAmount,
-        })
+      if (promotion.terms.length > 0) {
+        flags.hasAnyPromotion = true
+      }
+      if (promotion.terms.some((term) => term.interestRate === 0)) {
+        flags.hasZeroInterestPromotion = true
+        break
       }
     }
-
-    if (entries.length === 0) {
-      return null
-    }
-
-    return entries.reduce((best, current) =>
-      current.monthlyAmount < best.monthlyAmount ? current : best,
-    )
-  }, [activePromotions, priceInPesos])
+    return flags
+  }, [activePromotions])
 
   const whatsappNumber = useMemo(() => {
     const rawNumber = homeConfig.whatsappNumber?.trim()
@@ -119,14 +99,15 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
             {priceInDollars !== null && (
               <div className="text-sm text-gray-500 sm:text-base">USD {priceInDollars.toLocaleString("es-AR")}</div>
             )}
-            {highlightedPromotion && (
-              <div className="text-xs font-semibold text-purple-600 sm:text-sm">
-                Promo {highlightedPromotion.name}: {highlightedPromotion.months}{" "}
-                {highlightedPromotion.months === 1 ? "cuota" : "cuotas"}
-                {highlightedPromotion.interestRate === 0 ? " sin interes" : " con interes"} de $
-                {Math.round(highlightedPromotion.monthlyAmount).toLocaleString("es-AR")}
-              </div>
-            )}
+            {hasZeroInterestPromotion ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 sm:text-sm">
+                Promo sin interes
+              </span>
+            ) : hasAnyPromotion ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-purple-700 sm:text-sm">
+                Promociones activas
+              </span>
+            ) : null}
           </div>
           <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:gap-3">
             <Button className="justify-center py-2 text-sm sm:flex-1 sm:min-w-0 sm:py-3 sm:px-6 sm:text-base" asChild>
