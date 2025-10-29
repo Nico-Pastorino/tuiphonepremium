@@ -71,7 +71,7 @@ export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { getProductById, ensureProductById, products } = useProducts()
-  const { installmentPlans, getEffectiveDollarRate, homeConfig } = useAdmin()
+  const { installmentPlans, getEffectiveDollarRate, homeConfig, getActiveInstallmentPromotions } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
   const [product, setProduct] = useState<Product | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -170,6 +170,64 @@ export default function ProductDetailPage() {
     return `${baseLink}?text=${encodeURIComponent(message)}`
   }, [product?.name, product?.condition, whatsappNumber])
 
+  const priceInPesos =
+    product && product.priceUSD !== undefined && product.priceUSD !== null && effectiveDollarRate
+      ? product.priceUSD * effectiveDollarRate
+      : product?.price ?? 0
+  const priceInUSD =
+    product && product.priceUSD !== undefined && product.priceUSD !== null
+      ? product.priceUSD
+      : product && effectiveDollarRate
+        ? Number((product.price / effectiveDollarRate).toFixed(0))
+        : null
+  const originalPrice =
+    product &&
+    product.condition === "nuevo" &&
+    product.originalPrice !== undefined &&
+    product.originalPrice !== null
+      ? product.originalPrice
+      : null
+  const activePromotions = getActiveInstallmentPromotions()
+  const promotionBreakdown = useMemo(() => {
+    if (!product || !Number.isFinite(priceInPesos) || priceInPesos <= 0 || activePromotions.length === 0) {
+      return [] as Array<{
+        promotionId: string
+        termId: string
+        name: string
+        months: number
+        interestRate: number
+        monthlyAmount: number
+      }>
+    }
+
+    const entries: Array<{
+      promotionId: string
+      termId: string
+      name: string
+      months: number
+      interestRate: number
+      monthlyAmount: number
+    }> = []
+
+    for (const promotion of activePromotions) {
+      for (const term of promotion.terms) {
+        const totalAmount = priceInPesos * (1 + term.interestRate / 100)
+        const monthlyAmount = term.months > 0 ? totalAmount / term.months : totalAmount
+        entries.push({
+          promotionId: promotion.id,
+          termId: term.id,
+          name: promotion.name,
+          months: term.months,
+          interestRate: term.interestRate,
+          monthlyAmount,
+        })
+      }
+    }
+
+    return entries.sort((a, b) => a.monthlyAmount - b.monthlyAmount)
+  }, [activePromotions, priceInPesos, product])
+  const hasPromotionOptions = promotionBreakdown.length > 0
+
   if (isLoadingProduct) {
     return (
       <div className="min-h-screen bg-white">
@@ -204,18 +262,6 @@ export default function ProductDetailPage() {
     )
   }
 
-  const priceInPesos =
-    product.priceUSD !== undefined && product.priceUSD !== null ? product.priceUSD * effectiveDollarRate : product.price
-  const priceInUSD =
-    product.priceUSD !== undefined && product.priceUSD !== null
-      ? product.priceUSD
-      : effectiveDollarRate
-        ? Number((product.price / effectiveDollarRate).toFixed(0))
-        : null
-  const originalPrice =
-    product.condition === "nuevo" && product.originalPrice !== undefined && product.originalPrice !== null
-      ? product.originalPrice
-      : null
   const conditionLabel = product.condition === "seminuevo" ? "Seminuevo" : "Nuevo"
   const conditionBadgeClass =
     product.condition === "seminuevo" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
@@ -485,6 +531,34 @@ export default function ProductDetailPage() {
                     {priceInUSD !== null && (
                       <div className="mt-1 text-sm text-gray-500 sm:text-base">
                         USD {priceInUSD.toLocaleString("es-AR")}
+                      </div>
+                    )}
+
+                    {hasPromotionOptions && (
+                      <div className="mt-5 rounded-2xl border border-purple-200/80 bg-purple-50/80 p-4 sm:p-5">
+                        <p className="text-sm font-semibold text-purple-800 sm:text-base">Promociones activas</p>
+                        <div className="mt-3 space-y-3">
+                          {promotionBreakdown.map((promotion) => (
+                            <div
+                              key={`${promotion.promotionId}-${promotion.termId}`}
+                              className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-4 py-3 shadow-sm"
+                            >
+                              <div>
+                                <p className="text-sm font-semibold text-purple-900 sm:text-base">{promotion.name}</p>
+                                <p className="text-xs text-purple-600 sm:text-sm">
+                                  {promotion.months} {promotion.months === 1 ? "cuota" : "cuotas"}
+                                  {promotion.interestRate === 0 ? " sin interes" : " con interes"}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-base font-bold text-purple-900 sm:text-lg">
+                                  ${Math.round(promotion.monthlyAmount).toLocaleString("es-AR")}
+                                </p>
+                                <p className="text-[11px] text-purple-600">por mes</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 

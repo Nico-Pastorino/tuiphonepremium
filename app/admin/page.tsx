@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
-import type { HomeConfig, InstallmentPlan } from "@/contexts/AdminContext"
+import type { HomeConfig, InstallmentPlan, InstallmentPromotion } from "@/contexts/AdminContext"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { cloneHomeConfig } from "@/lib/home-config"
 import { cloneTradeInConfig } from "@/lib/trade-in-config"
@@ -35,6 +35,11 @@ import type { Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
 import { InstallmentPlanCard } from "@/components/installment-plan-card"
+import {
+  InstallmentPromotionForm,
+  type InstallmentPromotionFormData,
+} from "@/components/installment-promotion-form"
+import { InstallmentPromotionCard } from "@/components/installment-promotion-card"
 import {
   Trash2,
   Edit,
@@ -103,9 +108,13 @@ function AdminDashboard() {
   const { products, addProduct, updateProduct, deleteProduct, loading: productsLoading } = useProducts()
   const {
     installmentPlans,
+    installmentPromotions,
     addInstallmentPlan,
     updateInstallmentPlan,
     deleteInstallmentPlan,
+    addInstallmentPromotion,
+    updateInstallmentPromotion,
+    deleteInstallmentPromotion,
     dollarConfig,
     updateDollarConfig,
     getEffectiveDollarRate,
@@ -128,6 +137,8 @@ function AdminDashboard() {
   const [installmentCategory, setInstallmentCategory] = useState<"visa-mastercard" | "naranja">("visa-mastercard")
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editingInstallment, setEditingInstallment] = useState<InstallmentPlan | null>(null)
+  const [isAddPromotionOpen, setIsAddPromotionOpen] = useState(false)
+  const [editingPromotion, setEditingPromotion] = useState<InstallmentPromotion | null>(null)
   const [newLibraryImage, setNewLibraryImage] = useState<NewLibraryImageForm>({
     label: "",
     category: "",
@@ -979,6 +990,94 @@ function AdminDashboard() {
                         setEditingInstallment(null)
                       }}
                       onCancel={() => setEditingInstallment(null)}
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
+
+              <div className="rounded-2xl border border-purple-100 bg-white shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-purple-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-purple-900">Promociones especiales</h3>
+                    <p className="text-sm text-purple-600">
+                      Registra campañas temporales con cuotas bonificadas o sin interes.
+                    </p>
+                  </div>
+                  <Dialog open={isAddPromotionOpen} onOpenChange={setIsAddPromotionOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nueva promocion
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Crear promocion</DialogTitle>
+                      </DialogHeader>
+                      <InstallmentPromotionForm
+                        onSubmit={(data: InstallmentPromotionFormData) => {
+                          addInstallmentPromotion(data)
+                          setIsAddPromotionOpen(false)
+                        }}
+                        onCancel={() => setIsAddPromotionOpen(false)}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <div className="space-y-4 px-5 py-5">
+                  {installmentPromotions.length > 0 ? (
+                    installmentPromotions.map((promotion) => (
+                      <InstallmentPromotionCard
+                        key={promotion.id}
+                        promotion={promotion}
+                        onEdit={setEditingPromotion}
+                        onDelete={deleteInstallmentPromotion}
+                        onToggleActive={(id, value) => updateInstallmentPromotion(id, { isActive: value })}
+                      />
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-purple-200 bg-purple-50/60 py-10 text-center text-purple-600">
+                      <p className="text-sm">Todavia no agregaste promociones temporales.</p>
+                      <Button
+                        variant="outline"
+                        className="border-purple-300 text-purple-700 hover:bg-purple-100"
+                        onClick={() => setIsAddPromotionOpen(true)}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Agregar promocion
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {editingPromotion && (
+                <Dialog
+                  open={!!editingPromotion}
+                  onOpenChange={(isOpen) => {
+                    if (!isOpen) {
+                      setEditingPromotion(null)
+                    }
+                  }}
+                >
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Editar promocion</DialogTitle>
+                    </DialogHeader>
+                    <InstallmentPromotionForm
+                      promotion={{
+                        name: editingPromotion.name,
+                        terms: editingPromotion.terms,
+                        startDate: editingPromotion.startDate,
+                        endDate: editingPromotion.endDate,
+                        isActive: editingPromotion.isActive,
+                      }}
+                      onSubmit={(data: InstallmentPromotionFormData) => {
+                        updateInstallmentPromotion(editingPromotion.id, data)
+                        setEditingPromotion(null)
+                      }}
+                      onCancel={() => setEditingPromotion(null)}
                     />
                   </DialogContent>
                 </Dialog>

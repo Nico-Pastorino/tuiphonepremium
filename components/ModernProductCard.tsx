@@ -18,7 +18,7 @@ interface ModernProductCardProps {
 }
 
 export function ModernProductCard({ product, priority = false }: ModernProductCardProps) {
-  const { getEffectiveDollarRate, homeConfig } = useAdmin()
+  const { getEffectiveDollarRate, homeConfig, getActiveInstallmentPromotions } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
 
   const priceInPesos = useMemo(() => {
@@ -37,6 +37,41 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
     }
     return null
   }, [product.price, product.priceUSD, effectiveDollarRate])
+
+  const activePromotions = getActiveInstallmentPromotions()
+  const highlightedPromotion = useMemo(() => {
+    if (!Number.isFinite(priceInPesos) || priceInPesos <= 0 || activePromotions.length === 0) {
+      return null
+    }
+
+    const entries: Array<{
+      name: string
+      months: number
+      interestRate: number
+      monthlyAmount: number
+    }> = []
+
+    for (const promotion of activePromotions) {
+      for (const term of promotion.terms) {
+        const totalAmount = priceInPesos * (1 + term.interestRate / 100)
+        const monthlyAmount = term.months > 0 ? totalAmount / term.months : totalAmount
+        entries.push({
+          name: promotion.name,
+          months: term.months,
+          interestRate: term.interestRate,
+          monthlyAmount,
+        })
+      }
+    }
+
+    if (entries.length === 0) {
+      return null
+    }
+
+    return entries.reduce((best, current) =>
+      current.monthlyAmount < best.monthlyAmount ? current : best,
+    )
+  }, [activePromotions, priceInPesos])
 
   const whatsappNumber = useMemo(() => {
     const rawNumber = homeConfig.whatsappNumber?.trim()
@@ -83,6 +118,14 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
             <div className="text-2xl font-bold text-gray-900 sm:text-3xl">${priceInPesos.toLocaleString("es-AR")}</div>
             {priceInDollars !== null && (
               <div className="text-sm text-gray-500 sm:text-base">USD {priceInDollars.toLocaleString("es-AR")}</div>
+            )}
+            {highlightedPromotion && (
+              <div className="text-xs font-semibold text-purple-600 sm:text-sm">
+                Promo {highlightedPromotion.name}: {highlightedPromotion.months}{" "}
+                {highlightedPromotion.months === 1 ? "cuota" : "cuotas"}
+                {highlightedPromotion.interestRate === 0 ? " sin interes" : " con interes"} de $
+                {Math.round(highlightedPromotion.monthlyAmount).toLocaleString("es-AR")}
+              </div>
             )}
           </div>
           <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:gap-3">

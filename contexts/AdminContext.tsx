@@ -6,21 +6,43 @@ import type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 import { DEFAULT_HOME_CONFIG, mergeHomeConfig } from "@/lib/home-config"
 import type { TradeInConfig } from "@/types/trade-in"
 import { DEFAULT_TRADE_IN_CONFIG, mergeTradeInConfig } from "@/lib/trade-in-config"
-import type { DollarConfig, InstallmentConfig, InstallmentPlan } from "@/types/finance"
+import type {
+  DollarConfig,
+  InstallmentConfig,
+  InstallmentPlan,
+  InstallmentPromotion,
+  InstallmentPromotionTerm,
+} from "@/types/finance"
 import {
   DEFAULT_DOLLAR_CONFIG,
   DEFAULT_INSTALLMENT_CONFIG,
   cloneInstallmentPlans,
+  cloneInstallmentPromotions,
   mergeDollarConfig,
   mergeInstallmentConfig,
   sanitizeInstallmentPlanCollection,
+  sanitizeInstallmentPromotionCollection,
 } from "@/lib/finance-config"
 
 import type { ImageLibraryItem } from "@/types/image-library"
 
 export type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 export type { TradeInConfig } from "@/types/trade-in"
-export type { InstallmentPlan, DollarConfig } from "@/types/finance"
+export type { InstallmentPlan, InstallmentPromotion, InstallmentPromotionTerm, DollarConfig } from "@/types/finance"
+
+type InstallmentPromotionTermDraft = {
+  id?: string
+  months: number
+  interestRate: number
+}
+
+type InstallmentPromotionInput = {
+  name: string
+  terms: InstallmentPromotionTermDraft[]
+  startDate: string | null
+  endDate: string | null
+  isActive: boolean
+}
 
 interface AdminContextType {
   installmentPlans: InstallmentPlan[]
@@ -29,6 +51,11 @@ interface AdminContextType {
   deleteInstallmentPlan: (id: string) => void
   getActiveInstallmentPlans: () => InstallmentPlan[]
   getInstallmentPlansByCategory: (category: InstallmentPlan["category"]) => InstallmentPlan[]
+  installmentPromotions: InstallmentPromotion[]
+  addInstallmentPromotion: (promotion: InstallmentPromotionInput) => void
+  updateInstallmentPromotion: (id: string, promotion: Partial<InstallmentPromotionInput>) => void
+  deleteInstallmentPromotion: (id: string) => void
+  getActiveInstallmentPromotions: () => InstallmentPromotion[]
 
   imageLibrary: ImageLibraryItem[]
   refreshImageLibrary: () => Promise<void>
@@ -67,6 +94,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [installmentPlans, setInstallmentPlans] = useState<InstallmentPlan[]>(() =>
     cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans),
   )
+  const [installmentPromotions, setInstallmentPromotions] = useState<InstallmentPromotion[]>(() =>
+    cloneInstallmentPromotions(DEFAULT_INSTALLMENT_CONFIG.promotions),
+  )
   const [dollarConfig, setDollarConfig] = useState<DollarConfig>({ ...DEFAULT_DOLLAR_CONFIG })
   const [imageLibrary, setImageLibrary] = useState<ImageLibraryItem[]>([])
   const [homeConfig, setHomeConfig] = useState<HomeConfig>(DEFAULT_HOME_CONFIG)
@@ -91,18 +121,27 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (savedPlans) {
       try {
         const parsed = JSON.parse(savedPlans) as unknown
-        const sanitized = sanitizeInstallmentPlanCollection(parsed)
-        if (sanitized.length > 0) {
-          setInstallmentPlans(cloneInstallmentPlans(sanitized))
+        if (Array.isArray(parsed)) {
+          const sanitizedPlans = sanitizeInstallmentPlanCollection(parsed)
+          if (sanitizedPlans.length > 0) {
+            setInstallmentPlans(cloneInstallmentPlans(sanitizedPlans))
+          } else {
+            setInstallmentPlans(cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans))
+          }
+          setInstallmentPromotions(cloneInstallmentPromotions(DEFAULT_INSTALLMENT_CONFIG.promotions))
         } else {
-          setInstallmentPlans(cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans))
+          const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, parsed as Partial<InstallmentConfig>)
+          setInstallmentPlans(cloneInstallmentPlans(merged.plans))
+          setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
         }
       } catch (error) {
         console.error("Failed to parse saved installment plans", error)
         setInstallmentPlans(cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans))
+        setInstallmentPromotions(cloneInstallmentPromotions(DEFAULT_INSTALLMENT_CONFIG.promotions))
       }
     } else {
       setInstallmentPlans(cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans))
+      setInstallmentPromotions(cloneInstallmentPromotions(DEFAULT_INSTALLMENT_CONFIG.promotions))
     }
 
     const loadRemoteInstallments = async () => {
@@ -116,6 +155,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         if (result?.data && !installmentPlansHasLocalUpdates.current) {
           const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, result.data)
           setInstallmentPlans(cloneInstallmentPlans(merged.plans))
+          setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
         }
       } catch (error) {
         console.error("Failed to fetch installment plans from API", error)
@@ -253,8 +293,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!installmentPlansInitialized) return
-    localStorage.setItem(INSTALLMENT_STORAGE_KEY, JSON.stringify(installmentPlans))
-  }, [installmentPlans, installmentPlansInitialized])
+    const payload: InstallmentConfig = {
+      plans: sanitizeInstallmentPlanCollection(installmentPlans),
+      promotions: sanitizeInstallmentPromotionCollection(installmentPromotions),
+      updatedAt: new Date().toISOString(),
+    }
+    localStorage.setItem(INSTALLMENT_STORAGE_KEY, JSON.stringify(payload))
+  }, [installmentPlans, installmentPromotions, installmentPlansInitialized])
 
   useEffect(() => {
     if (!dollarConfigInitialized) return
@@ -281,10 +326,36 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TRADE_IN_STORAGE_KEY, JSON.stringify(tradeInConfig))
   }, [tradeInConfig, tradeInConfigInitialized])
 
-  const persistInstallmentPlans = async (plans: InstallmentPlan[]) => {
-    const sanitized = sanitizeInstallmentPlanCollection(plans)
+  const normalizePromotionTerms = (promotionId: string, drafts: InstallmentPromotionTermDraft[]) => {
+    const baseTimestamp = Date.now()
+    return drafts
+      .map((draft, index) => {
+        const months = Number(draft.months)
+        if (!Number.isFinite(months) || months <= 0) {
+          return null
+        }
+        const interestValue = Number(draft.interestRate ?? 0)
+        const termId =
+          typeof draft.id === "string" && draft.id.trim().length > 0
+            ? draft.id
+            : `${promotionId}-term-${baseTimestamp}-${index}`
+
+        return {
+          id: termId,
+          months,
+          interestRate: Number.isFinite(interestValue) ? interestValue : 0,
+        }
+      })
+      .filter((term): term is InstallmentPromotionTerm => term !== null)
+  }
+
+  const persistInstallmentConfig = async (
+    plans: InstallmentPlan[],
+    promotions: InstallmentPromotion[],
+  ) => {
     const payload: InstallmentConfig = {
-      plans: sanitized,
+      plans: sanitizeInstallmentPlanCollection(plans),
+      promotions: sanitizeInstallmentPromotionCollection(promotions),
       updatedAt: new Date().toISOString(),
     }
 
@@ -302,7 +373,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         throw new Error(message || "No se pudieron guardar las cuotas")
       }
     } catch (error) {
-      console.error("Failed to persist installment plans", error)
+      console.error("Failed to persist installment config", error)
     }
   }
 
@@ -334,7 +405,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
       }
       const nextPlans = sanitizeInstallmentPlanCollection([...prev, newPlan])
-      void persistInstallmentPlans(nextPlans)
+      void persistInstallmentConfig(nextPlans, installmentPromotions)
       installmentPlansHasLocalUpdates.current = true
       return nextPlans
     })
@@ -347,7 +418,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           plan.id === id ? { ...plan, ...planData, id: plan.id, createdAt: plan.createdAt } : plan,
         ),
       )
-      void persistInstallmentPlans(nextPlans)
+      void persistInstallmentConfig(nextPlans, installmentPromotions)
       installmentPlansHasLocalUpdates.current = true
       return nextPlans
     })
@@ -356,9 +427,65 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const deleteInstallmentPlan = (id: string) => {
     setInstallmentPlans((prev) => {
       const nextPlans = sanitizeInstallmentPlanCollection(prev.filter((plan) => plan.id !== id))
-      void persistInstallmentPlans(nextPlans)
+      void persistInstallmentConfig(nextPlans, installmentPromotions)
       installmentPlansHasLocalUpdates.current = true
       return nextPlans
+    })
+  }
+
+  const addInstallmentPromotion = (promotionData: InstallmentPromotionInput) => {
+    setInstallmentPromotions((prev) => {
+      const promotionId = `${promotionData.name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`
+      const normalizedTerms = normalizePromotionTerms(promotionId, promotionData.terms)
+      const newPromotion: InstallmentPromotion = {
+        id: promotionId,
+        name: promotionData.name.trim(),
+        terms: normalizedTerms,
+        startDate: promotionData.startDate,
+        endDate: promotionData.endDate,
+        isActive: promotionData.isActive,
+        createdAt: new Date().toISOString(),
+      }
+      const nextPromotions = sanitizeInstallmentPromotionCollection([...prev, newPromotion])
+      void persistInstallmentConfig(installmentPlans, nextPromotions)
+      installmentPlansHasLocalUpdates.current = true
+      return nextPromotions
+    })
+  }
+
+  const updateInstallmentPromotion = (id: string, updates: Partial<InstallmentPromotionInput>) => {
+    setInstallmentPromotions((prev) => {
+      const nextPromotions = sanitizeInstallmentPromotionCollection(
+        prev.map((promotion) => {
+          if (promotion.id !== id) {
+            return promotion
+          }
+
+          const nextTerms =
+            updates.terms !== undefined ? normalizePromotionTerms(id, updates.terms) : promotion.terms
+
+          return {
+            ...promotion,
+            name: updates.name !== undefined ? updates.name.trim() : promotion.name,
+            startDate: updates.startDate !== undefined ? updates.startDate : promotion.startDate,
+            endDate: updates.endDate !== undefined ? updates.endDate : promotion.endDate,
+            isActive: updates.isActive !== undefined ? updates.isActive : promotion.isActive,
+            terms: nextTerms,
+          }
+        }),
+      )
+      void persistInstallmentConfig(installmentPlans, nextPromotions)
+      installmentPlansHasLocalUpdates.current = true
+      return nextPromotions
+    })
+  }
+
+  const deleteInstallmentPromotion = (id: string) => {
+    setInstallmentPromotions((prev) => {
+      const nextPromotions = sanitizeInstallmentPromotionCollection(prev.filter((promotion) => promotion.id !== id))
+      void persistInstallmentConfig(installmentPlans, nextPromotions)
+      installmentPlansHasLocalUpdates.current = true
+      return nextPromotions
     })
   }
 
@@ -421,6 +548,39 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     } else {
       setImageLibrary((prev) => prev.filter((item) => item.id !== id))
     }
+  }
+
+  const parseDateSafe = (value: string | null | undefined) => {
+    if (!value) {
+      return null
+    }
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  const isPromotionActiveNow = (promotion: InstallmentPromotion, referenceDate = new Date()) => {
+    if (!promotion.isActive) {
+      return false
+    }
+    const start = parseDateSafe(promotion.startDate)
+    if (start && referenceDate < start) {
+      return false
+    }
+    const end = parseDateSafe(promotion.endDate)
+    if (end && referenceDate > end) {
+      return false
+    }
+    return true
+  }
+
+  const getActiveInstallmentPromotions = () => {
+    const now = new Date()
+    return installmentPromotions
+      .filter((promotion) => promotion.terms.length > 0 && isPromotionActiveNow(promotion, now))
+      .map((promotion) => ({
+        ...promotion,
+        terms: [...promotion.terms].sort((a, b) => a.months - b.months),
+      }))
   }
 
   const getActiveInstallmentPlans = () => installmentPlans.filter((plan) => plan.isActive)
@@ -543,13 +703,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const value: AdminContextType = {
     installmentPlans,
+    installmentPromotions,
     imageLibrary,
     refreshImageLibrary,
     addInstallmentPlan,
     updateInstallmentPlan,
     deleteInstallmentPlan,
+    addInstallmentPromotion,
+    updateInstallmentPromotion,
+    deleteInstallmentPromotion,
     getActiveInstallmentPlans,
     getInstallmentPlansByCategory,
+    getActiveInstallmentPromotions,
     addImageToLibrary,
     updateImageInLibrary,
     removeImageFromLibrary,

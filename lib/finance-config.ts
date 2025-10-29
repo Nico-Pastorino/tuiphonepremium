@@ -1,4 +1,10 @@
-import type { DollarConfig, InstallmentConfig, InstallmentPlan } from "@/types/finance"
+import type {
+  DollarConfig,
+  InstallmentConfig,
+  InstallmentPlan,
+  InstallmentPromotion,
+  InstallmentPromotionTerm,
+} from "@/types/finance"
 
 const nowIso = () => new Date().toISOString()
 
@@ -32,8 +38,11 @@ const NARANJA_DEFAULTS: InstallmentPlan[] = [
 
 export const DEFAULT_INSTALLMENT_PLANS: InstallmentPlan[] = [...VISA_MASTER_DEFAULTS, ...NARANJA_DEFAULTS]
 
+export const DEFAULT_INSTALLMENT_PROMOTIONS: InstallmentPromotion[] = []
+
 export const DEFAULT_INSTALLMENT_CONFIG: InstallmentConfig = {
   plans: cloneInstallmentPlans(DEFAULT_INSTALLMENT_PLANS),
+  promotions: cloneInstallmentPromotions(DEFAULT_INSTALLMENT_PROMOTIONS),
   updatedAt: nowIso(),
 }
 
@@ -46,8 +55,18 @@ export const DEFAULT_DOLLAR_CONFIG: DollarConfig = {
   autoUpdate: true,
 }
 
+const clonePromotionTerms = (terms: InstallmentPromotionTerm[]): InstallmentPromotionTerm[] =>
+  terms.map((term) => ({ ...term }))
+
 export function cloneInstallmentPlans(plans: InstallmentPlan[]): InstallmentPlan[] {
   return plans.map((plan) => ({ ...plan }))
+}
+
+export function cloneInstallmentPromotions(promotions: InstallmentPromotion[]): InstallmentPromotion[] {
+  return promotions.map((promotion) => ({
+    ...promotion,
+    terms: clonePromotionTerms(promotion.terms ?? []),
+  }))
 }
 
 export function sanitizeInstallmentPlan(raw: unknown, fallbackIndex = 0): InstallmentPlan | null {
@@ -94,13 +113,102 @@ export function sanitizeInstallmentPlanCollection(raw: unknown): InstallmentPlan
     .filter((plan): plan is InstallmentPlan => plan !== null)
 }
 
+export function sanitizeInstallmentPromotion(raw: unknown, fallbackIndex = 0): InstallmentPromotion | null {
+  if (!raw || typeof raw !== "object") {
+    return null
+  }
+
+  const name =
+    typeof (raw as Record<string, unknown>).name === "string" && (raw as Record<string, unknown>).name.trim().length > 0
+      ? (raw as Record<string, unknown>).name.trim()
+      : null
+  if (!name) {
+    return null
+  }
+
+  const hasValidId = typeof (raw as Record<string, unknown>).id === "string" && (raw as Record<string, unknown>).id !== ""
+  const id = hasValidId ? String((raw as Record<string, unknown>).id) : `promotion-${fallbackIndex}`
+  const startDate =
+    typeof (raw as Record<string, unknown>).startDate === "string" && (raw as Record<string, unknown>).startDate !== ""
+      ? String((raw as Record<string, unknown>).startDate)
+      : null
+  const endDate =
+    typeof (raw as Record<string, unknown>).endDate === "string" && (raw as Record<string, unknown>).endDate !== ""
+      ? String((raw as Record<string, unknown>).endDate)
+      : null
+  const isActive =
+    (raw as Record<string, unknown>).isActive !== undefined
+      ? Boolean((raw as Record<string, unknown>).isActive)
+      : true
+  const createdAt =
+    typeof (raw as Record<string, unknown>).createdAt === "string" && (raw as Record<string, unknown>).createdAt !== ""
+      ? String((raw as Record<string, unknown>).createdAt)
+      : nowIso()
+
+  const sanitizePromotionTerm = (value: unknown, index: number): InstallmentPromotionTerm | null => {
+    if (!value || typeof value !== "object") {
+      return null
+    }
+
+    const monthsValue = Number((value as Record<string, unknown>).months)
+    if (!Number.isFinite(monthsValue) || monthsValue <= 0) {
+      return null
+    }
+
+    const interestRateValue = Number((value as Record<string, unknown>).interestRate ?? 0)
+    const hasTermId =
+      typeof (value as Record<string, unknown>).id === "string" && (value as Record<string, unknown>).id !== ""
+    const termId = hasTermId ? String((value as Record<string, unknown>).id) : `${id}-term-${index}`
+
+    return {
+      id: termId,
+      months: monthsValue,
+      interestRate: Number.isFinite(interestRateValue) ? interestRateValue : 0,
+    }
+  }
+
+  let terms: InstallmentPromotionTerm[] = []
+  const rawTerms = (raw as Record<string, unknown>).terms
+  if (Array.isArray(rawTerms)) {
+    terms = rawTerms
+      .map((term, index) => sanitizePromotionTerm(term, index))
+      .filter((term): term is InstallmentPromotionTerm => term !== null)
+  } else {
+    const fallbackTerm = sanitizePromotionTerm(raw, 0)
+    terms = fallbackTerm ? [fallbackTerm] : []
+  }
+
+  return {
+    id,
+    name,
+    terms,
+    startDate,
+    endDate,
+    isActive,
+    createdAt,
+  }
+}
+
+export function sanitizeInstallmentPromotionCollection(raw: unknown): InstallmentPromotion[] {
+  if (!Array.isArray(raw)) {
+    return []
+  }
+
+  return raw
+    .map((item, index) => sanitizeInstallmentPromotion(item, index))
+    .filter((promotion): promotion is InstallmentPromotion => promotion !== null)
+}
+
 export function mergeInstallmentConfig(
   base: InstallmentConfig,
   partial?: Partial<InstallmentConfig> | null,
 ): InstallmentConfig {
+  const basePromotions = Array.isArray(base.promotions) ? base.promotions : DEFAULT_INSTALLMENT_PROMOTIONS
+
   if (!partial) {
     return {
       plans: cloneInstallmentPlans(base.plans),
+      promotions: cloneInstallmentPromotions(basePromotions),
       updatedAt: base.updatedAt,
     }
   }
@@ -108,12 +216,19 @@ export function mergeInstallmentConfig(
   const sanitizedPlans = partial.plans ? sanitizeInstallmentPlanCollection(partial.plans) : []
   const plans =
     sanitizedPlans.length > 0 ? sanitizedPlans : cloneInstallmentPlans(base.plans.length > 0 ? base.plans : DEFAULT_INSTALLMENT_PLANS)
+  const sanitizedPromotions =
+    partial.promotions !== undefined ? sanitizeInstallmentPromotionCollection(partial.promotions) : null
+  const promotions =
+    sanitizedPromotions !== null
+      ? sanitizedPromotions
+      : cloneInstallmentPromotions(basePromotions.length > 0 ? basePromotions : DEFAULT_INSTALLMENT_PROMOTIONS)
 
   const updatedAt =
     typeof partial.updatedAt === "string" && partial.updatedAt.trim().length > 0 ? partial.updatedAt : base.updatedAt || nowIso()
 
   return {
     plans,
+    promotions,
     updatedAt,
   }
 }

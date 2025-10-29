@@ -9,8 +9,25 @@ export interface InstallmentPlan {
   category: InstallmentPlanCategory
 }
 
+export interface InstallmentPromotionTerm {
+  id: string
+  months: number
+  interestRate: number
+}
+
+export interface InstallmentPromotion {
+  id: string
+  name: string
+  terms: InstallmentPromotionTerm[]
+  startDate: string | null
+  endDate: string | null
+  isActive: boolean
+  createdAt: string
+}
+
 export interface InstallmentConfig {
   plans: InstallmentPlan[]
+  promotions: InstallmentPromotion[]
   updatedAt: string
 }
 
