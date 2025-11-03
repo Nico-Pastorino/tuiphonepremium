@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { AdminProvider } from "@/contexts/AdminContext"
+import { ProductProvider } from "@/contexts/ProductContext"
 import { ToastContainer } from "@/components/ui/toast"
 import { ServiceWorkerManager } from "@/components/ServiceWorkerManager"
 import {
@@ -31,7 +32,6 @@ export default async function RootLayout({
     getInstallmentConfigCached(),
     getDollarConfigCached(),
   ])
-
   return (
     <html lang="es">
       <head>
@@ -46,9 +46,11 @@ export default async function RootLayout({
             dollarConfig,
           }}
         >
-          {children}
-          <ToastContainer />
-          <ServiceWorkerManager />
+          <ProductProvider>
+            {children}
+            <ToastContainer />
+            <ServiceWorkerManager />
+          </ProductProvider>
         </AdminProvider>
       </body>
     </html>
