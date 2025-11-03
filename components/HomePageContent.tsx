@@ -50,9 +50,13 @@ type HomePageContentProps = {
   homeConfig: HomeConfig
 }
 
-async function fetchCatalogFeatured(): Promise<CatalogProductsResponse> {
-  const response = await fetch("/api/catalog/products?limit=16&refresh=1&featured=1", {
-    cache: "no-store",
+async function fetchCatalogFeatured(force = false): Promise<CatalogProductsResponse> {
+  const params = new URLSearchParams({ limit: "16", featured: "1" })
+  if (force) {
+    params.set("refresh", "1")
+  }
+  const response = await fetch(`/api/catalog/products?${params.toString()}`, {
+    cache: force ? "reload" : "default",
     headers: { "Content-Type": "application/json" },
   })
 
@@ -63,9 +67,9 @@ async function fetchCatalogFeatured(): Promise<CatalogProductsResponse> {
   return (await response.json()) as CatalogProductsResponse
 }
 
-async function fetchTradeInConfig(): Promise<TradeInConfig> {
+async function fetchTradeInConfig(force = false): Promise<TradeInConfig> {
   const response = await fetch("/api/admin/trade-in", {
-    cache: "no-store",
+    cache: force ? "reload" : "default",
     headers: { "Content-Type": "application/json" },
   })
 
@@ -90,12 +94,12 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
   const [tradeInError, setTradeInError] = useState<string | null>(null)
   const [tradeInReloadToken, setTradeInReloadToken] = useState(0)
 
-  const refreshProducts = useCallback(async () => {
+  const refreshProducts = useCallback(async (force = false) => {
     setLoading(true)
     setError(null)
 
     try {
-      const data = await fetchCatalogFeatured()
+      const data = await fetchCatalogFeatured(force)
       const trimmed = data.items
         .filter((item) => item.featured)
         .map((item) => ({
@@ -126,7 +130,7 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
       setTradeInError(null)
 
       try {
-        const data = await fetchTradeInConfig()
+        const data = await fetchTradeInConfig(tradeInReloadToken > 0)
         if (active) {
           setTradeInConfigState(data)
         }
@@ -417,7 +421,7 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
               </div>
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No pudimos cargar los productos</h3>
               <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">{error}</p>
-              <Button onClick={refreshProducts} variant="outline" className="border-gray-300 bg-transparent">
+              <Button onClick={() => refreshProducts(true)} variant="outline" className="border-gray-300 bg-transparent">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Reintentar conexión
               </Button>

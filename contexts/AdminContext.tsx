@@ -90,18 +90,45 @@ const AUTH_STORAGE_KEY = "admin-authenticated"
 const HOME_STORAGE_KEY = "admin-home-config"
 const TRADE_IN_STORAGE_KEY = "admin-trade-in-config"
 
-export function AdminProvider({ children }: { children: ReactNode }) {
+type AdminProviderInitialState = {
+  installmentConfig?: InstallmentConfig
+  dollarConfig?: DollarConfig
+  homeConfig?: HomeConfig
+  tradeInConfig?: TradeInConfig
+}
+
+interface AdminProviderProps {
+  children: ReactNode
+  initialState?: AdminProviderInitialState
+  enableRemoteSync?: boolean
+}
+
+export function AdminProvider({ children, initialState, enableRemoteSync = false }: AdminProviderProps) {
+  const baseInstallmentConfig = initialState?.installmentConfig
+    ? mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, initialState.installmentConfig)
+    : DEFAULT_INSTALLMENT_CONFIG
+  const baseDollarConfig = initialState?.dollarConfig
+    ? mergeDollarConfig(DEFAULT_DOLLAR_CONFIG, initialState.dollarConfig)
+    : DEFAULT_DOLLAR_CONFIG
+  const baseHomeConfig = initialState?.homeConfig
+    ? mergeHomeConfig(DEFAULT_HOME_CONFIG, initialState.homeConfig)
+    : DEFAULT_HOME_CONFIG
+  const baseTradeInConfig = initialState?.tradeInConfig
+    ? mergeTradeInConfig(DEFAULT_TRADE_IN_CONFIG, initialState.tradeInConfig)
+    : DEFAULT_TRADE_IN_CONFIG
+
   const [installmentPlans, setInstallmentPlans] = useState<InstallmentPlan[]>(() =>
-    cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans),
+    cloneInstallmentPlans(baseInstallmentConfig.plans),
   )
   const [installmentPromotions, setInstallmentPromotions] = useState<InstallmentPromotion[]>(() =>
-    cloneInstallmentPromotions(DEFAULT_INSTALLMENT_CONFIG.promotions),
+    cloneInstallmentPromotions(baseInstallmentConfig.promotions),
   )
-  const [dollarConfig, setDollarConfig] = useState<DollarConfig>({ ...DEFAULT_DOLLAR_CONFIG })
+  const [dollarConfig, setDollarConfig] = useState<DollarConfig>({ ...baseDollarConfig })
   const [imageLibrary, setImageLibrary] = useState<ImageLibraryItem[]>([])
-  const [homeConfig, setHomeConfig] = useState<HomeConfig>(DEFAULT_HOME_CONFIG)
-  const [tradeInConfig, setTradeInConfig] = useState<TradeInConfig>(DEFAULT_TRADE_IN_CONFIG)
+  const [homeConfig, setHomeConfig] = useState<HomeConfig>(baseHomeConfig)
+  const [tradeInConfig, setTradeInConfig] = useState<TradeInConfig>(baseTradeInConfig)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [remoteSyncEnabled, setRemoteSyncEnabled] = useState(enableRemoteSync)
   const [installmentPlansInitialized, setInstallmentPlansInitialized] = useState(false)
   const [dollarConfigInitialized, setDollarConfigInitialized] = useState(false)
   const [homeConfigInitialized, setHomeConfigInitialized] = useState(false)
@@ -111,129 +138,60 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const homeConfigHasLocalUpdates = useRef(false)
   const tradeInConfigHasLocalUpdates = useRef(false)
   const tradeInConfigLoadedFromStorage = useRef(false)
+  const remoteSyncEnabledRef = useRef(remoteSyncEnabled)
+  const remoteSyncInFlightRef = useRef<Promise<void> | null>(null)
+
   useEffect(() => {
-    const savedPlans = typeof window === "undefined" ? null : localStorage.getItem(INSTALLMENT_STORAGE_KEY)
-    const savedDollarConfig = typeof window === "undefined" ? null : localStorage.getItem(DOLLAR_STORAGE_KEY)
-    const savedAuth = typeof window === "undefined" ? null : localStorage.getItem(AUTH_STORAGE_KEY)
-    const savedHomeConfig = typeof window === "undefined" ? null : localStorage.getItem(HOME_STORAGE_KEY)
-    const savedTradeInConfig = typeof window === "undefined" ? null : localStorage.getItem(TRADE_IN_STORAGE_KEY)
+    remoteSyncEnabledRef.current = remoteSyncEnabled
+  }, [remoteSyncEnabled])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      setInstallmentPlansInitialized(true)
+      setDollarConfigInitialized(true)
+      setHomeConfigInitialized(true)
+      setTradeInConfigInitialized(true)
+      return
+    }
+
+    const savedPlans = localStorage.getItem(INSTALLMENT_STORAGE_KEY)
+    const savedDollar = localStorage.getItem(DOLLAR_STORAGE_KEY)
+    const savedAuth = localStorage.getItem(AUTH_STORAGE_KEY)
+    const savedHome = localStorage.getItem(HOME_STORAGE_KEY)
+    const savedTradeIn = localStorage.getItem(TRADE_IN_STORAGE_KEY)
 
     if (savedPlans) {
       try {
-        const parsed = JSON.parse(savedPlans) as unknown
-        if (Array.isArray(parsed)) {
-          const sanitizedPlans = sanitizeInstallmentPlanCollection(parsed)
-          if (sanitizedPlans.length > 0) {
-            setInstallmentPlans(cloneInstallmentPlans(sanitizedPlans))
-          } else {
-            setInstallmentPlans(cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans))
-          }
-          setInstallmentPromotions(cloneInstallmentPromotions(DEFAULT_INSTALLMENT_CONFIG.promotions))
-        } else {
-          const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, parsed as Partial<InstallmentConfig>)
-          setInstallmentPlans(cloneInstallmentPlans(merged.plans))
-          setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
-        }
+        const parsed = JSON.parse(savedPlans) as Partial<InstallmentConfig>
+        const merged = mergeInstallmentConfig(baseInstallmentConfig, parsed)
+        setInstallmentPlans(cloneInstallmentPlans(merged.plans))
+        setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
       } catch (error) {
         console.error("Failed to parse saved installment plans", error)
-        setInstallmentPlans(cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans))
-        setInstallmentPromotions(cloneInstallmentPromotions(DEFAULT_INSTALLMENT_CONFIG.promotions))
-      }
-    } else {
-      setInstallmentPlans(cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans))
-      setInstallmentPromotions(cloneInstallmentPromotions(DEFAULT_INSTALLMENT_CONFIG.promotions))
-    }
-
-    const loadRemoteInstallments = async () => {
-      try {
-        const response = await fetch("/api/admin/installments")
-        if (!response.ok) {
-          const message = await response.text()
-          throw new Error(message || "Unable to fetch installment plans")
-        }
-        const result = (await response.json()) as { data?: InstallmentConfig }
-        if (result?.data && !installmentPlansHasLocalUpdates.current) {
-          const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, result.data)
-          setInstallmentPlans(cloneInstallmentPlans(merged.plans))
-          setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
-        }
-      } catch (error) {
-        console.error("Failed to fetch installment plans from API", error)
-      } finally {
-        setInstallmentPlansInitialized(true)
       }
     }
 
-    void loadRemoteInstallments()
-
-    if (savedDollarConfig) {
+    if (savedDollar) {
       try {
-        const parsed = JSON.parse(savedDollarConfig) as Partial<DollarConfig>
-        setDollarConfig(mergeDollarConfig(DEFAULT_DOLLAR_CONFIG, parsed))
+        const parsed = JSON.parse(savedDollar) as Partial<DollarConfig>
+        setDollarConfig(mergeDollarConfig(baseDollarConfig, parsed))
       } catch (error) {
         console.error("Failed to parse saved dollar config", error)
-        setDollarConfig({ ...DEFAULT_DOLLAR_CONFIG })
-      }
-    } else {
-      setDollarConfig({ ...DEFAULT_DOLLAR_CONFIG })
-    }
-
-    const loadRemoteDollarConfig = async () => {
-      try {
-        const response = await fetch("/api/admin/dollar")
-        if (!response.ok) {
-          const message = await response.text()
-          throw new Error(message || "Unable to fetch dollar config")
-        }
-        const result = (await response.json()) as { data?: Partial<DollarConfig> }
-        if (result?.data && !dollarConfigHasLocalUpdates.current) {
-          setDollarConfig(mergeDollarConfig(DEFAULT_DOLLAR_CONFIG, result.data))
-        }
-      } catch (error) {
-        console.error("Failed to fetch dollar config from API", error)
-      } finally {
-        setDollarConfigInitialized(true)
       }
     }
 
-    void loadRemoteDollarConfig()
-
-    if (savedAuth === "true") {
-      setIsAuthenticated(true)
-    }
-
-    if (savedHomeConfig) {
+    if (savedHome) {
       try {
-        const parsed = JSON.parse(savedHomeConfig) as Partial<HomeConfig>
+        const parsed = JSON.parse(savedHome) as Partial<HomeConfig>
         setHomeConfig((prev) => mergeHomeConfig(prev, parsed))
       } catch (error) {
         console.error("Failed to parse saved home config", error)
       }
     }
 
-    const loadRemoteHomeConfig = async () => {
+    if (savedTradeIn) {
       try {
-        const response = await fetch("/api/admin/home-config")
-        if (!response.ok) {
-          const message = await response.text()
-          throw new Error(message || "Unable to fetch home config")
-        }
-        const result = (await response.json()) as { data?: Partial<HomeConfig> }
-        if (result?.data && !homeConfigHasLocalUpdates.current) {
-          setHomeConfig((prev) => mergeHomeConfig(prev, result.data))
-        }
-      } catch (error) {
-        console.error("Failed to fetch home config from API", error)
-      } finally {
-        setHomeConfigInitialized(true)
-      }
-    }
-
-    void loadRemoteHomeConfig()
-
-    if (savedTradeInConfig) {
-      try {
-        const parsed = JSON.parse(savedTradeInConfig) as Partial<TradeInConfig>
+        const parsed = JSON.parse(savedTradeIn) as Partial<TradeInConfig>
         setTradeInConfig((prev) => mergeTradeInConfig(prev, parsed))
         tradeInConfigLoadedFromStorage.current = true
       } catch (error) {
@@ -241,36 +199,130 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const loadRemoteTradeInConfig = async () => {
-      try {
-        const response = await fetch("/api/admin/trade-in")
-        if (!response.ok) {
-          const message = await response.text()
-          throw new Error(message || "Unable to fetch trade-in config")
-        }
-        const result = (await response.json()) as { data?: TradeInConfig; fallback?: boolean }
-        const shouldApplyRemote =
-          result?.data &&
-          !tradeInConfigHasLocalUpdates.current &&
-          (!result.fallback || !tradeInConfigLoadedFromStorage.current)
-
-        if (shouldApplyRemote) {
-          setTradeInConfig((prev) => mergeTradeInConfig(prev, result.data))
-        }
-      } catch (error) {
-        console.error("Failed to fetch trade-in config from API", error)
-      } finally {
-        setTradeInConfigInitialized(true)
-      }
+    if (savedAuth === "true") {
+      setIsAuthenticated(true)
+      setRemoteSyncEnabled(true)
     }
 
-    void loadRemoteTradeInConfig()
+    setInstallmentPlansInitialized(true)
+    setDollarConfigInitialized(true)
+    setHomeConfigInitialized(true)
+    setTradeInConfigInitialized(true)
+  }, [baseInstallmentConfig, baseDollarConfig, baseHomeConfig, baseTradeInConfig])
 
-  }, [])
+  const runRemoteSync = useCallback(async () => {
+    if (!remoteSyncEnabledRef.current) {
+      return
+    }
+
+    if (remoteSyncInFlightRef.current) {
+      return remoteSyncInFlightRef.current
+    }
+
+    const syncPromise = (async () => {
+      await Promise.all([
+        (async () => {
+          try {
+            const response = await fetch("/api/admin/installments", { cache: "no-store" })
+            if (!response.ok) {
+              const message = await response.text()
+              throw new Error(message || "Unable to fetch installment plans")
+            }
+            const result = (await response.json()) as { data?: InstallmentConfig }
+            if (result?.data && !installmentPlansHasLocalUpdates.current) {
+              const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, result.data)
+              setInstallmentPlans(cloneInstallmentPlans(merged.plans))
+              setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
+            }
+          } catch (error) {
+            console.error("Failed to fetch installment plans from API", error)
+          } finally {
+            setInstallmentPlansInitialized(true)
+          }
+        })(),
+        (async () => {
+          try {
+            const response = await fetch("/api/admin/dollar", { cache: "no-store" })
+            if (!response.ok) {
+              const message = await response.text()
+              throw new Error(message || "Unable to fetch dollar config")
+            }
+            const result = (await response.json()) as { data?: Partial<DollarConfig> }
+            if (result?.data && !dollarConfigHasLocalUpdates.current) {
+              setDollarConfig(mergeDollarConfig(DEFAULT_DOLLAR_CONFIG, result.data))
+            }
+          } catch (error) {
+            console.error("Failed to fetch dollar config from API", error)
+          } finally {
+            setDollarConfigInitialized(true)
+          }
+        })(),
+        (async () => {
+          try {
+            const response = await fetch("/api/admin/home-config", { cache: "no-store" })
+            if (!response.ok) {
+              const message = await response.text()
+              throw new Error(message || "Unable to fetch home config")
+            }
+            const result = (await response.json()) as { data?: Partial<HomeConfig> }
+            if (result?.data && !homeConfigHasLocalUpdates.current) {
+              setHomeConfig((prev) => mergeHomeConfig(prev, result.data))
+            }
+          } catch (error) {
+            console.error("Failed to fetch home config from API", error)
+          } finally {
+            setHomeConfigInitialized(true)
+          }
+        })(),
+        (async () => {
+          try {
+            const response = await fetch("/api/admin/trade-in", { cache: "no-store" })
+            if (!response.ok) {
+              const message = await response.text()
+              throw new Error(message || "Unable to fetch trade-in config")
+            }
+            const result = (await response.json()) as { data?: TradeInConfig; fallback?: boolean }
+            const shouldApplyRemote =
+              result?.data &&
+              !tradeInConfigHasLocalUpdates.current &&
+              (!result.fallback || !tradeInConfigLoadedFromStorage.current)
+
+            if (shouldApplyRemote) {
+              setTradeInConfig((prev) => mergeTradeInConfig(prev, result.data))
+            }
+          } catch (error) {
+            console.error("Failed to fetch trade-in config from API", error)
+          } finally {
+            setTradeInConfigInitialized(true)
+          }
+        })(),
+      ])
+    })()
+
+    remoteSyncInFlightRef.current = syncPromise
+    try {
+      await syncPromise
+    } finally {
+      remoteSyncInFlightRef.current = null
+    }
+  }, [
+    setInstallmentPlans,
+    setInstallmentPromotions,
+    setDollarConfig,
+    setHomeConfig,
+    setTradeInConfig,
+  ])
+
+  useEffect(() => {
+    if (!remoteSyncEnabled) {
+      return
+    }
+    void runRemoteSync()
+  }, [remoteSyncEnabled, runRemoteSync])
 
   const refreshImageLibrary = useCallback(async () => {
     try {
-      const response = await fetch("/api/admin/image-library")
+      const response = await fetch("/api/admin/image-library", { cache: "no-store" })
       if (!response.ok) {
         const message = await response.text()
         throw new Error(message || "Unable to fetch image library")
@@ -288,8 +340,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    if (!remoteSyncEnabled) {
+      return
+    }
     void refreshImageLibrary()
-  }, [refreshImageLibrary])
+  }, [refreshImageLibrary, remoteSyncEnabled])
 
   useEffect(() => {
     if (!installmentPlansInitialized) return
@@ -699,6 +754,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setIsAuthenticated(false)
     localStorage.removeItem(AUTH_STORAGE_KEY)
+    setRemoteSyncEnabled(false)
   }
 
   const value: AdminContextType = {

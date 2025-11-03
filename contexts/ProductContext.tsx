@@ -110,6 +110,7 @@ type InitialProductsPayload = {
 type ProductProviderProps = {
   children: React.ReactNode
   initialData?: InitialProductsPayload | null
+  autoLoad?: boolean
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -175,11 +176,11 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, source: string):
   })
 }
 
-export function ProductProvider({ children, initialData = null }: ProductProviderProps) {
+export function ProductProvider({ children, initialData = null, autoLoad = true }: ProductProviderProps) {
   const initialProducts = useMemo(() => (initialData ? mapProducts(initialData.products) : []), [initialData])
   const initialSupabaseConnected = initialData?.supabaseConnected ?? false
   const [products, setProducts] = useState<Product[]>(() => initialProducts)
-  const [loading, setLoading] = useState(initialProducts.length === 0)
+  const [loading, setLoading] = useState(() => initialProducts.length === 0 && autoLoad)
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(initialSupabaseConnected)
   const supabaseConnectedRef = useRef(initialSupabaseConnected)
@@ -294,11 +295,17 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
       const supabaseConfigured = isSupabaseConfigured()
 
       const adminUrl = force ? "/api/admin/products?refresh=1" : "/api/admin/products"
-      const catalogUrl = `/api/catalog/products?limit=200${force ? "&refresh=1" : ""}`
+      const catalogParams = new URLSearchParams({ limit: "200" })
+      if (force) {
+        catalogParams.set("refresh", "1")
+      }
+      const catalogUrl = `/api/catalog/products?${catalogParams.toString()}`
+      const adminRequestInit: FetchInit = force ? { cache: "reload" } : {}
+      const catalogRequestInit: FetchInit = force ? { cache: "reload" } : {}
 
       const fetchFromAdmin = async (attempt = 1): Promise<{ source: SourceName; products: Product[] }> => {
         try {
-          const response = await fetchWithTimeout(adminUrl, { cache: "no-store" }, API_TIMEOUT_MS, "Admin API")
+          const response = await fetchWithTimeout(adminUrl, adminRequestInit, API_TIMEOUT_MS, "Admin API")
           const result = (await response.json()) as ApiListResponse
 
           if (!response.ok) {
@@ -317,7 +324,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
       }
 
       const fetchFromCatalog = async (): Promise<{ source: SourceName; products: Product[] }> => {
-        const response = await fetchWithTimeout(catalogUrl, { cache: "no-store" }, API_TIMEOUT_MS, "Catalog API")
+        const response = await fetchWithTimeout(catalogUrl, catalogRequestInit, API_TIMEOUT_MS, "Catalog API")
         const result = (await response.json()) as CatalogProductsResponse & { error?: string }
 
         if (!response.ok) {
@@ -424,8 +431,10 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
 
   useEffect(() => {
     hydrateFromCache()
-    loadProducts()
-  }, [hydrateFromCache, loadProducts])
+    if (autoLoad) {
+      loadProducts()
+    }
+  }, [hydrateFromCache, loadProducts, autoLoad])
 
   const handleSuccess = (message: string) => {
     showToast(message, "success")

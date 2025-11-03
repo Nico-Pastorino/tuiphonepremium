@@ -54,6 +54,7 @@ import {
   ArrowDown,
 } from "lucide-react"
 import type { TradeInConditionId, TradeInStorageId, TradeInRow } from "@/types/trade-in"
+import { ProductProvider } from "@/contexts/ProductContext"
 
 type NewLibraryImageForm = { label: string; category: string; dataUrl: string }
 
@@ -95,6 +96,14 @@ const createEmptyTradeInRow = (label: string, id: string): TradeInRow => {
 
 
 export default function AdminPage() {
+  return (
+    <ProductProvider>
+      <AdminPageInner />
+    </ProductProvider>
+  )
+}
+
+function AdminPageInner() {
   const { isAuthenticated } = useAdmin()
 
   if (!isAuthenticated) {

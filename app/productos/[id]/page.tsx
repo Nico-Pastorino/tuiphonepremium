@@ -19,7 +19,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-react"
-import { useProducts } from "@/contexts/ProductContext"
+import { ProductProvider, useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
 import Image from "next/image"
 import Link from "next/link"
@@ -68,6 +68,14 @@ const buildInstallmentGroups = (priceInPesos: number, installmentPlans: Installm
 }
 
 export default function ProductDetailPage() {
+  return (
+    <ProductProvider autoLoad={false}>
+      <ProductDetailView />
+    </ProductProvider>
+  )
+}
+
+function ProductDetailView() {
   const params = useParams()
   const router = useRouter()
   const { getProductById, ensureProductById, products } = useProducts()

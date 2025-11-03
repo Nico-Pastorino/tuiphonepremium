@@ -1,9 +1,14 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { ProductProvider } from "@/contexts/ProductContext"
 import { AdminProvider } from "@/contexts/AdminContext"
 import { ToastContainer } from "@/components/ui/toast"
 import { ServiceWorkerManager } from "@/components/ServiceWorkerManager"
+import {
+  getDollarConfigCached,
+  getHomeConfigCached,
+  getInstallmentConfigCached,
+  getTradeInConfigCached,
+} from "@/lib/site-config-cache"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -20,18 +25,30 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const [homeConfig, tradeInConfig, installmentConfig, dollarConfig] = await Promise.all([
+    getHomeConfigCached(),
+    getTradeInConfigCached(),
+    getInstallmentConfigCached(),
+    getDollarConfigCached(),
+  ])
+
   return (
     <html lang="es">
       <head>
         <link rel="icon" href="/favicon.png" />
       </head>
       <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
-        <AdminProvider>
-          <ProductProvider>
-            {children}
-            <ToastContainer />
-            <ServiceWorkerManager />
-          </ProductProvider>
+        <AdminProvider
+          initialState={{
+            homeConfig,
+            tradeInConfig,
+            installmentConfig,
+            dollarConfig,
+          }}
+        >
+          {children}
+          <ToastContainer />
+          <ServiceWorkerManager />
         </AdminProvider>
       </body>
     </html>

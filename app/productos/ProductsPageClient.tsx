@@ -76,11 +76,7 @@ const fetchCatalogProducts = async (
   if (filters.category) params.set("category", filters.category)
   if (filters.condition) params.set("condition", filters.condition)
 
-  const response = await fetch(`/api/catalog/products?${params.toString()}`, {
-    headers: {
-      "Cache-Control": "no-cache",
-    },
-  })
+  const response = await fetch(`/api/catalog/products?${params.toString()}`)
 
   if (!response.ok) {
     throw new Error(`Error ${response.status}`)
