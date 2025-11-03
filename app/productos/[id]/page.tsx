@@ -538,26 +538,31 @@ export default function ProductDetailPage() {
                       <div className="mt-5 rounded-2xl border border-purple-200/80 bg-purple-50/80 p-4 sm:p-5">
                         <p className="text-sm font-semibold text-purple-800 sm:text-base">Promociones activas</p>
                         <div className="mt-3 space-y-3">
-                          {promotionBreakdown.map((promotion) => (
-                            <div
-                              key={`${promotion.promotionId}-${promotion.termId}`}
-                              className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-4 py-3 shadow-sm"
-                            >
-                              <div>
-                                <p className="text-sm font-semibold text-purple-900 sm:text-base">{promotion.name}</p>
-                                <p className="text-xs text-purple-600 sm:text-sm">
-                                  {promotion.months} {promotion.months === 1 ? "cuota" : "cuotas"}
-                                  {promotion.interestRate === 0 ? " sin interes" : " con interes"}
-                                </p>
+                          {promotionBreakdown.map((promotion) => {
+                            const monthlyPayment = Math.round(promotion.monthlyAmount).toLocaleString("es-AR")
+                            const installmentsLabel = `${promotion.months} ${
+                              promotion.months === 1 ? "cuota" : "cuotas"
+                            }`
+
+                            return (
+                              <div
+                                key={`${promotion.promotionId}-${promotion.termId}`}
+                                className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-4 py-3 shadow-sm"
+                              >
+                                <div>
+                                  <p className="text-sm font-semibold text-purple-900 sm:text-base">{promotion.name}</p>
+                                  <p className="text-xs text-purple-600 sm:text-sm">
+                                    {installmentsLabel} de ${monthlyPayment}
+                                    {promotion.interestRate === 0 ? " sin interes" : ""}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-base font-bold text-purple-900 sm:text-lg">${monthlyPayment}</p>
+                                  <p className="text-[11px] text-purple-600">por mes</p>
+                                </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-base font-bold text-purple-900 sm:text-lg">
-                                  ${Math.round(promotion.monthlyAmount).toLocaleString("es-AR")}
-                                </p>
-                                <p className="text-[11px] text-purple-600">por mes</p>
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )}

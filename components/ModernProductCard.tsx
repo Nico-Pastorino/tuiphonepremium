@@ -120,11 +120,8 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
               <div className="text-sm text-gray-500 sm:text-base">USD {priceInDollars.toLocaleString("es-AR")}</div>
             )}
             {highlightedPromotion && (
-              <div className="text-xs font-semibold text-purple-600 sm:text-sm">
-                Promo {highlightedPromotion.name}: {highlightedPromotion.months}{" "}
-                {highlightedPromotion.months === 1 ? "cuota" : "cuotas"}
-                {highlightedPromotion.interestRate === 0 ? " sin interes" : " con interes"} de $
-                {Math.round(highlightedPromotion.monthlyAmount).toLocaleString("es-AR")}
+              <div className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700 sm:text-sm">
+                Promociones activas
               </div>
             )}
           </div>
