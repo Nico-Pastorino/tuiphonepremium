@@ -3,6 +3,8 @@ import type { Database, ProductInsert, ProductRow, ProductUpdate, SiteConfigInse
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const PRODUCT_SELECT_COLUMNS =
+  "id,name,description,price,original_price,price_usd,category,condition,images,specifications,stock,featured,created_at,updated_at"
 
 export const supabaseAdmin =
   supabaseUrl && supabaseServiceKey
@@ -76,7 +78,11 @@ export class ProductAdminService {
 
     try {
       const client = getAdminClient()
-      const { data, error } = await client.from("products").insert(productData).select("*").single()
+      const { data, error } = await client
+        .from("products")
+        .insert(productData)
+        .select(PRODUCT_SELECT_COLUMNS)
+        .single()
 
       if (error) {
         throw error
@@ -102,7 +108,7 @@ export class ProductAdminService {
         .from("products")
         .update(productData)
         .eq("id", id)
-        .select("*")
+        .select(PRODUCT_SELECT_COLUMNS)
         .single()
 
       if (error) {
@@ -129,7 +135,7 @@ export class ProductAdminService {
         .from("products")
         .delete()
         .eq("id", id)
-        .select("*")
+        .select(PRODUCT_SELECT_COLUMNS)
         .single()
 
       if (error) {
@@ -145,17 +151,22 @@ export class ProductAdminService {
     }
   }
 
-  static async getAllProducts(): Promise<AdminResult<ProductRow[]>> {
+  static async getAllProducts(options?: { limit?: number; offset?: number }): Promise<AdminResult<ProductRow[]>> {
     if (!supabaseAdmin) {
       return { data: null, error: new Error("Admin client not configured") }
     }
 
     try {
       const client = getAdminClient()
+      const limit = options?.limit ?? 250
+      const offset = options?.offset ?? 0
+      const safeLimit = Math.max(1, Math.min(limit, 500))
+      const safeOffset = Math.max(0, offset)
       const { data, error } = await client
         .from("products")
-        .select("*")
+        .select(PRODUCT_SELECT_COLUMNS)
         .order("created_at", { ascending: false })
+        .range(safeOffset, safeOffset + safeLimit - 1)
 
       if (error) {
         throw error

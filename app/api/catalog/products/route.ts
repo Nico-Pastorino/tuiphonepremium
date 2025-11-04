@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCatalogProducts } from "@/lib/product-cache"
 
-export const dynamic = "force-dynamic"
+export const revalidate = 300
 
 const DEFAULT_LIMIT = 12
 const MAX_LIMIT = 60
@@ -39,7 +39,11 @@ export async function GET(request: NextRequest) {
       condition: condition && condition.trim().length > 0 ? condition.trim() : null,
       featured,
     })
-    return NextResponse.json(data)
+    const response = NextResponse.json(data)
+    if (force) {
+      response.headers.set("Cache-Control", "no-store")
+    }
+    return response
   } catch (error) {
     console.error("Catalog products API error:", error)
     return NextResponse.json(

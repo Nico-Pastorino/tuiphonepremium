@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import useSWRInfinite from "swr/infinite"
 import dynamic from "next/dynamic"
 import { useRouter, useSearchParams } from "next/navigation"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
@@ -65,23 +66,8 @@ interface ProductsPageClientProps {
   initialFilters: FiltersState
 }
 
-const fetchCatalogProducts = async (
-  offset: number,
-  limit: number,
-  filters: FiltersState,
-): Promise<CatalogProductsResponse> => {
-  const params = new URLSearchParams()
-  params.set("offset", String(offset))
-  params.set("limit", String(limit))
-  if (filters.category) params.set("category", filters.category)
-  if (filters.condition) params.set("condition", filters.condition)
-
-  const response = await fetch(`/api/catalog/products?${params.toString()}`, {
-    headers: {
-      "Cache-Control": "no-cache",
-    },
-  })
-
+const fetchCatalogProducts = async (requestUrl: string): Promise<CatalogProductsResponse> => {
+  const response = await fetch(requestUrl)
   if (!response.ok) {
     throw new Error(`Error ${response.status}`)
   }
@@ -93,15 +79,17 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [filters, setFilters] = useState<FiltersState>(initialFilters)
-  const [products, setProducts] = useState<ProductSummary[]>(() => sortProducts(initialData.items))
-  const [total, setTotal] = useState(initialData.total)
-  const [loadingInitial, setLoadingInitial] = useState(initialData.items.length === 0)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const initialLoadingEmpty = loadingInitial && products.length === 0
+
+  const activeFilters = useMemo<FiltersState>(() => {
+    const categoryParam = searchParams.get("category")
+    const conditionParam = searchParams.get("condition")
+    return {
+      category: categoryParam && categoryParam.trim().length > 0 ? categoryParam : null,
+      condition: conditionParam && conditionParam.trim().length > 0 ? conditionParam : null,
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 768px)")
@@ -125,78 +113,73 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
     }
   }, [])
 
-  useEffect(() => {
-    const categoryParam = searchParams.get("category")
-    const conditionParam = searchParams.get("condition")
-    const nextFilters: FiltersState = {
-      category: categoryParam || null,
-      condition: conditionParam || null,
-    }
-
-    setFilters((prev) => {
-      if (prev.category === nextFilters.category && prev.condition === nextFilters.condition) {
-        return prev
-      }
-      return nextFilters
-    })
-  }, [searchParams])
-
   const effectivePageSize = useMemo(() => (isMobile ? Math.min(pageSize, 9) : pageSize), [isMobile, pageSize])
   const priorityCount = useMemo(() => (isMobile ? 2 : 3), [isMobile])
 
-  const loadProductsForFilters = useCallback(
-    async (filtersToLoad: FiltersState, offset: number, append: boolean) => {
-      setError(null)
-      if (append) {
-        setLoadingMore(true)
-      } else {
-        setLoadingInitial(true)
+  const initialSignature = useMemo(
+    () => `${initialFilters.category ?? ""}|${initialFilters.condition ?? ""}`,
+    [initialFilters.category, initialFilters.condition],
+  )
+  const activeSignature = useMemo(
+    () => `${activeFilters.category ?? ""}|${activeFilters.condition ?? ""}`,
+    [activeFilters.category, activeFilters.condition],
+  )
+
+  const fallbackData = useMemo(() => {
+    if (initialData.items.length === 0) {
+      return undefined
+    }
+    if (initialSignature !== activeSignature) {
+      return undefined
+    }
+    return [initialData]
+  }, [initialData, initialSignature, activeSignature])
+
+  const getKey = useCallback(
+    (pageIndex: number, previousPageData: CatalogProductsResponse | null) => {
+      if (previousPageData && previousPageData.items.length === 0) {
+        return null
       }
 
-      try {
-        const data = await fetchCatalogProducts(offset, effectivePageSize, filtersToLoad)
-        setTotal(data.total)
-        const sortedItems = sortProducts(data.items)
-        if (append) {
-          setProducts((prev) => sortProducts([...prev, ...data.items]))
-        } else {
-          setProducts(sortedItems)
-        }
-      } catch (err) {
-        console.error("No se pudieron cargar los productos:", err)
-        setError("No se pudieron cargar los productos. Intenta nuevamente.")
-        if (!append) {
-          setProducts([])
-          setTotal(0)
-        }
-      } finally {
-        if (append) {
-          setLoadingMore(false)
-        } else {
-          setLoadingInitial(false)
-        }
-      }
+      const params = new URLSearchParams()
+      params.set("offset", String(pageIndex * effectivePageSize))
+      params.set("limit", String(effectivePageSize))
+      if (activeFilters.category) params.set("category", activeFilters.category)
+      if (activeFilters.condition) params.set("condition", activeFilters.condition)
+      return `/api/catalog/products?${params.toString()}`
     },
-    [effectivePageSize],
+    [activeFilters.category, activeFilters.condition, effectivePageSize],
+  )
+
+  const { data, error, isLoading, isValidating, size, setSize } = useSWRInfinite<CatalogProductsResponse>(
+    getKey,
+    fetchCatalogProducts,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60_000,
+      keepPreviousData: true,
+      fallbackData,
+    },
   )
 
   useEffect(() => {
-    loadProductsForFilters(filters, 0, false)
-  }, [filters, loadProductsForFilters])
+    void setSize(1)
+  }, [activeSignature, setSize])
+
+  const pages = data ?? []
+  const products = useMemo(() => sortProducts(pages.flatMap((page) => page.items)), [pages])
+  const total = pages[0]?.total ?? initialData.total
+  const loadingInitial = !pages.length && isLoading
+  const loadingMore = isValidating && size > pages.length
+  const errorMessage = error instanceof Error ? error.message : null
+  const initialLoadingEmpty = loadingInitial && products.length === 0
+  const statsText = loadingInitial ? "Cargando productos..." : `Mostrando ${products.length} de ${total} productos`
 
   const handleFilterChange = useCallback(
     (next: { category?: string | null; condition?: string | null }) => {
-      const nextFilters: FiltersState = {
-        category: next.category ?? null,
-        condition: next.condition ?? null,
-      }
-
-      setFilters(nextFilters)
-
       const params = new URLSearchParams()
-      if (nextFilters.category) params.set("category", nextFilters.category)
-      if (nextFilters.condition) params.set("condition", nextFilters.condition)
-
+      if (next.category) params.set("category", next.category)
+      if (next.condition) params.set("condition", next.condition)
       const queryString = params.toString()
       router.replace(queryString ? `/productos?${queryString}` : "/productos", { scroll: false })
       setShowFilters(false)
@@ -208,10 +191,9 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
     if (loadingMore || products.length >= total) {
       return
     }
-    loadProductsForFilters(filters, products.length, true)
-  }, [filters, loadProductsForFilters, loadingMore, products.length, total])
+    void setSize((currentSize) => currentSize + 1)
+  }, [loadingMore, products.length, total, setSize])
 
-  const statsText = loadingInitial ? "Cargando productos..." : `Mostrando ${products.length} de ${total} productos`
   useEffect(() => {
     if (initialLoadingEmpty) {
       setShowFilters(false)
@@ -257,8 +239,8 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
                   </div>
                   <div className="flex-1 overflow-y-auto p-5">
                     <ProductFilters
-                      category={filters.category}
-                      condition={filters.condition}
+                      category={activeFilters.category}
+                      condition={activeFilters.condition}
                       onFilterChange={handleFilterChange}
                     />
                   </div>
@@ -274,9 +256,9 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
                   <p className="text-sm text-gray-600 sm:text-base">{statsText}</p>
                 </div>
 
-                {error && !initialLoadingEmpty && (
+                {errorMessage && !initialLoadingEmpty && (
                   <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {error}
+                    {errorMessage}
                   </div>
                 )}
 
@@ -335,8 +317,8 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
               <div className="hidden lg:block lg:w-80">
                 <AnimatedSection animation="fadeLeft" className="lg:sticky lg:top-32">
                   <ProductFilters
-                    category={filters.category}
-                    condition={filters.condition}
+                    category={activeFilters.category}
+                    condition={activeFilters.condition}
                     onFilterChange={handleFilterChange}
                   />
                 </AnimatedSection>

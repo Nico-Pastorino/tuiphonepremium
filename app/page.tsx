@@ -2,7 +2,7 @@ import { HomePageContent } from "@/components/HomePageContent"
 import { getProductsSnapshot, toProductSummary } from "@/lib/product-cache"
 import { getHomeConfigCached } from "@/lib/site-config-cache"
 
-export const revalidate = 120
+export const revalidate = 300
 
 export default async function HomePage() {
   const [snapshot, homeConfig] = await Promise.all([

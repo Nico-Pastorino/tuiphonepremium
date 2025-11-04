@@ -6,6 +6,7 @@ import type { ImageLibraryItem } from "@/types/image-library"
 
 const IMAGE_LIBRARY_KEY = "image-library"
 const DEFAULT_BUCKET = "image-library"
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 
 const getBucketName = () => process.env.SUPABASE_IMAGE_LIBRARY_BUCKET || DEFAULT_BUCKET
 
@@ -56,6 +57,9 @@ const parseDataUrl = (dataUrl: string) => {
   const contentType = match[1]
   const base64Data = match[2]
   const buffer = Buffer.from(base64Data, "base64")
+  if (buffer.byteLength > MAX_UPLOAD_BYTES) {
+    throw new Error("La imagen excede el tamaño máximo permitido (2MB)")
+  }
   const extension = contentType.split("/")[1]?.split("+")[0] || "png"
   return { buffer, contentType, extension }
 }
@@ -174,6 +178,7 @@ export const addImageToLibrary = async (
   const { error: uploadError } = await supabaseAdmin.storage.from(bucket).upload(filePath, buffer, {
     contentType,
     upsert: false,
+    cacheControl: "public, max-age=31536000, immutable",
   })
 
   if (uploadError) {

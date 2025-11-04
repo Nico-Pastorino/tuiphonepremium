@@ -368,7 +368,7 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
               },
             ].map((category, index) => (
               <AnimatedSection key={category.name} animation="scale" delay={index * 100}>
-                <Link href={category.href}>
+                <Link href={category.href} prefetch={false}>
                   <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-0 shadow-sm overflow-hidden rounded-xl sm:rounded-2xl h-full bg-white">
                     <CardContent className="flex h-full flex-col justify-center gap-4 p-3 sm:p-4 md:p-6">
                       <div className="flex items-center gap-3 sm:gap-4 md:gap-5">
@@ -449,7 +449,7 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
                 size="lg"
                 className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-xl transition-all duration-300 shadow-lg text-base sm:text-lg"
               >
-                <Link href="/productos">
+                <Link href="/productos" prefetch={false}>
                   Ver todos los productos
                   <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                 </Link>
@@ -787,32 +787,56 @@ const ctaSection = (
                   <h4 className="font-bold text-base sm:text-lg">Productos</h4>
                   <ul className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm text-gray-400 sm:text-base lg:grid-cols-1">
                     <li>
-                      <Link href="/productos?category=iphone" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=iphone"
+                        prefetch={false}
+                        className="hover:text-white transition-colors"
+                      >
                         iPhone
                       </Link>
                     </li>
                     <li>
-                      <Link href="/productos?category=ipad" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=ipad"
+                        prefetch={false}
+                        className="hover:text-white transition-colors"
+                      >
                         iPad
                       </Link>
                     </li>
                     <li>
-                      <Link href="/productos?category=mac" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=mac"
+                        prefetch={false}
+                        className="hover:text-white transition-colors"
+                      >
                         Mac
                       </Link>
                     </li>
                     <li>
-                      <Link href="/productos?category=watch" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=watch"
+                        prefetch={false}
+                        className="hover:text-white transition-colors"
+                      >
                         Apple Watch
                       </Link>
                     </li>
                     <li>
-                      <Link href="/productos?category=airpods" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=airpods"
+                        prefetch={false}
+                        className="hover:text-white transition-colors"
+                      >
                         AirPods
                       </Link>
                     </li>
                     <li>
-                      <Link href="/productos?category=accesorios" className="hover:text-white transition-colors">
+                      <Link
+                        href="/productos?category=accesorios"
+                        prefetch={false}
+                        className="hover:text-white transition-colors"
+                      >
                         Accesorios
                       </Link>
                     </li>
@@ -880,11 +904,11 @@ const ctaSection = (
             <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-center text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:text-left sm:text-sm">
               <p>&copy; {new Date().getFullYear()} TuIphonepremium. Todos los derechos reservados.</p>
               <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-                <Link href="/privacidad" className="hover:text-white transition-colors">
+                <Link href="/privacidad" prefetch={false} className="hover:text-white transition-colors">
                   Politica de privacidad
                 </Link>
                 <span className="hidden sm:inline text-white/30">-</span>
-                <Link href="/legales" className="hover:text-white transition-colors">
+                <Link href="/legales" prefetch={false} className="hover:text-white transition-colors">
                   Terminos y condiciones
                 </Link>
               </div>

@@ -68,6 +68,7 @@ export function MinimalNavbar() {
       <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] sm:w-[95%] max-w-6xl flex items-center justify-between px-6 py-4 rounded-3xl shadow-lg z-50 bg-gradient-to-r from-blue-500 to-purple-600">
         <Link
           href="/"
+          prefetch={false}
           onClick={closeMenu}
           className="flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-2xl transition"
         >
@@ -109,6 +110,7 @@ export function MinimalNavbar() {
           <div className="flex items-center justify-between p-6 border-b border-white/10">
             <Link
               href="/"
+              prefetch={false}
               onClick={handleLinkClick}
               className="flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-2xl transition"
             >
@@ -136,6 +138,7 @@ export function MinimalNavbar() {
               <Link
                 key={index}
                 href={item.href}
+                prefetch={false}
                 onClick={handleLinkClick}
                 className="block px-8 py-5 text-white hover:bg-white/10 active:bg-white/20 transition-colors border-b border-white/10 font-semibold text-base touch-manipulation"
               >

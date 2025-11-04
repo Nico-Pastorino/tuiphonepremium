@@ -1,5 +1,3 @@
-import { revalidateTag, unstable_cache } from "next/cache"
-
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { ProductRow } from "@/types/database"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
@@ -22,10 +20,7 @@ type GlobalWithCache = typeof globalThis & {
   __TUIPHONE_PRODUCTS_CACHE__?: CacheState
 }
 
-export const PRODUCTS_CACHE_TAG = "products"
-
-const PRODUCTS_CACHE_KEY = "products-snapshot"
-const DEFAULT_TTL_MS = 30_000
+const DEFAULT_TTL_MS = 300_000
 const MAX_LIMIT = 60
 const CATEGORY_PRIORITY_ORDER = ["iphone", "ipad", "mac", "watch", "airpods", "accesorios"]
 const CATEGORY_PRIORITY = new Map(CATEGORY_PRIORITY_ORDER.map((value, index) => [value, index]))
@@ -47,8 +42,6 @@ const getCacheTtlMs = (): number => {
 
   return parsed
 }
-
-const getCacheTtlSeconds = (): number => Math.max(1, Math.floor(getCacheTtlMs() / 1000))
 
 const resolveCacheState = (): CacheState => {
   const globalObject = globalThis as GlobalWithCache
@@ -83,7 +76,6 @@ const updateCacheState = (cache: CacheState, snapshot: ProductsSnapshot): void =
 export const invalidateProductsCache = async (): Promise<void> => {
   const cache = resolveCacheState()
   resetCacheState(cache)
-  await revalidateTag(PRODUCTS_CACHE_TAG)
 }
 
 export type GetProductsOptions = {
@@ -91,21 +83,34 @@ export type GetProductsOptions = {
 }
 
 const fetchProductsSnapshot = async (): Promise<ProductsSnapshot> => {
-  const { data, error } = await ProductAdminService.getAllProducts()
+  const allProducts: ProductRow[] = []
+  const pageSize = 200
+  let offset = 0
+  let connected = false
 
-  if (error) {
-    throw error instanceof Error ? error : new Error("Unable to load products from Supabase")
+  while (true) {
+    const { data, error } = await ProductAdminService.getAllProducts({ limit: pageSize, offset })
+
+    if (error) {
+      throw error instanceof Error ? error : new Error("Unable to load products from Supabase")
+    }
+
+    const chunk = data ?? []
+    connected = true
+    if (chunk.length > 0) {
+      allProducts.push(...chunk)
+    }
+
+    if (chunk.length < pageSize) {
+      break
+    }
+
+    offset += chunk.length
   }
 
-  const products = data ?? []
   const fetchedAt = Date.now()
-  return { data: products, fetchedAt, connected: true }
+  return { data: allProducts, fetchedAt, connected }
 }
-
-const cachedProductsSnapshot = unstable_cache(fetchProductsSnapshot, [PRODUCTS_CACHE_KEY], {
-  revalidate: getCacheTtlSeconds(),
-  tags: [PRODUCTS_CACHE_TAG],
-})
 
 export const getProductsSnapshot = async ({ force = false }: GetProductsOptions = {}): Promise<ProductsSnapshot> => {
   const cache = resolveCacheState()
@@ -117,7 +122,6 @@ export const getProductsSnapshot = async ({ force = false }: GetProductsOptions 
 
   if (force) {
     resetCacheState(cache)
-    await revalidateTag(PRODUCTS_CACHE_TAG)
     const snapshot = await fetchProductsSnapshot()
     updateCacheState(cache, snapshot)
     return snapshot
@@ -127,7 +131,7 @@ export const getProductsSnapshot = async ({ force = false }: GetProductsOptions 
     return cache.inFlight
   }
 
-  const fetchPromise = cachedProductsSnapshot()
+  const fetchPromise = fetchProductsSnapshot()
   cache.inFlight = fetchPromise
 
   try {
