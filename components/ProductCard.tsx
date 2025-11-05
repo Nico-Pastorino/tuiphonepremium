@@ -68,17 +68,17 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
             )}
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button className="w-full py-2 text-sm sm:flex-1 sm:py-3 sm:text-base" asChild>
-              <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                Consultar
-              </a>
-            </Button>
             <Button
               variant="outline"
               className="w-full px-4 py-2 text-sm sm:w-auto sm:px-5 sm:py-3 sm:text-base"
               asChild
             >
               <Link href={`/productos/${product.id}`}>Ver mas</Link>
+            </Button>
+            <Button className="w-full py-2 text-sm sm:flex-1 sm:py-3 sm:text-base" asChild>
+              <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                Consultar
+              </a>
             </Button>
           </div>
         </div>
