@@ -479,14 +479,14 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
               {
                 icon: Shield,
                 title: "Garantia extendida",
-                description: "12 meses de garantia total y soporte tecnico especializado",
-                features: ["Soporte 24/7", "Reparacion gratuita", "Reemplazo inmediato"],
+                description: "12 meses de garantia oficial Apple con soporte tecnico especializado",
+                features: ["Soporte certificado Apple", "Gestion directa ante Apple", "Cobertura valida en todo el pais"],
               },
               {
                 icon: Truck,
                 title: "Envio express",
-                description: "Envio gratuito en CABA y GBA en menos de 24 horas",
-                features: ["Envio gratis", "Tracking en tiempo real", "Seguro incluido"],
+                description: "Envio por Andreani o Jetpack en menos de 24 horas",
+                features: ["Despacho prioritario", "Tracking en tiempo real", "Entrega pactada en CABA y GBA"],
               },
               {
                 icon: Award,
