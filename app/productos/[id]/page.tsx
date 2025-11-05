@@ -689,6 +689,7 @@ export default function ProductDetailPage() {
                     productName={product.name}
                     productPriceARS={Math.round(priceInPesos)}
                     productPriceUSD={priceInUSD}
+                    productCondition={product.condition}
                   />
                 )}
 

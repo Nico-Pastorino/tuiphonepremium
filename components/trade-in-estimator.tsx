@@ -21,6 +21,7 @@ interface TradeInEstimatorProps {
   productName: string
   productPriceARS: number
   productPriceUSD: number | null
+  productCondition: "nuevo" | "seminuevo"
 }
 
 const STORAGE_LABELS: Record<TradeInStorageId, string> = {
@@ -40,7 +41,12 @@ const CONDITION_LABELS: Record<TradeInConditionId, string> = {
 const hasAnyTradeInValue = (values: Record<TradeInConditionId, number | null>): boolean =>
   Object.values(values).some((value) => value !== null)
 
-export function TradeInEstimator({ productName, productPriceARS, productPriceUSD }: TradeInEstimatorProps) {
+export function TradeInEstimator({
+  productName,
+  productPriceARS,
+  productPriceUSD,
+  productCondition,
+}: TradeInEstimatorProps) {
   const { tradeInConfig, getEffectiveDollarRate, homeConfig } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
   const whatsappNumber = useMemo(() => {
@@ -161,6 +167,54 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
     tradeInValueUSD !== null && productPriceUSD !== null
       ? Math.max(productPriceUSD - tradeInValueUSD, 0)
       : productPriceUSD
+
+  const selectedStorageLabel = useMemo(() => {
+    if (!selectedStorageId) {
+      return null
+    }
+    const match = availableStorageOptions.find((option) => option.id === selectedStorageId)
+    return match?.label ?? null
+  }, [availableStorageOptions, selectedStorageId])
+
+  const whatsappMessage = useMemo(() => {
+    const conditionLabel = productCondition === "seminuevo" ? "semi-nuevo" : "nuevo"
+    const batteryDescription = selectedCondition === "over90" ? "90% o mas" : "menos del 90%"
+    const tradeInModelLabel = selectedRow ? `iPhone ${selectedRow.label}` : null
+    const greeting = "Hola TuiPhonepremium \u{1F44B}."
+    const interest = `Estoy interesado en comprar un ${productName} ${conditionLabel}.`
+
+    const tradeInDetails =
+      tradeInModelLabel !== null
+        ? `Quiero entregar mi ${tradeInModelLabel}${selectedStorageLabel ? ` ${selectedStorageLabel}` : ""} con ${batteryDescription} de bateria.`
+        : null
+
+    const tradeInValueText =
+      tradeInValueUSD !== null ? `El estimado por mi usado es de USD ${tradeInValueUSD.toLocaleString("es-AR")}.` : null
+
+    const finalPriceText =
+      finalPriceUSD !== null ? `El saldo a pagar quedaria en USD ${finalPriceUSD.toLocaleString("es-AR")}.` : null
+
+    const message = [
+      greeting,
+      interest,
+      tradeInDetails,
+      tradeInValueText,
+      finalPriceText,
+      "\u00BFMe confirman los pasos a seguir?",
+    ]
+      .filter((segment): segment is string => Boolean(segment))
+      .join(" ")
+
+    return encodeURIComponent(message)
+  }, [
+    productCondition,
+    productName,
+    selectedCondition,
+    selectedRow,
+    selectedStorageLabel,
+    tradeInValueUSD,
+    finalPriceUSD,
+  ])
 
   const canEstimate = tradeInOptions.length > 0
 
@@ -287,7 +341,7 @@ export function TradeInEstimator({ productName, productPriceARS, productPriceUSD
           asChild
         >
           <a
-            href={`https://wa.me/${whatsappNumber}`}
+            href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
             target="_blank"
             rel="noopener noreferrer"
           >
