@@ -48,6 +48,7 @@ const DEFAULT_SECTION_LABELS: Record<HomeSectionId, string> = DEFAULT_HOME_CONFI
 type HomePageContentProps = {
   initialProducts: ProductSummary[]
   homeConfig: HomeConfig
+  initialTradeInConfig: TradeInConfig
 }
 
 async function fetchCatalogFeatured(): Promise<CatalogProductsResponse> {
@@ -81,14 +82,13 @@ async function fetchTradeInConfig(): Promise<TradeInConfig> {
   return result.data
 }
 
-export function HomePageContent({ initialProducts, homeConfig }: HomePageContentProps) {
+export function HomePageContent({ initialProducts, homeConfig, initialTradeInConfig }: HomePageContentProps) {
   const [products, setProducts] = useState<ProductSummary[]>(initialProducts)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [tradeInConfigState, setTradeInConfigState] = useState<TradeInConfig | null>(null)
-  const [tradeInLoading, setTradeInLoading] = useState(true)
+  const [tradeInConfigState, setTradeInConfigState] = useState<TradeInConfig | null>(initialTradeInConfig ?? null)
+  const [tradeInLoading, setTradeInLoading] = useState(!initialTradeInConfig)
   const [tradeInError, setTradeInError] = useState<string | null>(null)
-  const [tradeInReloadToken, setTradeInReloadToken] = useState(0)
 
   const refreshProducts = useCallback(async () => {
     setLoading(true)
@@ -118,41 +118,34 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
     }
   }, [initialProducts.length, refreshProducts])
 
+  const loadTradeInConfig = useCallback(async () => {
+    setTradeInLoading(true)
+    setTradeInError(null)
+
+    try {
+      const data = await fetchTradeInConfig()
+      setTradeInConfigState(data)
+    } catch (err) {
+      console.error("No se pudo cargar la configuracion de plan canje:", err)
+      setTradeInError("No se pudo cargar la tabla de canje.")
+      setTradeInConfigState(null)
+    } finally {
+      setTradeInLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
-    let active = true
-
-    const loadTradeIn = async () => {
-      setTradeInLoading(true)
-      setTradeInError(null)
-
-      try {
-        const data = await fetchTradeInConfig()
-        if (active) {
-          setTradeInConfigState(data)
-        }
-      } catch (err) {
-        console.error("No se pudo cargar la configuracion de plan canje:", err)
-        if (active) {
-          setTradeInError("No se pudo cargar la tabla de canje.")
-          setTradeInConfigState(null)
-        }
-      } finally {
-        if (active) {
-          setTradeInLoading(false)
-        }
-      }
+    if (initialTradeInConfig) {
+      setTradeInConfigState(initialTradeInConfig)
+      setTradeInLoading(false)
+      return
     }
-
-    void loadTradeIn()
-
-    return () => {
-      active = false
-    }
-  }, [tradeInReloadToken])
+    void loadTradeInConfig()
+  }, [initialTradeInConfig, loadTradeInConfig])
 
   const handleTradeInRetry = useCallback(() => {
-    setTradeInReloadToken((value) => value + 1)
-  }, [])
+    void loadTradeInConfig()
+  }, [loadTradeInConfig])
 
   const sectionLabels = useMemo(() => {
     const labels: Record<HomeSectionId, string> = { ...DEFAULT_SECTION_LABELS }
@@ -479,14 +472,14 @@ export function HomePageContent({ initialProducts, homeConfig }: HomePageContent
               {
                 icon: Shield,
                 title: "Garantia extendida",
-                description: "12 meses de garantia oficial Apple con soporte tecnico especializado",
-                features: ["Soporte certificado Apple", "Gestion directa ante Apple", "Cobertura valida en todo el pais"],
+                description: "12 meses de garantia total y soporte tecnico especializado",
+                features: ["Soporte 24/7", "Reparacion gratuita", "Reemplazo inmediato"],
               },
               {
                 icon: Truck,
                 title: "Envio express",
                 description: "Envio por Andreani o Jetpack en menos de 24 horas",
-                features: ["Despacho prioritario", "Tracking en tiempo real", "Entrega pactada en CABA y GBA"],
+                features: ["Envio rapido", "Tracking en tiempo real", "Seguro incluido"],
               },
               {
                 icon: Award,

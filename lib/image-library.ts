@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto"
+import sharp from "sharp"
 
 import { SiteConfigService, supabaseAdmin, SITE_CONFIG_TABLE_NOT_FOUND } from "@/lib/supabase-admin"
 import type { Json } from "@/types/database"
@@ -7,6 +8,7 @@ import type { ImageLibraryItem } from "@/types/image-library"
 const IMAGE_LIBRARY_KEY = "image-library"
 const DEFAULT_BUCKET = "image-library"
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024
+const MAX_IMAGE_WIDTH = 1600
 
 const getBucketName = () => process.env.SUPABASE_IMAGE_LIBRARY_BUCKET || DEFAULT_BUCKET
 
@@ -62,6 +64,34 @@ const parseDataUrl = (dataUrl: string) => {
   }
   const extension = contentType.split("/")[1]?.split("+")[0] || "png"
   return { buffer, contentType, extension }
+}
+
+const optimizeImage = async (
+  buffer: Buffer,
+  contentType: string,
+  extension: string,
+): Promise<{ buffer: Buffer; contentType: string; extension: string }> => {
+  try {
+    const transformer = sharp(buffer).rotate()
+    const metadata = await transformer.metadata()
+    const shouldResize = (metadata.width ?? 0) > MAX_IMAGE_WIDTH
+
+    if (shouldResize) {
+      transformer.resize({ width: MAX_IMAGE_WIDTH, withoutEnlargement: true })
+    }
+
+    const targetFormat = extension === "png" ? "png" : "webp"
+    const optimizedBuffer =
+      targetFormat === "png"
+        ? await transformer.png({ quality: 80, compressionLevel: 9 }).toBuffer()
+        : await transformer.webp({ quality: 80 }).toBuffer()
+
+    const optimizedContentType = targetFormat === "png" ? "image/png" : "image/webp"
+    return { buffer: optimizedBuffer, contentType: optimizedContentType, extension: targetFormat }
+  } catch (error) {
+    console.warn("No se pudo optimizar la imagen para la biblioteca. Se utilizara el archivo original.", error)
+    return { buffer, contentType, extension }
+  }
 }
 
 const sanitizeItem = (raw: unknown): ImageLibraryItem | null => {
@@ -170,7 +200,8 @@ export const addImageToLibrary = async (
 
   const bucket = await ensureStorageBucket()
 
-  const { buffer, contentType, extension } = parseDataUrl(params.dataUrl)
+  const parsed = parseDataUrl(params.dataUrl)
+  const { buffer, contentType, extension } = await optimizeImage(parsed.buffer, parsed.contentType, parsed.extension)
   const categorySlug = slugify(params.category || "general") || "general"
   const id = randomUUID()
   const filePath = `${categorySlug}/${id}.${extension}`

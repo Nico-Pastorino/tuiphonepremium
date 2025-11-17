@@ -40,9 +40,7 @@ export async function GET(request: NextRequest) {
       featured,
     })
     const response = NextResponse.json(data)
-    if (force) {
-      response.headers.set("Cache-Control", "no-store")
-    }
+    response.headers.set("Cache-Control", force ? "no-store" : "s-maxage=300, stale-while-revalidate=600")
     return response
   } catch (error) {
     console.error("Catalog products API error:", error)

@@ -73,7 +73,9 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
               className="w-full px-4 py-2 text-sm sm:w-auto sm:px-5 sm:py-3 sm:text-base"
               asChild
             >
-              <Link href={`/productos/${product.id}`}>Ver mas</Link>
+              <Link href={`/productos/${product.id}`} prefetch={false}>
+                Ver mas
+              </Link>
             </Button>
             <Button className="w-full py-2 text-sm sm:flex-1 sm:py-3 sm:text-base" asChild>
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer">

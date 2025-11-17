@@ -131,7 +131,9 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
               className="justify-center px-4 py-2 text-sm sm:flex-1 sm:min-w-0 sm:px-6 sm:py-3 sm:text-base"
               asChild
             >
-              <Link href={`/productos/${product.id}`}>Ver mas</Link>
+              <Link href={`/productos/${product.id}`} prefetch={false}>
+                Ver mas
+              </Link>
             </Button>
             <Button className="justify-center py-2 text-sm sm:flex-1 sm:min-w-0 sm:py-3 sm:px-6 sm:text-base" asChild>
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer">

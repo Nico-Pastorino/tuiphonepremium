@@ -88,7 +88,7 @@ const SUPABASE_TIMEOUT_MS = 10_000
 const API_TIMEOUT_MS = 12_000
 const API_MAX_ATTEMPTS = 2
 const API_RETRY_DELAY_MS = 300
-const CLIENT_DATA_TTL_MS = 60_000
+const CLIENT_DATA_TTL_MS = 5 * 60 * 1000
 const CACHE_KEY = "tuiphone_products_cache_v1"
 const CACHE_TTL_MS = 1000 * 60 * 5
 

@@ -4,6 +4,13 @@ import { ProductProvider } from "@/contexts/ProductContext"
 import { AdminProvider } from "@/contexts/AdminContext"
 import { ToastContainer } from "@/components/ui/toast"
 import { ServiceWorkerManager } from "@/components/ServiceWorkerManager"
+import { getProductsSnapshot } from "@/lib/product-cache"
+import {
+  getDollarConfigCached,
+  getHomeConfigCached,
+  getInstallmentConfigCached,
+  getTradeInConfigCached,
+} from "@/lib/site-config-cache"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -20,14 +27,33 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const [productsSnapshot, homeConfig, tradeInConfig, installmentConfig, dollarConfig] = await Promise.all([
+    getProductsSnapshot(),
+    getHomeConfigCached(),
+    getTradeInConfigCached(),
+    getInstallmentConfigCached(),
+    getDollarConfigCached(),
+  ])
+
+  const productInitialData = {
+    products: productsSnapshot.data,
+    supabaseConnected: productsSnapshot.connected,
+    timestamp: productsSnapshot.fetchedAt,
+  }
+
   return (
     <html lang="es">
       <head>
         <link rel="icon" href="/favicon.png" />
       </head>
       <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
-        <AdminProvider>
-          <ProductProvider>
+        <AdminProvider
+          initialHomeConfig={homeConfig}
+          initialTradeInConfig={tradeInConfig}
+          initialInstallmentConfig={installmentConfig}
+          initialDollarConfig={dollarConfig}
+        >
+          <ProductProvider initialData={productInitialData}>
             {children}
             <ToastContainer />
             <ServiceWorkerManager />

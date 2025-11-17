@@ -1,13 +1,14 @@
 import { HomePageContent } from "@/components/HomePageContent"
 import { getProductsSnapshot, toProductSummary } from "@/lib/product-cache"
-import { getHomeConfigCached } from "@/lib/site-config-cache"
+import { getHomeConfigCached, getTradeInConfigCached } from "@/lib/site-config-cache"
 
 export const revalidate = 300
 
 export default async function HomePage() {
-  const [snapshot, homeConfig] = await Promise.all([
+  const [snapshot, homeConfig, tradeInConfig] = await Promise.all([
     getProductsSnapshot(),
     getHomeConfigCached(),
+    getTradeInConfigCached(),
   ])
 
   const selectedRows = snapshot.data.filter((row) => row.featured).slice(0, 12)
@@ -21,5 +22,7 @@ export default async function HomePage() {
     }
   })
 
-  return <HomePageContent initialProducts={products} homeConfig={homeConfig} />
+  return (
+    <HomePageContent initialProducts={products} homeConfig={homeConfig} initialTradeInConfig={tradeInConfig} />
+  )
 }
