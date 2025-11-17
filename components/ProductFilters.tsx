@@ -7,7 +7,7 @@ import { Smartphone, Tablet, Laptop, Watch, Headphones, Filter, Cable } from "lu
 import { useEffect, useState } from "react"
 
 interface ProductFiltersProps {
-  onFilterChange?: (filters: { category: string | null; condition: string | null }) => void
+  onFilterChange?: (filters: { category: string | null; condition: string | null; search?: string | null }) => void
   category?: string | null
   condition?: string | null
 }

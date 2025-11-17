@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category")
     const condition = searchParams.get("condition")
     const featured = parseBooleanParam(searchParams.get("featured"))
+    const search = searchParams.get("search")
 
     const data = await getCatalogProducts({
       limit,
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
       category: category && category.trim().length > 0 ? category.trim() : null,
       condition: condition && condition.trim().length > 0 ? condition.trim() : null,
       featured,
+      search: search && search.trim().length > 0 ? search.trim() : null,
     })
     const response = NextResponse.json(data)
     response.headers.set("Cache-Control", force ? "no-store" : "s-maxage=300, stale-while-revalidate=600")

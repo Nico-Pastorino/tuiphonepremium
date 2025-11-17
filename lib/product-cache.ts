@@ -163,6 +163,48 @@ const normalizeCondition = (condition: string | null): "nuevo" | "seminuevo" => 
   return "nuevo"
 }
 
+const removeDiacritics = (value: string): string => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+const normalizeText = (value: string): string => removeDiacritics(value.toLowerCase()).replace(/\s+/g, " ").trim()
+
+const getSpecificationsText = (value: ProductRow["specifications"]): string => {
+  if (value === null || typeof value === "undefined") {
+    return ""
+  }
+  if (typeof value === "string") {
+    return value
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value)
+  }
+  try {
+    return JSON.stringify(value)
+  } catch (error) {
+    console.warn("No se pudieron serializar las especificaciones para la busqueda:", error)
+    return ""
+  }
+}
+
+const matchesSearch = (row: ProductRow, normalizedSearch: string): boolean => {
+  const parts: string[] = [row.name, row.description ?? "", row.category, row.condition]
+  const numericParts: Array<number | null | undefined> = [row.price, row.original_price, row.price_usd]
+
+  for (const numeric of numericParts) {
+    if (typeof numeric === "number" && Number.isFinite(numeric)) {
+      parts.push(String(numeric))
+    }
+  }
+
+  const specsText = getSpecificationsText(row.specifications)
+  if (specsText) {
+    parts.push(specsText)
+  }
+
+  return parts.some((part) => {
+    if (!part) return false
+    return normalizeText(part).includes(normalizedSearch)
+  })
+}
+
 export const toProductSummary = (row: ProductRow): ProductSummary => ({
   id: row.id,
   name: row.name,
@@ -180,13 +222,15 @@ export const toProductSummary = (row: ProductRow): ProductSummary => ({
 
 const applyFilters = (
   rows: ProductRow[],
-  filters: { category?: string | null; condition?: string | null; featured?: boolean | null },
+  filters: { category?: string | null; condition?: string | null; featured?: boolean | null; search?: string | null },
 ): ProductRow[] => {
   const normalizedCategory = filters.category?.toLowerCase() ?? null
   const normalizedCondition = filters.condition ? normalizeCondition(filters.condition) : null
   const normalizedFeatured = typeof filters.featured === "boolean" ? filters.featured : null
+  const normalizedSearch =
+    filters.search && filters.search.trim().length > 0 ? normalizeText(filters.search) : null
 
-  if (!normalizedCategory && !normalizedCondition && normalizedFeatured === null) {
+  if (!normalizedCategory && !normalizedCondition && normalizedFeatured === null && !normalizedSearch) {
     return rows
   }
 
@@ -194,7 +238,8 @@ const applyFilters = (
     const categoryMatches = !normalizedCategory || row.category.toLowerCase() === normalizedCategory
     const conditionMatches = !normalizedCondition || normalizeCondition(row.condition) === normalizedCondition
     const featuredMatches = normalizedFeatured === null || row.featured === normalizedFeatured
-    return categoryMatches && conditionMatches && featuredMatches
+    const searchMatches = !normalizedSearch || matchesSearch(row, normalizedSearch)
+    return categoryMatches && conditionMatches && featuredMatches && searchMatches
   })
 }
 
@@ -205,6 +250,7 @@ export type CatalogQueryOptions = {
   category?: string | null
   condition?: string | null
   featured?: boolean | null
+  search?: string | null
 }
 
 export const getCatalogProducts = async ({
@@ -214,11 +260,12 @@ export const getCatalogProducts = async ({
   category = null,
   condition = null,
   featured = null,
+  search = null,
 }: CatalogQueryOptions = {}): Promise<CatalogProductsResponse> => {
   const snapshot = await getProductsSnapshot({ force })
   const { data, fetchedAt, connected } = snapshot
 
-  const filtered = applyFilters(data, { category, condition, featured })
+  const filtered = applyFilters(data, { category, condition, featured, search })
   const normalizedOffset = Math.max(0, Number.isFinite(offset) ? offset : 0)
   const normalizedLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 12, MAX_LIMIT))
 

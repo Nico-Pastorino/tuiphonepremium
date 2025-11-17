@@ -27,19 +27,22 @@ const getParam = (searchParams: PageProps["searchParams"], key: string): string 
 export default async function ProductsPage({ searchParams }: PageProps) {
   const category = getParam(searchParams, "category")
   const condition = getParam(searchParams, "condition")
+  const search = getParam(searchParams, "search")
+  const normalizedSearch = search && search.trim().length > 0 ? search.trim() : null
 
   const initialData = await getCatalogProducts({
     limit: INITIAL_PAGE_SIZE,
     offset: 0,
     category: category && category.trim().length > 0 ? category : null,
     condition: condition && condition.trim().length > 0 ? condition : null,
+    search: normalizedSearch,
   })
 
   return (
     <ProductsPageClient
       initialData={initialData}
       pageSize={INITIAL_PAGE_SIZE}
-      initialFilters={{ category: category ?? null, condition: condition ?? null }}
+      initialFilters={{ category: category ?? null, condition: condition ?? null, search: normalizedSearch }}
     />
   )
 }

@@ -8,7 +8,7 @@ import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { ModernProductCard } from "@/components/ModernProductCard"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
-import { Filter, RefreshCw } from "lucide-react"
+import { Filter, RefreshCw, Search } from "lucide-react"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
 
 const ProductFilters = dynamic(() => import("@/components/ProductFilters").then((mod) => mod.ProductFilters))
@@ -58,6 +58,7 @@ const sortProducts = (items: ProductSummary[]): ProductSummary[] => {
 type FiltersState = {
   category: string | null
   condition: string | null
+  search: string | null
 }
 
 interface ProductsPageClientProps {
@@ -85,11 +86,19 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   const activeFilters = useMemo<FiltersState>(() => {
     const categoryParam = searchParams.get("category")
     const conditionParam = searchParams.get("condition")
+    const searchParam = searchParams.get("search")
     return {
       category: categoryParam && categoryParam.trim().length > 0 ? categoryParam : null,
       condition: conditionParam && conditionParam.trim().length > 0 ? conditionParam : null,
+      search: searchParam && searchParam.trim().length > 0 ? searchParam : null,
     }
   }, [searchParams])
+
+  const [searchInput, setSearchInput] = useState(activeFilters.search ?? "")
+
+  useEffect(() => {
+    setSearchInput(activeFilters.search ?? "")
+  }, [activeFilters.search])
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 768px)")
@@ -117,12 +126,12 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   const priorityCount = useMemo(() => (isMobile ? 2 : 3), [isMobile])
 
   const initialSignature = useMemo(
-    () => `${initialFilters.category ?? ""}|${initialFilters.condition ?? ""}`,
-    [initialFilters.category, initialFilters.condition],
+    () => `${initialFilters.category ?? ""}|${initialFilters.condition ?? ""}|${initialFilters.search ?? ""}`,
+    [initialFilters.category, initialFilters.condition, initialFilters.search],
   )
   const activeSignature = useMemo(
-    () => `${activeFilters.category ?? ""}|${activeFilters.condition ?? ""}`,
-    [activeFilters.category, activeFilters.condition],
+    () => `${activeFilters.category ?? ""}|${activeFilters.condition ?? ""}|${activeFilters.search ?? ""}`,
+    [activeFilters.category, activeFilters.condition, activeFilters.search],
   )
 
   const fallbackData = useMemo(() => {
@@ -146,9 +155,10 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
       params.set("limit", String(effectivePageSize))
       if (activeFilters.category) params.set("category", activeFilters.category)
       if (activeFilters.condition) params.set("condition", activeFilters.condition)
+      if (activeFilters.search) params.set("search", activeFilters.search)
       return `/api/catalog/products?${params.toString()}`
     },
-    [activeFilters.category, activeFilters.condition, effectivePageSize],
+    [activeFilters.category, activeFilters.condition, activeFilters.search, effectivePageSize],
   )
 
   const { data, error, isLoading, isValidating, size, setSize } = useSWRInfinite<CatalogProductsResponse>(
@@ -173,19 +183,45 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
   const loadingMore = isValidating && size > pages.length
   const errorMessage = error instanceof Error ? error.message : null
   const initialLoadingEmpty = loadingInitial && products.length === 0
-  const statsText = loadingInitial ? "Cargando productos..." : `Mostrando ${products.length} de ${total} productos`
+  const trimmedSearch = (activeFilters.search ?? "").trim()
+  const statsText = loadingInitial
+    ? "Cargando productos..."
+    : trimmedSearch.length > 0
+      ? products.length > 0
+        ? `Encontramos ${products.length} resultado${products.length === 1 ? "" : "s"} para "${trimmedSearch}"`
+        : `Sin coincidencias para "${trimmedSearch}".`
+      : `Mostrando ${products.length} de ${total} productos`
 
   const handleFilterChange = useCallback(
-    (next: { category?: string | null; condition?: string | null }) => {
+    (next: { category?: string | null; condition?: string | null; search?: string | null }) => {
       const params = new URLSearchParams()
-      if (next.category) params.set("category", next.category)
-      if (next.condition) params.set("condition", next.condition)
+      const categoryValue = next.category !== undefined ? next.category : activeFilters.category
+      const conditionValue = next.condition !== undefined ? next.condition : activeFilters.condition
+      const searchValue = next.search !== undefined ? next.search : activeFilters.search
+      if (categoryValue) params.set("category", categoryValue)
+      if (conditionValue) params.set("condition", conditionValue)
+      if (searchValue) params.set("search", searchValue)
       const queryString = params.toString()
       router.replace(queryString ? `/productos?${queryString}` : "/productos", { scroll: false })
       setShowFilters(false)
     },
-    [router],
+    [router, activeFilters.category, activeFilters.condition, activeFilters.search],
   )
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      const normalizedInput = searchInput.trim()
+      const normalizedActive = (activeFilters.search ?? "").trim()
+      if (normalizedInput === normalizedActive) {
+        return
+      }
+      handleFilterChange({ search: normalizedInput.length > 0 ? normalizedInput : null })
+    }, 400)
+
+    return () => {
+      window.clearTimeout(handler)
+    }
+  }, [searchInput, activeFilters.search, handleFilterChange])
 
   const handleLoadMore = useCallback(() => {
     if (loadingMore || products.length >= total) {
@@ -207,7 +243,7 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
       <div className="section-padding">
         <div className="inner-container px-4 sm:px-6 lg:px-0">
           <AnimatedSection animation="fadeUp">
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-6 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-wide text-blue-500 sm:text-xs">Catalogo completo</p>
                 <h1 className="mb-2 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">Productos Apple</h1>
@@ -215,14 +251,29 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
                   Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos
                 </p>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters((prev) => !prev)}
-                className="w-full justify-center gap-2 rounded-xl border-gray-200 text-sm hover:border-gray-300 hover:bg-white sm:hidden"
-              >
-                <Filter className="w-4 h-4" />
-                Filtros
-              </Button>
+              <div className="w-full max-w-md lg:max-w-lg">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="search"
+                      value={searchInput}
+                      onChange={(event) => setSearchInput(event.target.value)}
+                      placeholder="Buscar productos..."
+                      aria-label="Buscar productos"
+                      className="w-full rounded-full border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowFilters((prev) => !prev)}
+                    className="h-12 w-12 rounded-full border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-white lg:hidden"
+                  >
+                    <Filter className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </AnimatedSection>
 
@@ -288,14 +339,32 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
                       <Filter className="w-12 h-12 text-gray-400" />
                     </div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">No se encontraron productos</h3>
-                    <p className="text-gray-600 mb-6">Intenta ajustar los filtros seleccionados</p>
-                    <Button
-                      onClick={() => {
-                        handleFilterChange({ category: null, condition: null })
-                      }}
-                    >
-                      Limpiar filtros
-                    </Button>
+                    <p className="text-gray-600 mb-6">
+                      {trimmedSearch.length > 0
+                        ? `No encontramos coincidencias para "${trimmedSearch}". Intenta con otro termino o ajusta los filtros.`
+                        : "Intenta ajustar los filtros seleccionados"}
+                    </p>
+                    <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                      {trimmedSearch.length > 0 && (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setSearchInput("")
+                            handleFilterChange({ search: null })
+                          }}
+                          className="rounded-xl border-gray-200 hover:border-gray-300 hover:bg-white"
+                        >
+                          Limpiar busqueda
+                        </Button>
+                      )}
+                      <Button
+                        onClick={() => {
+                          handleFilterChange({ category: null, condition: null })
+                        }}
+                      >
+                        Limpiar filtros
+                      </Button>
+                    </div>
                   </div>
                 )}
               </AnimatedSection>
