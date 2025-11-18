@@ -156,62 +156,64 @@ export function AdminProvider({
       return
     }
 
-    const savedPlans = localStorage.getItem(INSTALLMENT_STORAGE_KEY)
-    if (savedPlans) {
-      try {
-        const parsed = JSON.parse(savedPlans) as unknown
-
-        if (Array.isArray(parsed)) {
-          // Legacy format stored only the plans array; ignore it so we don't lose server promotions.
-          console.warn("Ignoring legacy installment cache without promotions")
-          localStorage.removeItem(INSTALLMENT_STORAGE_KEY)
-        } else if (
-          parsed &&
-          typeof parsed === "object" &&
-          Array.isArray((parsed as Record<string, unknown>).promotions)
-        ) {
-          const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, parsed as Partial<InstallmentConfig>)
-          setInstallmentPlans(cloneInstallmentPlans(merged.plans))
-          setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
-        }
-      } catch (error) {
-        console.error("Failed to parse saved installment plans", error)
-      }
-    }
-
-    const savedDollarConfig = localStorage.getItem(DOLLAR_STORAGE_KEY)
-    if (savedDollarConfig) {
-      try {
-        const parsed = JSON.parse(savedDollarConfig) as Partial<DollarConfig>
-        setDollarConfig(mergeDollarConfig(DEFAULT_DOLLAR_CONFIG, parsed))
-      } catch (error) {
-        console.error("Failed to parse saved dollar config", error)
-      }
-    }
-
     const savedAuth = localStorage.getItem(AUTH_STORAGE_KEY)
-    if (savedAuth === "true") {
+    const wasAuthenticated = savedAuth === "true"
+
+    if (wasAuthenticated) {
       setIsAuthenticated(true)
-    }
 
-    const savedHomeConfig = localStorage.getItem(HOME_STORAGE_KEY)
-    if (savedHomeConfig) {
-      try {
-        const parsed = JSON.parse(savedHomeConfig) as Partial<HomeConfig>
-        setHomeConfig((prev) => mergeHomeConfig(prev, parsed))
-      } catch (error) {
-        console.error("Failed to parse saved home config", error)
+      const savedPlans = localStorage.getItem(INSTALLMENT_STORAGE_KEY)
+      if (savedPlans) {
+        try {
+          const parsed = JSON.parse(savedPlans) as unknown
+
+          if (Array.isArray(parsed)) {
+            // Legacy format stored only the plans array; ignore it so we don't lose server promotions.
+            console.warn("Ignoring legacy installment cache without promotions")
+            localStorage.removeItem(INSTALLMENT_STORAGE_KEY)
+          } else if (
+            parsed &&
+            typeof parsed === "object" &&
+            Array.isArray((parsed as Record<string, unknown>).promotions)
+          ) {
+            const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, parsed as Partial<InstallmentConfig>)
+            setInstallmentPlans(cloneInstallmentPlans(merged.plans))
+            setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
+          }
+        } catch (error) {
+          console.error("Failed to parse saved installment plans", error)
+        }
       }
-    }
 
-    const savedTradeInConfig = localStorage.getItem(TRADE_IN_STORAGE_KEY)
-    if (savedTradeInConfig) {
-      try {
-        const parsed = JSON.parse(savedTradeInConfig) as Partial<TradeInConfig>
-        setTradeInConfig((prev) => mergeTradeInConfig(prev, parsed))
-        tradeInConfigLoadedFromStorage.current = true
-      } catch (error) {
-        console.error("Failed to parse saved trade-in config", error)
+      const savedDollarConfig = localStorage.getItem(DOLLAR_STORAGE_KEY)
+      if (savedDollarConfig) {
+        try {
+          const parsed = JSON.parse(savedDollarConfig) as Partial<DollarConfig>
+          setDollarConfig(mergeDollarConfig(DEFAULT_DOLLAR_CONFIG, parsed))
+        } catch (error) {
+          console.error("Failed to parse saved dollar config", error)
+        }
+      }
+
+      const savedHomeConfig = localStorage.getItem(HOME_STORAGE_KEY)
+      if (savedHomeConfig) {
+        try {
+          const parsed = JSON.parse(savedHomeConfig) as Partial<HomeConfig>
+          setHomeConfig((prev) => mergeHomeConfig(prev, parsed))
+        } catch (error) {
+          console.error("Failed to parse saved home config", error)
+        }
+      }
+
+      const savedTradeInConfig = localStorage.getItem(TRADE_IN_STORAGE_KEY)
+      if (savedTradeInConfig) {
+        try {
+          const parsed = JSON.parse(savedTradeInConfig) as Partial<TradeInConfig>
+          setTradeInConfig((prev) => mergeTradeInConfig(prev, parsed))
+          tradeInConfigLoadedFromStorage.current = true
+        } catch (error) {
+          console.error("Failed to parse saved trade-in config", error)
+        }
       }
     }
 
@@ -332,22 +334,22 @@ export function AdminProvider({
   }, [isAuthenticated, refreshImageLibrary])
 
   useEffect(() => {
-    if (!installmentPlansInitialized) return
+    if (!installmentPlansInitialized || !isAuthenticated) return
     const payload: InstallmentConfig = {
       plans: sanitizeInstallmentPlanCollection(installmentPlans),
       promotions: sanitizeInstallmentPromotionCollection(installmentPromotions),
       updatedAt: new Date().toISOString(),
     }
     localStorage.setItem(INSTALLMENT_STORAGE_KEY, JSON.stringify(payload))
-  }, [installmentPlans, installmentPromotions, installmentPlansInitialized])
+  }, [installmentPlans, installmentPromotions, installmentPlansInitialized, isAuthenticated])
 
   useEffect(() => {
-    if (!dollarConfigInitialized) return
+    if (!dollarConfigInitialized || !isAuthenticated) return
     localStorage.setItem(DOLLAR_STORAGE_KEY, JSON.stringify(dollarConfig))
-  }, [dollarConfig, dollarConfigInitialized])
+  }, [dollarConfig, dollarConfigInitialized, isAuthenticated])
 
   useEffect(() => {
-    if (!homeConfigInitialized) return
+    if (!homeConfigInitialized || !isAuthenticated) return
     localStorage.setItem(
       HOME_STORAGE_KEY,
       JSON.stringify({
@@ -359,12 +361,12 @@ export function AdminProvider({
         })),
       }),
     )
-  }, [homeConfig, homeConfigInitialized])
+  }, [homeConfig, homeConfigInitialized, isAuthenticated])
 
   useEffect(() => {
-    if (!tradeInConfigInitialized) return
+    if (!tradeInConfigInitialized || !isAuthenticated) return
     localStorage.setItem(TRADE_IN_STORAGE_KEY, JSON.stringify(tradeInConfig))
-  }, [tradeInConfig, tradeInConfigInitialized])
+  }, [tradeInConfig, tradeInConfigInitialized, isAuthenticated])
 
   const normalizePromotionTerms = (promotionId: string, drafts: InstallmentPromotionTermDraft[]) => {
     const baseTimestamp = Date.now()
