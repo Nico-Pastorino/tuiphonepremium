@@ -160,15 +160,16 @@ export function AdminProvider({
     if (savedPlans) {
       try {
         const parsed = JSON.parse(savedPlans) as unknown
+
         if (Array.isArray(parsed)) {
-          const sanitizedPlans = sanitizeInstallmentPlanCollection(parsed)
-          if (sanitizedPlans.length > 0) {
-            setInstallmentPlans(cloneInstallmentPlans(sanitizedPlans))
-          } else {
-            setInstallmentPlans(cloneInstallmentPlans(DEFAULT_INSTALLMENT_CONFIG.plans))
-          }
-          setInstallmentPromotions(cloneInstallmentPromotions(DEFAULT_INSTALLMENT_CONFIG.promotions))
-        } else {
+          // Legacy format stored only the plans array; ignore it so we don't lose server promotions.
+          console.warn("Ignoring legacy installment cache without promotions")
+          localStorage.removeItem(INSTALLMENT_STORAGE_KEY)
+        } else if (
+          parsed &&
+          typeof parsed === "object" &&
+          Array.isArray((parsed as Record<string, unknown>).promotions)
+        ) {
           const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, parsed as Partial<InstallmentConfig>)
           setInstallmentPlans(cloneInstallmentPlans(merged.plans))
           setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
