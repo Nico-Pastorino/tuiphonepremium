@@ -10,7 +10,7 @@ import type {
   CatalogProductsResponse,
 } from "@/types/product"
 import type { ProductRow } from "@/types/database"
-import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { useAdmin } from "@/contexts/AdminContext"
 
 type ApiListResponse = { data?: ProductRow[]; error?: string }
 
@@ -30,7 +30,7 @@ interface ProductContextType {
   getFeaturedProducts: () => Product[]
   searchProducts: (query: string) => Product[]
   filterProducts: (filters: ProductFilters) => Product[]
-  refreshProducts: () => Promise<void>
+  refreshProducts: (options?: { preferAdmin?: boolean }) => Promise<void>
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
@@ -84,7 +84,6 @@ function summaryToProduct(summary: ProductSummary): Product {
     updatedAt: undefined,
   }
 }
-const SUPABASE_TIMEOUT_MS = 10_000
 const API_TIMEOUT_MS = 12_000
 const API_MAX_ATTEMPTS = 2
 const API_RETRY_DELAY_MS = 300
@@ -176,6 +175,7 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, source: string):
 }
 
 export function ProductProvider({ children, initialData = null }: ProductProviderProps) {
+  const { isAuthenticated } = useAdmin()
   const initialProducts = useMemo(() => (initialData ? mapProducts(initialData.products) : []), [initialData])
   const initialSupabaseConnected = initialData?.supabaseConnected ?? false
   const [products, setProducts] = useState<Product[]>(() => initialProducts)
@@ -269,7 +269,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
   }, [updateProductsState])
 
   const loadProducts = useCallback(
-    async ({ force = false }: { force?: boolean } = {}) => {
+    async ({ force = false, preferAdmin = false }: { force?: boolean; preferAdmin?: boolean } = {}) => {
       const hasExistingProducts = productsRef.current.length > 0
       const lastUpdated = lastUpdateRef.current
       const isReliableData = supabaseConnectedRef.current
@@ -290,13 +290,14 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
       }
 
-      type SourceName = "admin" | "supabase" | "catalog"
-      const supabaseConfigured = isSupabaseConfigured()
+      type SourceName = "admin" | "catalog"
 
-      const adminUrl = force ? "/api/admin/products?refresh=1" : "/api/admin/products"
+      const adminUrl = force || preferAdmin ? "/api/admin/products?refresh=1" : "/api/admin/products"
       const catalogUrl = `/api/catalog/products?limit=200${force ? "&refresh=1" : ""}`
 
-      const fetchFromAdmin = async (attempt = 1): Promise<{ source: SourceName; products: Product[] }> => {
+      const fetchFromAdmin = async (
+        attempt = 1,
+      ): Promise<{ source: SourceName; products: Product[]; connected: boolean }> => {
         try {
           const response = await fetchWithTimeout(adminUrl, { cache: "no-store" }, API_TIMEOUT_MS, "Admin API")
           const result = (await response.json()) as ApiListResponse
@@ -305,7 +306,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
             throw new Error(result?.error || `API responded with status ${response.status}`)
           }
 
-          return { source: "admin" as const, products: mapProducts(result.data) }
+          return { source: "admin" as const, products: mapProducts(result.data), connected: true }
         } catch (error) {
           if (attempt < API_MAX_ATTEMPTS) {
             console.warn(`Retrying product API fetch (attempt ${attempt + 1})`, error)
@@ -316,7 +317,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
       }
 
-      const fetchFromCatalog = async (): Promise<{ source: SourceName; products: Product[] }> => {
+      const fetchFromCatalog = async (): Promise<{ source: SourceName; products: Product[]; connected: boolean }> => {
         const response = await fetchWithTimeout(catalogUrl, { cache: "no-store" }, API_TIMEOUT_MS, "Catalog API")
         const result = (await response.json()) as CatalogProductsResponse & { error?: string }
 
@@ -325,21 +326,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
 
         const productsList = (result.items ?? []).map(summaryToProduct)
-        return { source: "catalog" as const, products: productsList }
-      }
-
-      const fetchFromSupabase = async () => {
-        const { data, error: supabaseError } = await withTimeout(
-          supabase.from("products").select("*").order("created_at", { ascending: false }),
-          SUPABASE_TIMEOUT_MS,
-          "Supabase",
-        )
-
-        if (supabaseError) {
-          throw supabaseError
-        }
-
-        return { source: "supabase" as const, products: mapProducts(data ?? []) }
+        return { source: "catalog" as const, products: productsList, connected: Boolean(result.supabaseConnected) }
       }
 
       try {
@@ -349,7 +336,6 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         const sourcePriority: Record<SourceName, number> = {
           catalog: 1,
           admin: 2,
-          supabase: 3,
         }
 
         const recordError = (source: SourceName, error: unknown) => {
@@ -358,11 +344,6 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
 
         const applyResult = (source: SourceName, productsList: Product[], connected: boolean) => {
-          if (source === "supabase" && productsList.length === 0) {
-            console.warn("Supabase returned an empty product list. Waiting for API fallback before updating state.")
-            return
-          }
-
           const priority = sourcePriority[source]
           if (priority < resolvedPriority && productsRef.current.length > 0) {
             return
@@ -375,31 +356,24 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
           clearLoading()
         }
 
-        const fetchPromises: Promise<void>[] = []
+        const preferAdminSource = preferAdmin || force || isAuthenticated
+        const sources: SourceName[] = preferAdminSource ? ["admin", "catalog"] : ["catalog", "admin"]
 
-        if (supabaseConfigured) {
-          fetchPromises.push(
-            fetchFromSupabase()
-              .then(({ products: productsList }) => applyResult("supabase", productsList, true))
-              .catch((error) => recordError("supabase", error)),
-          )
-        } else {
-          console.info("Supabase no esta configurado. Se intentara cargar desde la API.")
+        for (const source of sources) {
+          try {
+            const { products: productsList, connected } =
+              source === "admin" ? await fetchFromAdmin() : await fetchFromCatalog()
+            if (source === "admin" && productsList.length === 0) {
+              continue
+            }
+            applyResult(source, productsList, connected)
+            if (resolvedSource) {
+              break
+            }
+          } catch (error) {
+            recordError(source, error)
+          }
         }
-
-        fetchPromises.push(
-          fetchFromAdmin()
-            .then(({ products: productsList }) => applyResult("admin", productsList, false))
-            .catch((error) => recordError("admin", error)),
-        )
-
-        fetchPromises.push(
-          fetchFromCatalog()
-            .then(({ products: productsList }) => applyResult("catalog", productsList, false))
-            .catch((error) => recordError("catalog", error)),
-        )
-
-        await Promise.all(fetchPromises)
 
         if (resolvedSource === null) {
           const fallbackError = errors[0]?.error
@@ -419,13 +393,19 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         clearLoading()
       }
     },
-    [showToast, updateProductsState, updateSupabaseState],
+    [showToast, updateProductsState, updateSupabaseState, isAuthenticated],
   )
 
   useEffect(() => {
     hydrateFromCache()
     loadProducts()
   }, [hydrateFromCache, loadProducts])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      void loadProducts({ force: true, preferAdmin: true })
+    }
+  }, [isAuthenticated, loadProducts])
 
   const handleSuccess = (message: string) => {
     showToast(message, "success")
@@ -546,34 +526,42 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         return existing
       }
 
-      if (isSupabaseConfigured()) {
-        try {
-          const { data, error } = await withTimeout(
-            supabase.from("products").select("*").eq("id", id).maybeSingle(),
-            SUPABASE_TIMEOUT_MS,
-            "Supabase",
-          )
+      try {
+        const response = await fetchWithTimeout(
+          `/api/catalog/product/${id}`,
+          { cache: "no-store" },
+          API_TIMEOUT_MS,
+          "Catalog product API",
+        )
 
-          if (error) {
-            throw error
-          }
-
-          if (data) {
-            const product = transformSupabaseProduct(data)
-            const updatedProducts = [...productsRef.current.filter((item) => item.id !== id), product].sort(
-              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-            )
-            updateProductsState(updatedProducts, true)
-            updateSupabaseState(true)
-            return product
-          }
-        } catch (error) {
-          console.warn(`No se pudo cargar el producto ${id} desde Supabase:`, error)
+        if (response.status === 404) {
+          return null
         }
+
+        const result = (await response.json()) as { data?: ProductRow; supabaseConnected?: boolean; error?: string }
+
+        if (!response.ok || !result.data) {
+          throw new Error(result?.error || `Catalog responded with status ${response.status}`)
+        }
+
+        const product = transformSupabaseProduct(result.data)
+        const updatedProducts = [...productsRef.current.filter((item) => item.id !== id), product].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
+        updateProductsState(updatedProducts, Boolean(result.supabaseConnected))
+        updateSupabaseState(Boolean(result.supabaseConnected))
+        return product
+      } catch (error) {
+        console.error(`Error al obtener el producto ${id} desde el catalogo:`, error)
       }
 
       try {
-        const response = await fetchWithTimeout("/api/admin/products", { cache: "no-store" }, API_TIMEOUT_MS, "API")
+        const response = await fetchWithTimeout(
+          "/api/admin/products",
+          { cache: "no-store" },
+          API_TIMEOUT_MS,
+          "Admin API",
+        )
         const result = (await response.json()) as ApiListResponse
 
         if (!response.ok) {
@@ -586,12 +574,12 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
           const updatedProducts = [...productsRef.current.filter((item) => item.id !== id), fallbackProduct].sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           )
-          updateProductsState(updatedProducts, false)
-          updateSupabaseState(false)
+          updateProductsState(updatedProducts, true)
+          updateSupabaseState(true)
           return fallbackProduct
         }
       } catch (error) {
-        console.error(`Error al obtener el producto ${id} desde la API:`, error)
+        console.error(`Error al obtener el producto ${id} desde la API de admin:`, error)
       }
 
       return null
@@ -599,8 +587,8 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
     [updateProductsState, setSupabaseConnected],
   )
 
-  const refreshProducts = async () => {
-    await loadProducts({ force: true })
+  const refreshProducts = async (options?: { preferAdmin?: boolean }) => {
+    await loadProducts({ force: true, preferAdmin: options?.preferAdmin ?? false })
   }
 
   const value: ProductContextType = {
