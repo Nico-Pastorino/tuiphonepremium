@@ -180,6 +180,101 @@ export class ProductAdminService {
       return { data: null, error: normalized }
     }
   }
+
+  static async getProductById(id: string): Promise<AdminResult<ProductRow | null>> {
+    if (!supabaseAdmin) {
+      return { data: null, error: new Error("Admin client not configured") }
+    }
+
+    try {
+      const client = getAdminClient()
+      const { data, error } = await client
+        .from("products")
+        .select(PRODUCT_SELECT_COLUMNS)
+        .eq("id", id)
+        .maybeSingle()
+
+      if (error) {
+        throw error
+      }
+
+      return { data: (data as ProductRow) ?? null, error: null }
+    } catch (error) {
+      const normalized = normalizeError(error)
+      console.error("Get product by id error:", normalized)
+      return { data: null, error: normalized }
+    }
+  }
+
+  static async getCatalogPage(options: {
+    limit: number
+    offset: number
+    category?: string | null
+    condition?: string | null
+    featured?: boolean | null
+    search?: string | null
+  }): Promise<AdminResult<{ rows: ProductRow[]; total: number }>> {
+    if (!supabaseAdmin) {
+      return { data: null, error: new Error("Admin client not configured") }
+    }
+
+    try {
+      const client = getAdminClient()
+      const normalizedLimit = Math.max(1, Math.min(options.limit, 200))
+      const normalizedOffset = Math.max(0, options.offset)
+
+      let query = client
+        .from("products")
+        .select(PRODUCT_SELECT_COLUMNS, { count: "exact" })
+        .order("condition", { ascending: true })
+        .order("price", { ascending: false, nullsFirst: false })
+        .order("category", { ascending: true })
+        .order("created_at", { ascending: false })
+        .range(normalizedOffset, normalizedOffset + normalizedLimit - 1)
+
+      if (options.category) {
+        const normalizedCategory = options.category.trim().toLowerCase()
+        query = query.ilike("category", normalizedCategory)
+      }
+
+      if (options.condition) {
+        query = query.eq("condition", options.condition.trim().toLowerCase())
+      }
+
+      if (typeof options.featured === "boolean") {
+        query = query.eq("featured", options.featured)
+      }
+
+      const searchValue = options.search?.trim()
+      if (searchValue && searchValue.length > 0) {
+        const sanitized = searchValue.replace(/[%_]/g, (match) => `\\${match}`)
+        const pattern = `%${sanitized}%`
+        query = query.or(
+          [
+            `name.ilike.${pattern}`,
+            `description.ilike.${pattern}`,
+            `category.ilike.${pattern}`,
+            `condition.ilike.${pattern}`,
+          ].join(","),
+        )
+      }
+
+      const { data, error, count } = await query
+
+      if (error) {
+        throw error
+      }
+
+      return {
+        data: { rows: (data as ProductRow[]) ?? [], total: count ?? 0 },
+        error: null,
+      }
+    } catch (error) {
+      const normalized = normalizeError(error)
+      console.error("Get catalog page error:", normalized)
+      return { data: null, error: normalized }
+    }
+  }
 }
 export class SiteConfigService {
   static async getConfigByKey(key: string): Promise<AdminResult<SiteConfigRow | null>> {

@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server"
 
-import { getProductsSnapshot } from "@/lib/product-cache"
+import { ProductAdminService } from "@/lib/supabase-admin"
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   try {
-    const snapshot = await getProductsSnapshot()
-    const target = snapshot.data.find((row) => row.id === params.id)
+    const { data, error } = await ProductAdminService.getProductById(params.id)
 
-    if (!target) {
+    if (error) {
+      throw error
+    }
+
+    if (!data) {
       return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 })
     }
 
     return NextResponse.json({
-      data: target,
-      supabaseConnected: snapshot.connected,
-      timestamp: snapshot.fetchedAt,
+      data,
+      supabaseConnected: true,
+      timestamp: Date.now(),
     })
   } catch (error) {
     console.error("Catalog product lookup failed:", error)

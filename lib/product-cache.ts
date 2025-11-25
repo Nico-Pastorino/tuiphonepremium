@@ -227,42 +227,72 @@ export const getCatalogProducts = async ({
   featured = null,
   search = null,
 }: CatalogQueryOptions = {}): Promise<CatalogProductsResponse> => {
-  const snapshot = await getProductsSnapshot({ force })
-  const { data, fetchedAt, connected } = snapshot
-
-  const filtered = applyFilters(data, { category, condition, featured, search })
   const normalizedOffset = Math.max(0, Number.isFinite(offset) ? offset : 0)
   const normalizedLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 12, MAX_LIMIT))
+  const normalizedCategory = category && category.trim().length > 0 ? category.trim().toLowerCase() : null
+  const normalizedCondition = condition && condition.trim().length > 0 ? condition.trim().toLowerCase() : null
+  const normalizedSearch = search && search.trim().length > 0 ? search.trim() : null
 
-  const sorted = filtered.slice().sort((a, b) => {
-    const conditionPriorityA = CONDITION_PRIORITY.get(normalizeCondition(a.condition)) ?? CONDITION_PRIORITY.size
-    const conditionPriorityB = CONDITION_PRIORITY.get(normalizeCondition(b.condition)) ?? CONDITION_PRIORITY.size
-    if (conditionPriorityA !== conditionPriorityB) {
-      return conditionPriorityA - conditionPriorityB
+  try {
+    const { data, error } = await ProductAdminService.getCatalogPage({
+      limit: normalizedLimit,
+      offset: normalizedOffset,
+      category: normalizedCategory,
+      condition: normalizedCondition,
+      featured,
+      search: normalizedSearch,
+    })
+
+    if (error || !data) {
+      throw error ?? new Error("Catalog query failed")
     }
 
-    const priceA = Number.isFinite(a.price) ? a.price : 0
-    const priceB = Number.isFinite(b.price) ? b.price : 0
-    if (priceA !== priceB) {
-      return priceB - priceA
+    return {
+      items: data.rows.map(toProductSummary),
+      total: data.total,
+      supabaseConnected: true,
+      timestamp: Date.now(),
     }
+  } catch (error) {
+    console.error("Fallo la consulta directa del catalogo, usando cache en memoria:", error)
+    const snapshot = await getProductsSnapshot({ force })
+    const filtered = applyFilters(snapshot.data, {
+      category: normalizedCategory,
+      condition: normalizedCondition,
+      featured,
+      search: normalizedSearch,
+    })
 
-    const priorityA = CATEGORY_PRIORITY.get(a.category.toLowerCase()) ?? CATEGORY_PRIORITY.size
-    const priorityB = CATEGORY_PRIORITY.get(b.category.toLowerCase()) ?? CATEGORY_PRIORITY.size
-    if (priorityA !== priorityB) {
-      return priorityA - priorityB
+    const sorted = filtered.slice().sort((a, b) => {
+      const conditionPriorityA = CONDITION_PRIORITY.get(normalizeCondition(a.condition)) ?? CONDITION_PRIORITY.size
+      const conditionPriorityB = CONDITION_PRIORITY.get(normalizeCondition(b.condition)) ?? CONDITION_PRIORITY.size
+      if (conditionPriorityA !== conditionPriorityB) {
+        return conditionPriorityA - conditionPriorityB
+      }
+
+      const priceA = Number.isFinite(a.price) ? a.price : 0
+      const priceB = Number.isFinite(b.price) ? b.price : 0
+      if (priceA !== priceB) {
+        return priceB - priceA
+      }
+
+      const priorityA = CATEGORY_PRIORITY.get(a.category.toLowerCase()) ?? CATEGORY_PRIORITY.size
+      const priorityB = CATEGORY_PRIORITY.get(b.category.toLowerCase()) ?? CATEGORY_PRIORITY.size
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB
+      }
+
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+
+    const slice = sorted.slice(normalizedOffset, normalizedOffset + normalizedLimit)
+    const items = slice.map(toProductSummary)
+
+    return {
+      items,
+      total: filtered.length,
+      supabaseConnected: snapshot.connected,
+      timestamp: snapshot.fetchedAt,
     }
-
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  })
-
-  const slice = sorted.slice(normalizedOffset, normalizedOffset + normalizedLimit)
-  const items = slice.map(toProductSummary)
-
-  return {
-    items,
-    total: filtered.length,
-    supabaseConnected: connected,
-    timestamp: fetchedAt,
   }
 }
