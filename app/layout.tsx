@@ -1,10 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { ProductProvider } from "@/contexts/ProductContext"
 import { AdminProvider } from "@/contexts/AdminContext"
 import { ToastContainer } from "@/components/ui/toast"
 import { ServiceWorkerManager } from "@/components/ServiceWorkerManager"
-import { getProductsSnapshot } from "@/lib/product-cache"
 import {
   getDollarConfigCached,
   getHomeConfigCached,
@@ -27,19 +25,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const [productsSnapshot, homeConfig, tradeInConfig, installmentConfig, dollarConfig] = await Promise.all([
-    getProductsSnapshot(),
+  const [homeConfig, tradeInConfig, installmentConfig, dollarConfig] = await Promise.all([
     getHomeConfigCached(),
     getTradeInConfigCached(),
     getInstallmentConfigCached(),
     getDollarConfigCached(),
   ])
-
-  const productInitialData = {
-    products: productsSnapshot.data,
-    supabaseConnected: productsSnapshot.connected,
-    timestamp: productsSnapshot.fetchedAt,
-  }
 
   return (
     <html lang="es">
@@ -53,11 +44,9 @@ export default async function RootLayout({
           initialInstallmentConfig={installmentConfig}
           initialDollarConfig={dollarConfig}
         >
-          <ProductProvider initialData={productInitialData}>
-            {children}
-            <ToastContainer />
-            <ServiceWorkerManager />
-          </ProductProvider>
+          {children}
+          <ToastContainer />
+          <ServiceWorkerManager />
         </AdminProvider>
       </body>
     </html>

@@ -1,6 +1,8 @@
+import { revalidateTag, unstable_cache } from "next/cache"
+
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { ProductRow } from "@/types/database"
-import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
+import type { CatalogProductsResponse, Product, ProductSummary } from "@/types/product"
 
 type ProductsSnapshot = {
   data: ProductRow[]
@@ -8,19 +10,8 @@ type ProductsSnapshot = {
   connected: boolean
 }
 
-type CacheState = {
-  data: ProductRow[] | null
-  expiresAt: number
-  fetchedAt: number
-  connected: boolean
-  inFlight: Promise<ProductsSnapshot> | null
-}
-
-type GlobalWithCache = typeof globalThis & {
-  __TUIPHONE_PRODUCTS_CACHE__?: CacheState
-}
-
 const DEFAULT_TTL_MS = 300_000
+const PRODUCTS_CACHE_TAG = "products-snapshot"
 const MAX_LIMIT = 60
 const CATEGORY_PRIORITY_ORDER = ["iphone", "ipad", "mac", "watch", "airpods", "accesorios"]
 const CATEGORY_PRIORITY = new Map(CATEGORY_PRIORITY_ORDER.map((value, index) => [value, index]))
@@ -43,39 +34,8 @@ const getCacheTtlMs = (): number => {
   return parsed
 }
 
-const resolveCacheState = (): CacheState => {
-  const globalObject = globalThis as GlobalWithCache
-  if (!globalObject.__TUIPHONE_PRODUCTS_CACHE__) {
-    globalObject.__TUIPHONE_PRODUCTS_CACHE__ = {
-      data: null,
-      expiresAt: 0,
-      fetchedAt: 0,
-      connected: false,
-      inFlight: null,
-    }
-  }
-
-  return globalObject.__TUIPHONE_PRODUCTS_CACHE__
-}
-
-const resetCacheState = (cache: CacheState): void => {
-  cache.data = null
-  cache.expiresAt = 0
-  cache.fetchedAt = 0
-  cache.connected = false
-  cache.inFlight = null
-}
-
-const updateCacheState = (cache: CacheState, snapshot: ProductsSnapshot): void => {
-  cache.data = snapshot.data
-  cache.fetchedAt = snapshot.fetchedAt
-  cache.connected = snapshot.connected
-  cache.expiresAt = snapshot.fetchedAt + getCacheTtlMs()
-}
-
 export const invalidateProductsCache = async (): Promise<void> => {
-  const cache = resolveCacheState()
-  resetCacheState(cache)
+  await revalidateTag(PRODUCTS_CACHE_TAG)
 }
 
 export type GetProductsOptions = {
@@ -112,37 +72,18 @@ const fetchProductsSnapshot = async (): Promise<ProductsSnapshot> => {
   return { data: allProducts, fetchedAt, connected }
 }
 
+const CACHE_TTL_SECONDS = Math.max(30, Math.round(getCacheTtlMs() / 1000))
+
+const getSnapshotCached = unstable_cache(fetchProductsSnapshot, ["products-snapshot"], {
+  revalidate: CACHE_TTL_SECONDS,
+  tags: [PRODUCTS_CACHE_TAG],
+})
+
 export const getProductsSnapshot = async ({ force = false }: GetProductsOptions = {}): Promise<ProductsSnapshot> => {
-  const cache = resolveCacheState()
-  const now = Date.now()
-
-  if (!force && cache.data && cache.expiresAt > now) {
-    return { data: cache.data, fetchedAt: cache.fetchedAt, connected: cache.connected }
-  }
-
   if (force) {
-    resetCacheState(cache)
-    const snapshot = await fetchProductsSnapshot()
-    updateCacheState(cache, snapshot)
-    return snapshot
+    await revalidateTag(PRODUCTS_CACHE_TAG)
   }
-
-  if (cache.inFlight) {
-    return cache.inFlight
-  }
-
-  const fetchPromise = fetchProductsSnapshot()
-  cache.inFlight = fetchPromise
-
-  try {
-    const snapshot = await fetchPromise
-    updateCacheState(cache, snapshot)
-    return snapshot
-  } finally {
-    if (cache.inFlight === fetchPromise) {
-      cache.inFlight = null
-    }
-  }
+  return getSnapshotCached()
 }
 
 export const getProductsCached = async (options?: GetProductsOptions): Promise<ProductRow[]> => {
@@ -218,6 +159,30 @@ export const toProductSummary = (row: ProductRow): ProductSummary => ({
   stock: row.stock,
   featured: row.featured,
   createdAt: row.created_at,
+})
+
+const normalizeSpecificationsValue = (value: ProductRow["specifications"]): Record<string, string | number | boolean> => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {}
+  }
+  return value as Record<string, string | number | boolean>
+}
+
+export const toFullProduct = (row: ProductRow): Product => ({
+  id: row.id,
+  name: row.name,
+  description: row.description ?? "",
+  category: row.category,
+  condition: normalizeCondition(row.condition),
+  price: row.price,
+  originalPrice: row.original_price ?? null,
+  priceUSD: row.price_usd ?? null,
+  images: row.images ?? [],
+  specifications: normalizeSpecificationsValue(row.specifications),
+  stock: row.stock,
+  featured: row.featured,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at ?? null,
 })
 
 const applyFilters = (
