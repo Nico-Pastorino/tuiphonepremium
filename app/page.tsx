@@ -3,6 +3,7 @@ import { getCatalogProducts } from "@/lib/product-cache"
 import { getHomeConfigCached, getTradeInConfigCached } from "@/lib/site-config-cache"
 
 export const revalidate = 300
+export const dynamic = "force-dynamic"
 
 export default async function HomePage() {
   const outletEnabled = process.env.NEXT_PUBLIC_OUTLET_ENABLED === "true"

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { getCatalogProducts } from "@/lib/product-cache"
 import { ProductsPageClient } from "./ProductsPageClient"
+import { Suspense } from "react"
 
 const INITIAL_PAGE_SIZE = 12
 
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 }
 
 export const revalidate = 300
+export const dynamic = "force-dynamic"
 
 type PageProps = {
   searchParams?: Record<string, string | string[]>
@@ -39,10 +41,12 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   })
 
   return (
-    <ProductsPageClient
-      initialData={initialData}
-      pageSize={INITIAL_PAGE_SIZE}
-      initialFilters={{ category: category ?? null, condition: condition ?? null, search: normalizedSearch }}
-    />
+    <Suspense fallback={<div className="min-h-[40vh]" />}>
+      <ProductsPageClient
+        initialData={initialData}
+        pageSize={INITIAL_PAGE_SIZE}
+        initialFilters={{ category: category ?? null, condition: condition ?? null, search: normalizedSearch }}
+      />
+    </Suspense>
   )
 }

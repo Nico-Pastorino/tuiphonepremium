@@ -1,4 +1,6 @@
 ; 'tsx'
+
+export const dynamic = "force-dynamic"
 export default function DollarPage() {
   return (
     <div className="p-6">

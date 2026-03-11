@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getCatalogProducts } from "@/lib/product-cache"
 import { ProductsPageClient } from "@/app/productos/ProductsPageClient"
+import { Suspense } from "react"
 
 const INITIAL_PAGE_SIZE = 12
 
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 }
 
 export const revalidate = 300
+export const dynamic = "force-dynamic"
 
 export default async function OutletPage() {
   if (process.env.NEXT_PUBLIC_OUTLET_ENABLED !== "true") {
@@ -24,13 +26,15 @@ export default async function OutletPage() {
   })
 
   return (
-    <ProductsPageClient
-      initialData={initialData}
-      pageSize={INITIAL_PAGE_SIZE}
-      initialFilters={{ category: null, condition: "outlet", search: null }}
-      outletOnly
-      title="Outlet Apple"
-      subtitle="Equipos con detalles esteticos o funcionales a precio especial."
-    />
+    <Suspense fallback={<div className="min-h-[40vh]" />}>
+      <ProductsPageClient
+        initialData={initialData}
+        pageSize={INITIAL_PAGE_SIZE}
+        initialFilters={{ category: null, condition: "outlet", search: null }}
+        outletOnly
+        title="Outlet Apple"
+        subtitle="Equipos con detalles esteticos o funcionales a precio especial."
+      />
+    </Suspense>
   )
 }

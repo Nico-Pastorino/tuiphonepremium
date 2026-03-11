@@ -60,6 +60,8 @@ import type { ImageLibraryItem } from "@/types/image-library"
 
 type NewLibraryImageForm = { label: string; category: string; dataUrl: string }
 
+export const dynamic = "force-dynamic"
+
 
 
 const TRADE_IN_STORAGE_IDS: TradeInStorageId[] = ["64gb", "128gb", "256gb", "512gb"]

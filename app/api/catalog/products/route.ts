@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getCatalogProducts } from "@/lib/product-cache"
 
 export const revalidate = 300
+export const dynamic = "force-dynamic"
 
 const DEFAULT_LIMIT = 12
 const MAX_LIMIT = 60
