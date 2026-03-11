@@ -15,6 +15,7 @@ import { X, Plus } from "lucide-react"
 import { useAdmin } from "@/contexts/AdminContext"
 import type { ImageLibraryItem } from "@/types/image-library"
 import type { ProductFormData } from "@/types/product"
+import { resolveImageUrl } from "@/lib/image-cdn"
 
 interface ProductFormProps {
   onSubmit: (product: ProductFormData) => Promise<boolean>
@@ -25,6 +26,18 @@ interface ProductFormProps {
 export function ProductForm({ onSubmit, initialData, isLoading = false }: ProductFormProps) {
   const { getEffectiveDollarRate, imageLibrary } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
+  const outletEnabled = process.env.NEXT_PUBLIC_OUTLET_ENABLED === "true"
+
+  const OUTLET_DEFECT_OPTIONS = [
+    "No marca % de bateria",
+    "Marca en pantalla",
+    "Rayones",
+    "Golpes en carcasa",
+    "Sin Face ID",
+    "Sin True Tone",
+    "Camara con detalles",
+    "Altavoz con detalles",
+  ]
 
   const derivePriceFromUSD = (usd?: number) => {
     if (usd === undefined || Number.isNaN(usd)) {
@@ -52,6 +65,15 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     specifications: initialData?.specifications || {},
     stock: initialData?.stock ?? 0,
     featured: initialData?.featured || false,
+    isOutlet: initialData?.isOutlet ?? false,
+    outletNotes: initialData?.outletNotes ?? "",
+    outletDefects: initialData?.outletDefects ?? [],
+    outletBatteryPercent: initialData?.outletBatteryPercent ?? null,
+    outletGrade: initialData?.outletGrade ?? "",
+    outletWarrantyDays: initialData?.outletWarrantyDays ?? null,
+    outletAccessories: initialData?.outletAccessories ?? "",
+    outletDisplayIssues: initialData?.outletDisplayIssues ?? null,
+    outletCaseIssues: initialData?.outletCaseIssues ?? null,
   })
 
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
@@ -77,6 +99,17 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
   const [newImage, setNewImage] = useState("")
   const [newSpecKey, setNewSpecKey] = useState("")
   const [newSpecValue, setNewSpecValue] = useState("")
+  const [newDefect, setNewDefect] = useState("")
+
+  const toggleDefect = (defect: string) => {
+    setFormData((prev) => {
+      const exists = prev.outletDefects?.includes(defect)
+      const nextDefects = exists
+        ? (prev.outletDefects ?? []).filter((item) => item !== defect)
+        : [...(prev.outletDefects ?? []), defect]
+      return { ...prev, outletDefects: nextDefects }
+    })
+  }
 
   const handleAddImageFromLibrary = (image: ImageLibraryItem) => {
     if (formData.images.includes(image.url)) {
@@ -115,7 +148,17 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
         specifications: {},
         stock: 0,
         featured: false,
+        isOutlet: false,
+        outletNotes: "",
+        outletDefects: [],
+        outletBatteryPercent: null,
+        outletGrade: "",
+        outletWarrantyDays: null,
+        outletAccessories: "",
+        outletDisplayIssues: null,
+        outletCaseIssues: null,
       })
+      setNewDefect("")
     }
   }
 
@@ -242,8 +285,15 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
             <div className="space-y-2">
               <Label htmlFor="condition">Condicion *</Label>
               <Select
-                value={formData.condition}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, condition: value as any }))}
+                value={formData.isOutlet ? "outlet" : formData.condition}
+                onValueChange={(value) => {
+                  const isOutletSelected = value === "outlet"
+                  setFormData((prev) => ({
+                    ...prev,
+                    condition: isOutletSelected ? "seminuevo" : (value as any),
+                    isOutlet: isOutletSelected,
+                  }))
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar condicion" />
@@ -251,8 +301,14 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                 <SelectContent>
                   <SelectItem value="nuevo">Nuevo</SelectItem>
                   <SelectItem value="seminuevo">Seminuevo</SelectItem>
+                  {outletEnabled && <SelectItem value="outlet">Outlet</SelectItem>}
                 </SelectContent>
               </Select>
+              {outletEnabled && formData.isOutlet && (
+                <p className="text-xs text-orange-700">
+                  Outlet habilita los detalles especiales para equipos con defectos.
+                </p>
+              )}
             </div>
           </div>
 
@@ -265,6 +321,155 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
             <Label htmlFor="featured">Producto destacado</Label>
           </div>
 
+          {outletEnabled && (
+            <div className="space-y-4 rounded-2xl border border-orange-100 bg-orange-50/60 p-4">
+              <div>
+                <p className="text-sm font-semibold text-orange-900">Outlet</p>
+                <p className="text-xs text-orange-700">
+                  Completa los detalles para equipos con defectos o detalles especiales.
+                </p>
+              </div>
+
+              {formData.isOutlet && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="outletGrade">Estado general</Label>
+                      <Select
+                        value={formData.outletGrade ?? ""}
+                        onValueChange={(value) => setFormData((prev) => ({ ...prev, outletGrade: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="excelente">Excelente</SelectItem>
+                          <SelectItem value="bueno">Bueno</SelectItem>
+                          <SelectItem value="regular">Regular</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="outletBatteryPercent">Bateria (%)</Label>
+                      <Input
+                        id="outletBatteryPercent"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={formData.outletBatteryPercent ?? ""}
+                        onChange={(e) => {
+                          const value = e.target.value ? Number.parseInt(e.target.value, 10) : null
+                          setFormData((prev) => ({ ...prev, outletBatteryPercent: value }))
+                        }}
+                        placeholder="Ej: 87"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="outletWarrantyDays">Garantia (dias)</Label>
+                      <Input
+                        id="outletWarrantyDays"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={formData.outletWarrantyDays ?? ""}
+                        onChange={(e) => {
+                          const value = e.target.value ? Number.parseInt(e.target.value, 10) : null
+                          setFormData((prev) => ({ ...prev, outletWarrantyDays: value }))
+                        }}
+                        placeholder="Ej: 30"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="outletAccessories">Accesorios</Label>
+                      <Input
+                        id="outletAccessories"
+                        value={formData.outletAccessories ?? ""}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, outletAccessories: e.target.value }))}
+                        placeholder="Ej: sin cargador, solo caja"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Defectos / detalles</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {OUTLET_DEFECT_OPTIONS.map((defect) => {
+                        const active = formData.outletDefects?.includes(defect)
+                        return (
+                          <Button
+                            key={defect}
+                            type="button"
+                            variant={active ? "default" : "outline"}
+                            onClick={() => toggleDefect(defect)}
+                            className={active ? "bg-orange-600 hover:bg-orange-700 text-white" : "text-gray-700"}
+                          >
+                            {defect}
+                          </Button>
+                        )
+                      })}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={newDefect}
+                        onChange={(e) => setNewDefect(e.target.value)}
+                        placeholder="Agregar detalle personalizado"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const value = newDefect.trim()
+                          if (!value) return
+                          toggleDefect(value)
+                          setNewDefect("")
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="outletDisplayIssues"
+                        checked={Boolean(formData.outletDisplayIssues)}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, outletDisplayIssues: checked }))
+                        }
+                      />
+                      <Label htmlFor="outletDisplayIssues">Detalles en pantalla</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="outletCaseIssues"
+                        checked={Boolean(formData.outletCaseIssues)}
+                        onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, outletCaseIssues: checked }))}
+                      />
+                      <Label htmlFor="outletCaseIssues">Detalles en carcasa</Label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="outletNotes">Observaciones</Label>
+                    <Textarea
+                      id="outletNotes"
+                      value={formData.outletNotes ?? ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, outletNotes: e.target.value }))}
+                      placeholder="Ej: leve marca en esquina, sin cambios de pantalla..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Imagenes */}
           <div className="space-y-4">
             <Label>Imagenes del producto</Label>
@@ -276,7 +481,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                     <div key={index} className="relative group">
                       <div className="relative h-24 w-full bg-gray-100 rounded-lg overflow-hidden border">
                         <Image
-                          src={image || "/placeholder.svg"}
+                          src={resolveImageUrl(image) || "/placeholder.svg"}
                           alt={`Imagen ${index + 1}`}
                           fill
                           className="object-cover"
@@ -352,7 +557,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                         >
                           <div className="relative h-32 w-full bg-gray-100">
                             <Image
-                              src={image.url || "/placeholder.svg"}
+                              src={resolveImageUrl(image.url) || "/placeholder.svg"}
                               alt={image.label}
                               fill
                               className="object-cover transition-transform group-hover:scale-105"
@@ -433,5 +638,3 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     </Card>
   )
 }
-
-

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
@@ -26,11 +27,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useProducts } from "@/contexts/ProductContext"
 import { useAdmin } from "@/contexts/AdminContext"
-import type { HomeConfig, InstallmentPlan, InstallmentPromotion } from "@/contexts/AdminContext"
+import type { HomeConfig, InstallmentPlan, InstallmentPromotion, TradeInConfig } from "@/contexts/AdminContext"
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { cloneHomeConfig } from "@/lib/home-config"
 import { cloneTradeInConfig } from "@/lib/trade-in-config"
 import Image from "next/image"
+import { resolveImageUrl } from "@/lib/image-cdn"
 import type { Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
@@ -54,6 +56,7 @@ import {
   ArrowDown,
 } from "lucide-react"
 import type { TradeInConditionId, TradeInStorageId, TradeInRow } from "@/types/trade-in"
+import type { ImageLibraryItem } from "@/types/image-library"
 
 type NewLibraryImageForm = { label: string; category: string; dataUrl: string }
 
@@ -131,6 +134,7 @@ function AdminDashboard() {
   } = useAdmin()
   const effectiveAdminRate = getEffectiveDollarRate()
   const { dollarRate, refresh: refreshDollarRate, loading, error } = useDollarRate()
+  const outletEnabled = process.env.NEXT_PUBLIC_OUTLET_ENABLED === "true"
 
   const [isAddProductOpen, setIsAddProductOpen] = useState(false)
   const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false)
@@ -146,15 +150,16 @@ function AdminDashboard() {
   })
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
   const [searchTerm, setSearchTerm] = useState("")
+  const [conditionFilter, setConditionFilter] = useState<"nuevo" | "seminuevo" | "outlet" | null>(null)
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string>("")
   const [savingLibraryImage, setSavingLibraryImage] = useState(false)
 
-  const [homeForm, setHomeForm] = useState(() => cloneHomeConfig(homeConfig))
+  const [homeForm, setHomeForm] = useState<HomeConfig>(() => cloneHomeConfig(homeConfig))
   const [savingHomeConfig, setSavingHomeConfig] = useState(false)
 
-  const [tradeInForm, setTradeInForm] = useState(() => cloneTradeInConfig(tradeInConfig))
+  const [tradeInForm, setTradeInForm] = useState<TradeInConfig>(() => cloneTradeInConfig(tradeInConfig))
   const [savingTradeInConfig, setSavingTradeInConfig] = useState(false)
   const [tradeInRowDialog, setTradeInRowDialog] = useState<{ sectionId: string | null; label: string; error: string | null }>(
     {
@@ -184,11 +189,19 @@ function AdminDashboard() {
   const naranjaPlans = getInstallmentPlansByCategory("naranja")
 
   // Filtrar productos
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const filteredProducts = products.filter((product) => {
+    if (conditionFilter === "outlet") {
+      return Boolean(product.isOutlet)
+    }
+    if (conditionFilter === "nuevo") {
+      return product.condition === "nuevo" && !product.isOutlet
+    }
+    if (conditionFilter === "seminuevo") {
+      return product.condition === "seminuevo" && !product.isOutlet
+    }
+    const term = searchTerm.toLowerCase()
+    return product.name.toLowerCase().includes(term) || product.category.toLowerCase().includes(term)
+  })
 
   const baseDollarRate = dollarRate?.blue ?? dollarConfig.blueRate
   const finalDollarValue = (baseDollarRate + dollarConfig.markup).toFixed(2)
@@ -248,7 +261,7 @@ function AdminDashboard() {
   }
 
   const imageLibraryCategories = useMemo(() => {
-    const categories = new Set(imageLibrary.map((item) => item.category || "general"))
+    const categories = new Set<string>(imageLibrary.map((item) => item.category || "general"))
     return Array.from(categories).sort((a, b) => a.localeCompare(b))
   }, [imageLibrary])
 
@@ -256,7 +269,7 @@ function AdminDashboard() {
     if (libraryCategoryFilter === "todos") {
       return imageLibrary
     }
-    return imageLibrary.filter((item) => item.category === libraryCategoryFilter)
+    return imageLibrary.filter((item: ImageLibraryItem) => item.category === libraryCategoryFilter)
   }, [imageLibrary, libraryCategoryFilter])
 
   const handleAddLibraryImage = useCallback(
@@ -598,6 +611,46 @@ function AdminDashboard() {
                     className="w-full"
                   />
                 </div>
+                <div className="flex flex-wrap items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700">
+                  <Button
+                    type="button"
+                    variant={conditionFilter === "nuevo" ? "default" : "outline"}
+                    className={`h-8 rounded-full px-3 text-xs ${
+                      conditionFilter === "nuevo"
+                        ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                        : "border-gray-200 text-gray-700"
+                    }`}
+                    onClick={() => setConditionFilter((prev) => (prev === "nuevo" ? null : "nuevo"))}
+                  >
+                    Nuevo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={conditionFilter === "seminuevo" ? "default" : "outline"}
+                    className={`h-8 rounded-full px-3 text-xs ${
+                      conditionFilter === "seminuevo"
+                        ? "bg-blue-500 text-white hover:bg-blue-600"
+                        : "border-gray-200 text-gray-700"
+                    }`}
+                    onClick={() => setConditionFilter((prev) => (prev === "seminuevo" ? null : "seminuevo"))}
+                  >
+                    Seminuevo
+                  </Button>
+                  {outletEnabled && (
+                    <Button
+                      type="button"
+                      variant={conditionFilter === "outlet" ? "default" : "outline"}
+                      className={`h-8 rounded-full px-3 text-xs ${
+                        conditionFilter === "outlet"
+                          ? "bg-orange-500 text-white hover:bg-orange-600"
+                          : "border-orange-100 text-orange-700"
+                      }`}
+                      onClick={() => setConditionFilter((prev) => (prev === "outlet" ? null : "outlet"))}
+                    >
+                      Outlet
+                    </Button>
+                  )}
+                </div>
                 <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
                   <DialogTrigger asChild>
                     <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
@@ -634,17 +687,21 @@ function AdminDashboard() {
                     >
                       <div className="relative aspect-square overflow-hidden">
                         <Image
-                          src={product.images[0] || "/placeholder.svg?height=300&width=300"}
+                          src={resolveImageUrl(product.images[0]) || "/placeholder.svg?height=300&width=300"}
                           alt={product.name}
                           fill
                           className="object-cover"
                           unoptimized
                         />
                         <div className="absolute top-2 left-2 flex gap-2">
+                          {product.isOutlet ? (
+                            <Badge className="bg-orange-500 text-white">Outlet</Badge>
+                          ) : product.condition === "nuevo" ? (
+                            <Badge className="bg-emerald-500 text-white">Nuevo</Badge>
+                          ) : (
+                            <Badge className="bg-blue-500 text-white">Seminuevo</Badge>
+                          )}
                           {product.featured && <Badge className="bg-gray-900 text-white">Destacado</Badge>}
-                          <Badge variant={product.condition === "nuevo" ? "default" : "secondary"}>
-                            {product.condition}
-                          </Badge>
                         </div>
                       </div>
                       <CardContent className="p-4">
@@ -846,7 +903,7 @@ function AdminDashboard() {
                           >
                             <div className="relative h-28 w-full overflow-hidden rounded-md bg-gray-100">
                               <Image
-                                src={image.url || "/placeholder.svg"}
+                                src={resolveImageUrl(image.url) || "/placeholder.svg"}
                                 alt={image.label}
                                 fill
                                 className="object-cover"
@@ -1478,9 +1535,3 @@ function AdminDashboard() {
     </div>
   )
 }
-
-
-
-
-
-

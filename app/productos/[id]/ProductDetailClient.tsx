@@ -26,6 +26,7 @@ import type { Product, ProductSummary } from "@/types/product"
 import type { InstallmentPlan } from "@/types/finance"
 import type { ProductRow } from "@/types/database"
 import { TradeInEstimator } from "@/components/trade-in-estimator"
+import { resolveImageUrl } from "@/lib/image-cdn"
 
 const CATEGORY_LABELS = {
   "visa-mastercard": "Visa / Mastercard",
@@ -89,6 +90,15 @@ const transformProductRow = (row: ProductRow): Product => ({
       : {},
   stock: row.stock,
   featured: row.featured,
+  isOutlet: Boolean(row.is_outlet),
+  outletNotes: row.outlet_notes ?? null,
+  outletDefects: row.outlet_defects ?? [],
+  outletBatteryPercent: row.outlet_battery_percent ?? null,
+  outletGrade: row.outlet_grade ?? null,
+  outletWarrantyDays: row.outlet_warranty_days ?? null,
+  outletAccessories: row.outlet_accessories ?? null,
+  outletDisplayIssues: row.outlet_display_issues ?? null,
+  outletCaseIssues: row.outlet_case_issues ?? null,
   createdAt: row.created_at,
   updatedAt: row.updated_at ?? null,
 })
@@ -446,7 +456,10 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                     <div className="pointer-events-none absolute inset-0">
                       <div className="relative h-full w-full p-5 sm:p-8 md:p-10">
                         <Image
-                          src={product.images[selectedImageIndex] || "/placeholder.svg?height=600&width=600"}
+                          src={
+                            resolveImageUrl(product.images[selectedImageIndex]) ||
+                            "/placeholder.svg?height=600&width=600"
+                          }
                           alt={product.name}
                           fill
                           priority
@@ -480,9 +493,11 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
 
                     {/* Badges */}
                     <div className="absolute left-5 top-5 z-10 flex flex-col gap-2">
-                      {product.condition === "seminuevo" && (
+                      {product.isOutlet ? (
+                        <Badge className="rounded-full bg-orange-500 px-3 py-1 font-medium text-white">Outlet</Badge>
+                      ) : product.condition === "seminuevo" ? (
                         <Badge className="rounded-full bg-blue-500 px-3 py-1 font-medium text-white">Seminuevo</Badge>
-                      )}
+                      ) : null}
                       {product.featured && (
                         <Badge className="rounded-full bg-gray-900 px-3 py-1 font-medium text-white">Destacado</Badge>
                       )}
@@ -504,7 +519,7 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                           }`}
                         >
                           <Image
-                            src={image || "/placeholder.svg"}
+                            src={resolveImageUrl(image) || "/placeholder.svg"}
                             alt={`${product.name} ${index + 1}`}
                             fill
                             className="object-contain drop-shadow-md"
@@ -526,11 +541,22 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
             {/* Product Info */}
 
             <AnimatedSection animation="fadeRight">
-              <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-8 lg:-mt-16">
                 <div className="flex flex-col gap-5 lg:gap-6">
-                  <Badge variant="secondary" className={`w-fit rounded-full border-0 px-3 py-1 text-xs font-semibold ${conditionBadgeClass}`}>
-                    {conditionLabel}
-                  </Badge>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {product.isOutlet ? (
+                        <Badge className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+                          Outlet
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className={`w-fit rounded-full border-0 px-3 py-1 text-xs font-semibold ${conditionBadgeClass}`}
+                        >
+                          {conditionLabel}
+                        </Badge>
+                      )}
+                    </div>
                   <h1 className="text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">{product.name}</h1>
 
                   <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-6">
@@ -549,6 +575,39 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                     {priceInUSD !== null && (
                       <div className="mt-1 text-sm text-gray-500 sm:text-base">
                         USD {priceInUSD.toLocaleString("es-AR")}
+                      </div>
+                    )}
+
+                    {product.isOutlet && (
+                      <div className="mt-4 rounded-2xl border border-orange-200/70 bg-orange-50/70 p-4 sm:p-5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-orange-800 sm:text-base">Detalle Outlet</p>
+                          {product.outletGrade && (
+                            <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-[11px] font-semibold text-orange-700 capitalize">
+                              {product.outletGrade}
+                            </span>
+                          )}
+                          {product.outletBatteryPercent !== null && product.outletBatteryPercent !== undefined && (
+                            <span className="rounded-full bg-white/80 px-2.5 py-0.5 text-[11px] font-semibold text-orange-700">
+                              Bateria {product.outletBatteryPercent}%
+                            </span>
+                          )}
+                        </div>
+                        {product.outletDefects && product.outletDefects.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {product.outletDefects.slice(0, 6).map((defect) => (
+                              <span
+                                key={defect}
+                                className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-orange-700"
+                              >
+                                {defect}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {product.outletNotes && (
+                          <p className="mt-3 text-sm text-orange-700">{product.outletNotes}</p>
+                        )}
                       </div>
                     )}
 
@@ -702,21 +761,23 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                   </div>
                 </div>
 
-                {product.category.toLowerCase() === "iphone" && (
-                  <TradeInEstimator
-                    productName={product.name}
-                    productPriceARS={Math.round(priceInPesos)}
-                    productPriceUSD={priceInUSD}
-                    productCondition={product.condition}
-                  />
-                )}
-
                 <div className="flex flex-col gap-4 lg:hidden">
                   <QuickActionButtons />
                   <BenefitsGrid />
                 </div>
               </div>
             </AnimatedSection>
+
+            {product.category.toLowerCase() === "iphone" && (
+              <AnimatedSection animation="fadeUp" className="lg:col-span-2">
+                <TradeInEstimator
+                  productName={product.name}
+                  productPriceARS={Math.round(priceInPesos)}
+                  productPriceUSD={priceInUSD}
+                  productCondition={product.condition}
+                />
+              </AnimatedSection>
+            )}
           </div>
 
           {/* Product Details */}
@@ -765,7 +826,7 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                       <Card className="group cursor-pointer border-0 shadow-sm transition-all duration-300 hover:shadow-lg">
                         <div className="relative aspect-square overflow-hidden rounded-t-xl bg-gray-50">
                           <Image
-                            src={relatedProduct.images[0] || "/placeholder.svg?height=300&width=300"}
+                            src={resolveImageUrl(relatedProduct.images[0]) || "/placeholder.svg?height=300&width=300"}
                             alt={relatedProduct.name}
                             fill
                             className="object-contain transition-transform duration-300 group-hover:scale-105"
