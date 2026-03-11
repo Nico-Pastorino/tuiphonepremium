@@ -281,7 +281,7 @@ export const getCatalogProducts = async ({
       condition: normalizedCondition,
       featured,
       search: normalizedSearch,
-      outletOnly: outletOnly && OUTLET_SCHEMA_ENABLED,
+      outletOnly,
     })
 
     if (error || !data) {
