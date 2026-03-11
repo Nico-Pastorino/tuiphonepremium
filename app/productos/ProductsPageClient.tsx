@@ -192,19 +192,25 @@ export function ProductsPageClient({
 
   const pages = data ?? []
   const products = useMemo(() => sortProducts(pages.flatMap((page) => page.items)), [pages])
-  const total = pages[0]?.total ?? initialData.total
+  const outletFilteredProducts = useMemo(() => {
+    if (activeFilters.condition !== "outlet") {
+      return products
+    }
+    return products.filter((product) => Boolean(product.isOutlet))
+  }, [activeFilters.condition, products])
+  const total = activeFilters.condition === "outlet" ? outletFilteredProducts.length : pages[0]?.total ?? initialData.total
   const loadingInitial = !pages.length && isLoading
   const loadingMore = isValidating && size > pages.length
   const errorMessage = error instanceof Error ? error.message : null
-  const initialLoadingEmpty = loadingInitial && products.length === 0
+  const initialLoadingEmpty = loadingInitial && outletFilteredProducts.length === 0
   const trimmedSearch = (activeFilters.search ?? "").trim()
   const statsText = loadingInitial
     ? "Cargando productos..."
     : trimmedSearch.length > 0
-      ? products.length > 0
-        ? `Encontramos ${products.length} resultado${products.length === 1 ? "" : "s"} para "${trimmedSearch}"`
+      ? outletFilteredProducts.length > 0
+        ? `Encontramos ${outletFilteredProducts.length} resultado${outletFilteredProducts.length === 1 ? "" : "s"} para "${trimmedSearch}"`
         : `Sin coincidencias para "${trimmedSearch}".`
-      : `Mostrando ${products.length} de ${total} productos`
+      : `Mostrando ${outletFilteredProducts.length} de ${total} productos`
 
   const handleFilterChange = useCallback(
     (next: { category?: string | null; condition?: string | null; search?: string | null }) => {
@@ -238,11 +244,11 @@ export function ProductsPageClient({
   }, [searchInput, activeFilters.search, handleFilterChange])
 
   const handleLoadMore = useCallback(() => {
-    if (loadingMore || products.length >= total) {
+    if (loadingMore || outletFilteredProducts.length >= total) {
       return
     }
     void setSize((currentSize) => currentSize + 1)
-  }, [loadingMore, products.length, total, setSize])
+  }, [loadingMore, outletFilteredProducts.length, total, setSize])
 
   useEffect(() => {
     if (initialLoadingEmpty) {
@@ -337,9 +343,9 @@ export function ProductsPageClient({
                       </p>
                     </div>
                   </div>
-                ) : products.length > 0 ? (
+                ) : outletFilteredProducts.length > 0 ? (
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-x-8 xl:gap-y-10">
-                    {products.map((product, index) => (
+                    {outletFilteredProducts.map((product, index) => (
                       <AnimatedSection key={product.id} animation="fadeUp" delay={isMobile ? 0 : index * 60}>
                         {outletOnly || activeFilters.condition === "outlet" ? (
                           <ProductCard product={product} variant="outlet" />
@@ -384,7 +390,7 @@ export function ProductsPageClient({
                   </div>
                 )}
               </AnimatedSection>
-              {products.length < total && (
+              {outletFilteredProducts.length < total && (
                 <div className="mt-8 flex justify-center">
                   <Button
                     variant="outline"
