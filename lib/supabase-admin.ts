@@ -3,8 +3,20 @@ import type { Database, ProductInsert, ProductRow, ProductUpdate, SiteConfigInse
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const PRODUCT_SELECT_COLUMNS =
+const OUTLET_SCHEMA_ENABLED = process.env.OUTLET_SCHEMA_ENABLED === "true"
+const BASE_PRODUCT_SELECT_COLUMNS =
   "id,name,description,price,original_price,price_usd,category,condition,images,specifications,stock,featured,created_at,updated_at"
+const OUTLET_PRODUCT_COLUMNS =
+  "is_outlet,outlet_notes,outlet_defects,outlet_battery_percent,outlet_grade,outlet_warranty_days,outlet_accessories,outlet_display_issues,outlet_case_issues"
+const PRODUCT_SELECT_COLUMNS = OUTLET_SCHEMA_ENABLED
+  ? `${BASE_PRODUCT_SELECT_COLUMNS},${OUTLET_PRODUCT_COLUMNS}`
+  : BASE_PRODUCT_SELECT_COLUMNS
+
+const isMissingOutletColumnError = (error: PostgrestError | Error): boolean => {
+  const message =
+    "message" in error && typeof error.message === "string" ? error.message.toLowerCase() : ""
+  return message.includes("column") && message.includes("is_outlet") && message.includes("does not exist")
+}
 
 export const supabaseAdmin =
   supabaseUrl && supabaseServiceKey
@@ -169,6 +181,18 @@ export class ProductAdminService {
         .range(safeOffset, safeOffset + safeLimit - 1)
 
       if (error) {
+        if (OUTLET_SCHEMA_ENABLED && isMissingOutletColumnError(error)) {
+          const fallback = await client
+            .from("products")
+            .select(BASE_PRODUCT_SELECT_COLUMNS)
+            .order("created_at", { ascending: false })
+            .range(safeOffset, safeOffset + safeLimit - 1)
+          if (fallback.error) {
+            throw fallback.error
+          }
+          const typedFallback = fallback.data as ProductRow[] | null
+          return { data: typedFallback, error: null }
+        }
         throw error
       }
 
@@ -195,6 +219,17 @@ export class ProductAdminService {
         .maybeSingle()
 
       if (error) {
+        if (OUTLET_SCHEMA_ENABLED && isMissingOutletColumnError(error)) {
+          const fallback = await client
+            .from("products")
+            .select(BASE_PRODUCT_SELECT_COLUMNS)
+            .eq("id", id)
+            .maybeSingle()
+          if (fallback.error) {
+            throw fallback.error
+          }
+          return { data: (fallback.data as ProductRow) ?? null, error: null }
+        }
         throw error
       }
 
@@ -213,6 +248,7 @@ export class ProductAdminService {
     condition?: string | null
     featured?: boolean | null
     search?: string | null
+    outletOnly?: boolean | null
   }): Promise<AdminResult<{ rows: ProductRow[]; total: number }>> {
     if (!supabaseAdmin) {
       return { data: null, error: new Error("Admin client not configured") }
@@ -223,6 +259,10 @@ export class ProductAdminService {
       const normalizedLimit = Math.max(1, Math.min(options.limit, 200))
       const normalizedOffset = Math.max(0, options.offset)
 
+      if (options.outletOnly && !OUTLET_SCHEMA_ENABLED) {
+        return { data: { rows: [], total: 0 }, error: null }
+      }
+
       let query = client
         .from("products")
         .select(PRODUCT_SELECT_COLUMNS, { count: "exact" })
@@ -231,6 +271,14 @@ export class ProductAdminService {
         .order("category", { ascending: true })
         .order("created_at", { ascending: false })
         .range(normalizedOffset, normalizedOffset + normalizedLimit - 1)
+
+      if (OUTLET_SCHEMA_ENABLED) {
+        if (options.outletOnly) {
+          query = query.eq("is_outlet", true)
+        } else {
+          query = query.eq("is_outlet", false)
+        }
+      }
 
       if (options.category) {
         const normalizedCategory = options.category.trim().toLowerCase()
@@ -262,6 +310,56 @@ export class ProductAdminService {
       const { data, error, count } = await query
 
       if (error) {
+        if (OUTLET_SCHEMA_ENABLED && isMissingOutletColumnError(error)) {
+          if (options.outletOnly) {
+            return { data: { rows: [], total: 0 }, error: null }
+          }
+          let fallbackQuery = client
+            .from("products")
+            .select(BASE_PRODUCT_SELECT_COLUMNS, { count: "exact" })
+            .order("condition", { ascending: true })
+            .order("price", { ascending: false, nullsFirst: false })
+            .order("category", { ascending: true })
+            .order("created_at", { ascending: false })
+            .range(normalizedOffset, normalizedOffset + normalizedLimit - 1)
+
+          if (options.category) {
+            const normalizedCategory = options.category.trim().toLowerCase()
+            fallbackQuery = fallbackQuery.ilike("category", normalizedCategory)
+          }
+
+          if (options.condition) {
+            fallbackQuery = fallbackQuery.eq("condition", options.condition.trim().toLowerCase())
+          }
+
+          if (typeof options.featured === "boolean") {
+            fallbackQuery = fallbackQuery.eq("featured", options.featured)
+          }
+
+          const searchValue = options.search?.trim()
+          if (searchValue && searchValue.length > 0) {
+            const sanitized = searchValue.replace(/[%_]/g, (match) => `\\${match}`)
+            const pattern = `%${sanitized}%`
+            fallbackQuery = fallbackQuery.or(
+              [
+                `name.ilike.${pattern}`,
+                `description.ilike.${pattern}`,
+                `category.ilike.${pattern}`,
+                `condition.ilike.${pattern}`,
+              ].join(","),
+            )
+          }
+
+          const fallbackResult = await fallbackQuery
+          if (fallbackResult.error) {
+            throw fallbackResult.error
+          }
+
+          return {
+            data: { rows: (fallbackResult.data as ProductRow[]) ?? [], total: fallbackResult.count ?? 0 },
+            error: null,
+          }
+        }
         throw error
       }
 

@@ -1,4 +1,4 @@
-﻿export type HomeSectionId = "categories" | "featured" | "benefits" | "trade-in" | "cta"
+﻿export type HomeSectionId = "categories" | "featured" | "outlet" | "benefits" | "trade-in" | "cta"
 
 export interface HomeSectionConfig {
   id: HomeSectionId

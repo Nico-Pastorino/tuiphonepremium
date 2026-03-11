@@ -37,6 +37,7 @@ import type { HomeConfig, HomeSectionId } from "@/types/home"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
 import { DEFAULT_HOME_CONFIG } from "@/lib/home-config"
 
+const OUTLET_ENABLED = process.env.NEXT_PUBLIC_OUTLET_ENABLED === "true"
 const DEFAULT_SECTION_LABELS: Record<HomeSectionId, string> = DEFAULT_HOME_CONFIG.sections.reduce(
   (acc, section) => {
     acc[section.id] = section.label
@@ -47,6 +48,7 @@ const DEFAULT_SECTION_LABELS: Record<HomeSectionId, string> = DEFAULT_HOME_CONFI
 
 type HomePageContentProps = {
   initialProducts: ProductSummary[]
+  initialOutletProducts?: ProductSummary[]
   homeConfig: HomeConfig
   initialTradeInConfig: TradeInConfig
 }
@@ -60,6 +62,20 @@ async function fetchCatalogFeatured(force = false): Promise<CatalogProductsRespo
 
   if (!response.ok) {
     throw new Error(`Catalog fetch failed with status ${response.status}`)
+  }
+
+  return (await response.json()) as CatalogProductsResponse
+}
+
+async function fetchCatalogOutlet(force = false): Promise<CatalogProductsResponse> {
+  const refreshParam = force ? "&refresh=1" : ""
+  const response = await fetch(`/api/catalog/products?limit=12&outlet=1${refreshParam}`, {
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Outlet fetch failed with status ${response.status}`)
   }
 
   return (await response.json()) as CatalogProductsResponse
@@ -83,10 +99,18 @@ async function fetchTradeInConfig(): Promise<TradeInConfig> {
   return result.data
 }
 
-export function HomePageContent({ initialProducts, homeConfig, initialTradeInConfig }: HomePageContentProps) {
+export function HomePageContent({
+  initialProducts,
+  initialOutletProducts = [],
+  homeConfig,
+  initialTradeInConfig,
+}: HomePageContentProps) {
   const [products, setProducts] = useState<ProductSummary[]>(initialProducts)
+  const [outletProducts, setOutletProducts] = useState<ProductSummary[]>(initialOutletProducts)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [outletLoading, setOutletLoading] = useState(false)
+  const [outletError, setOutletError] = useState<string | null>(null)
   const [tradeInConfigState, setTradeInConfigState] = useState<TradeInConfig | null>(initialTradeInConfig ?? null)
   const [tradeInLoading, setTradeInLoading] = useState(!initialTradeInConfig)
   const [tradeInError, setTradeInError] = useState<string | null>(null)
@@ -113,11 +137,43 @@ export function HomePageContent({ initialProducts, homeConfig, initialTradeInCon
     }
   }, [])
 
+  const refreshOutlet = useCallback(async (force = false) => {
+    if (!OUTLET_ENABLED) {
+      return
+    }
+    setOutletLoading(true)
+    setOutletError(null)
+
+    try {
+      const data = await fetchCatalogOutlet(force)
+      const trimmed = data.items.map((item) => ({
+        ...item,
+        description: item.description ?? "",
+        images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
+      }))
+      setOutletProducts(trimmed)
+    } catch (err) {
+      console.error("No se pudieron actualizar los productos outlet:", err)
+      setOutletError("No se pudieron cargar los productos outlet.")
+    } finally {
+      setOutletLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (initialProducts.length === 0) {
       void refreshProducts()
     }
   }, [initialProducts.length, refreshProducts])
+
+  useEffect(() => {
+    if (!OUTLET_ENABLED) {
+      return
+    }
+    if (initialOutletProducts.length === 0) {
+      void refreshOutlet()
+    }
+  }, [initialOutletProducts.length, refreshOutlet])
 
   const loadTradeInConfig = useCallback(async () => {
     setTradeInLoading(true)
@@ -303,7 +359,10 @@ export function HomePageContent({ initialProducts, homeConfig, initialTradeInCon
     () => products.filter((product) => product.featured).slice(0, 8),
     [products],
   )
-  const enabledSections = homeConfig.sections.filter((section) => section.enabled)
+  const outletItems = useMemo(() => outletProducts.slice(0, 8), [outletProducts])
+  const enabledSections = homeConfig.sections.filter(
+    (section) => section.enabled && (OUTLET_ENABLED || section.id !== "outlet"),
+  )
   const instagramUrl = "https://www.instagram.com/tuiphonepremium"
   const tiktokUrl = "https://www.tiktok.com/@tu.iphone.premium?_t=ZS-90ljWaLjkxh&_r=1"
   const contactEmail = "tuiphonepremium@gmail.com"
@@ -454,6 +513,72 @@ export function HomePageContent({ initialProducts, homeConfig, initialTradeInCon
       </section>
     </AnimatedSection>
   )
+
+  const outletSection = OUTLET_ENABLED ? (
+    <AnimatedSection animation="fadeUp">
+      <section className="py-12 sm:py-16 md:py-20 bg-orange-50/40">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <AnimatedSection animation="fadeUp" className="text-center mb-8 sm:mb-12 md:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-6">
+              {sectionLabels.outlet ?? "Outlet"}
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
+              Equipos con detalles esteticos o funcionales a precio especial.
+            </p>
+          </AnimatedSection>
+
+          {outletLoading ? (
+            <ProductsLoading />
+          ) : outletError ? (
+            <div className="text-center py-12 sm:py-16">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-orange-400" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No pudimos cargar el outlet</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">{outletError}</p>
+              <Button onClick={() => refreshOutlet(true)} variant="outline" className="border-orange-200 bg-transparent">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reintentar
+              </Button>
+            </div>
+          ) : outletItems.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 sm:gap-6 md:gap-8 lg:grid-cols-3 xl:grid-cols-4">
+              {outletItems.map((product, index) => (
+                <AnimatedSection key={product.id} animation="fadeUp" delay={index * 100}>
+                  <ProductCard product={product} variant="outlet" />
+                </AnimatedSection>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 sm:py-16">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center">
+                <Smartphone className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-orange-400" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No hay productos outlet</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">
+                Volve pronto para ver nuevas oportunidades.
+              </p>
+            </div>
+          )}
+
+          {outletItems.length > 0 && (
+            <AnimatedSection animation="fadeUp" delay={400} className="text-center mt-12 sm:mt-16">
+              <Button
+                asChild
+                size="lg"
+                className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-xl transition-all duration-300 shadow-lg text-base sm:text-lg"
+              >
+                <Link href="/outlet" prefetch={false}>
+                  Ver outlet completo
+                  <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                </Link>
+              </Button>
+            </AnimatedSection>
+          )}
+        </div>
+      </section>
+    </AnimatedSection>
+  ) : null
 
   const benefitsSection = (
     <AnimatedSection animation="fadeUp">
@@ -684,6 +809,7 @@ const ctaSection = (
   const sectionMap = {
     categories: categoriesSection,
     featured: featuredSection,
+    outlet: outletSection,
     benefits: benefitsSection,
     "trade-in": tradeInSection,
     cta: ctaSection,

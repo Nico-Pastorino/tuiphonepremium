@@ -6,6 +6,7 @@ import dynamic from "next/dynamic"
 import { useRouter, useSearchParams } from "next/navigation"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { ModernProductCard } from "@/components/ModernProductCard"
+import { ProductCard } from "@/components/ProductCard"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
 import { Filter, RefreshCw, Search } from "lucide-react"
@@ -65,6 +66,9 @@ interface ProductsPageClientProps {
   initialData: CatalogProductsResponse
   pageSize: number
   initialFilters: FiltersState
+  outletOnly?: boolean
+  title?: string
+  subtitle?: string
 }
 
 const fetchCatalogProducts = async (requestUrl: string): Promise<CatalogProductsResponse> => {
@@ -76,7 +80,14 @@ const fetchCatalogProducts = async (requestUrl: string): Promise<CatalogProducts
   return (await response.json()) as CatalogProductsResponse
 }
 
-export function ProductsPageClient({ initialData, pageSize, initialFilters }: ProductsPageClientProps) {
+export function ProductsPageClient({
+  initialData,
+  pageSize,
+  initialFilters,
+  outletOnly = false,
+  title = "Productos Apple",
+  subtitle = "Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos",
+}: ProductsPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -154,11 +165,14 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
       params.set("offset", String(pageIndex * effectivePageSize))
       params.set("limit", String(effectivePageSize))
       if (activeFilters.category) params.set("category", activeFilters.category)
-      if (activeFilters.condition) params.set("condition", activeFilters.condition)
+      if (activeFilters.condition && activeFilters.condition !== "outlet") {
+        params.set("condition", activeFilters.condition)
+      }
       if (activeFilters.search) params.set("search", activeFilters.search)
+      if (outletOnly || activeFilters.condition === "outlet") params.set("outlet", "1")
       return `/api/catalog/products?${params.toString()}`
     },
-    [activeFilters.category, activeFilters.condition, activeFilters.search, effectivePageSize],
+    [activeFilters.category, activeFilters.condition, activeFilters.search, effectivePageSize, outletOnly],
   )
 
   const { data, error, isLoading, isValidating, size, setSize } = useSWRInfinite<CatalogProductsResponse>(
@@ -246,10 +260,8 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
             <div className="mb-6 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-wide text-blue-500 sm:text-xs">Catalogo completo</p>
-                <h1 className="mb-2 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">Productos Apple</h1>
-                <p className="text-sm text-gray-600 sm:text-base">
-                  Descubre nuestra seleccion completa de productos Apple nuevos y seminuevos
-                </p>
+                <h1 className="mb-2 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">{title}</h1>
+                <p className="text-sm text-gray-600 sm:text-base">{subtitle}</p>
               </div>
               <div className="w-full max-w-md lg:max-w-lg">
                 <div className="flex items-center gap-3">
@@ -329,7 +341,11 @@ export function ProductsPageClient({ initialData, pageSize, initialFilters }: Pr
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-x-8 xl:gap-y-10">
                     {products.map((product, index) => (
                       <AnimatedSection key={product.id} animation="fadeUp" delay={isMobile ? 0 : index * 60}>
-                        <ModernProductCard product={product} priority={index < priorityCount} />
+                        {outletOnly || activeFilters.condition === "outlet" ? (
+                          <ProductCard product={product} variant="outlet" />
+                        ) : (
+                          <ModernProductCard product={product} priority={index < priorityCount} />
+                        )}
                       </AnimatedSection>
                     ))}
                   </div>

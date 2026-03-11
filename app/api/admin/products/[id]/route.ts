@@ -3,6 +3,8 @@ import { invalidateProductsCache } from "@/lib/product-cache"
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductUpdate } from "@/types/database"
 
+const OUTLET_SCHEMA_ENABLED = process.env.OUTLET_SCHEMA_ENABLED === "true"
+
 const getErrorMessage = (error: Error) => error.message || "Unexpected error"
 
 const buildProductUpdate = (body: Record<string, unknown>): ProductUpdate => {
@@ -27,6 +29,36 @@ const buildProductUpdate = (body: Record<string, unknown>): ProductUpdate => {
   }
   if (body.stock !== undefined) updateData.stock = Number(body.stock)
   if (body.featured !== undefined) updateData.featured = Boolean(body.featured)
+
+  if (OUTLET_SCHEMA_ENABLED) {
+    if (body.isOutlet !== undefined) updateData.is_outlet = Boolean(body.isOutlet)
+    if (body.outletNotes !== undefined) {
+      updateData.outlet_notes = body.outletNotes === null ? null : String(body.outletNotes)
+    }
+    if (body.outletDefects !== undefined) {
+      updateData.outlet_defects = Array.isArray(body.outletDefects) ? (body.outletDefects as string[]) : []
+    }
+    if (body.outletBatteryPercent !== undefined) {
+      updateData.outlet_battery_percent =
+        body.outletBatteryPercent === null ? null : Number(body.outletBatteryPercent)
+    }
+    if (body.outletGrade !== undefined) {
+      updateData.outlet_grade = body.outletGrade === null ? null : String(body.outletGrade)
+    }
+    if (body.outletWarrantyDays !== undefined) {
+      updateData.outlet_warranty_days = body.outletWarrantyDays === null ? null : Number(body.outletWarrantyDays)
+    }
+    if (body.outletAccessories !== undefined) {
+      updateData.outlet_accessories = body.outletAccessories === null ? null : String(body.outletAccessories)
+    }
+    if (body.outletDisplayIssues !== undefined) {
+      updateData.outlet_display_issues =
+        body.outletDisplayIssues === null ? null : Boolean(body.outletDisplayIssues)
+    }
+    if (body.outletCaseIssues !== undefined) {
+      updateData.outlet_case_issues = body.outletCaseIssues === null ? null : Boolean(body.outletCaseIssues)
+    }
+  }
 
   return updateData
 }

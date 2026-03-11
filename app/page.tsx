@@ -5,8 +5,10 @@ import { getHomeConfigCached, getTradeInConfigCached } from "@/lib/site-config-c
 export const revalidate = 300
 
 export default async function HomePage() {
-  const [featuredResponse, homeConfig, tradeInConfig] = await Promise.all([
+  const outletEnabled = process.env.NEXT_PUBLIC_OUTLET_ENABLED === "true"
+  const [featuredResponse, outletResponse, homeConfig, tradeInConfig] = await Promise.all([
     getCatalogProducts({ limit: 12, offset: 0, featured: true }),
+    outletEnabled ? getCatalogProducts({ limit: 12, offset: 0, outletOnly: true }) : Promise.resolve(null),
     getHomeConfigCached(),
     getTradeInConfigCached(),
   ])
@@ -17,7 +19,18 @@ export default async function HomePage() {
     images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
   }))
 
+  const outletProducts = outletResponse?.items.map((item) => ({
+    ...item,
+    description: "",
+    images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
+  }))
+
   return (
-    <HomePageContent initialProducts={products} homeConfig={homeConfig} initialTradeInConfig={tradeInConfig} />
+    <HomePageContent
+      initialProducts={products}
+      initialOutletProducts={outletProducts ?? []}
+      homeConfig={homeConfig}
+      initialTradeInConfig={tradeInConfig}
+    />
   )
 }

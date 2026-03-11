@@ -42,6 +42,15 @@ export type ProductRow = {
   specifications: Json | null
   stock: number
   featured: boolean
+  is_outlet?: boolean | null
+  outlet_notes?: string | null
+  outlet_defects?: string[] | null
+  outlet_battery_percent?: number | null
+  outlet_grade?: string | null
+  outlet_warranty_days?: number | null
+  outlet_accessories?: string | null
+  outlet_display_issues?: boolean | null
+  outlet_case_issues?: boolean | null
   created_at: string
   updated_at: string | null
 }
@@ -59,6 +68,15 @@ export type ProductInsert = {
   specifications?: Json | null
   stock?: number
   featured?: boolean
+  is_outlet?: boolean | null
+  outlet_notes?: string | null
+  outlet_defects?: string[] | null
+  outlet_battery_percent?: number | null
+  outlet_grade?: string | null
+  outlet_warranty_days?: number | null
+  outlet_accessories?: string | null
+  outlet_display_issues?: boolean | null
+  outlet_case_issues?: boolean | null
   created_at?: string
   updated_at?: string | null
 }
@@ -76,6 +94,15 @@ export type ProductUpdate = {
   specifications?: Json | null
   stock?: number
   featured?: boolean
+  is_outlet?: boolean | null
+  outlet_notes?: string | null
+  outlet_defects?: string[] | null
+  outlet_battery_percent?: number | null
+  outlet_grade?: string | null
+  outlet_warranty_days?: number | null
+  outlet_accessories?: string | null
+  outlet_display_issues?: boolean | null
+  outlet_case_issues?: boolean | null
   created_at?: string
   updated_at?: string | null
 }

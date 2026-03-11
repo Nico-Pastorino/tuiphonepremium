@@ -57,6 +57,15 @@ function transformSupabaseProduct(row: ProductRow): Product {
     specifications: normalizeSpecifications(row.specifications),
     stock: row.stock,
     featured: row.featured,
+    isOutlet: Boolean(row.is_outlet),
+    outletNotes: row.outlet_notes ?? null,
+    outletDefects: row.outlet_defects ?? [],
+    outletBatteryPercent: row.outlet_battery_percent ?? null,
+    outletGrade: row.outlet_grade ?? null,
+    outletWarrantyDays: row.outlet_warranty_days ?? null,
+    outletAccessories: row.outlet_accessories ?? null,
+    outletDisplayIssues: row.outlet_display_issues ?? null,
+    outletCaseIssues: row.outlet_case_issues ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? undefined,
   }
@@ -80,6 +89,15 @@ function summaryToProduct(summary: ProductSummary): Product {
     specifications: {},
     stock: summary.stock,
     featured: summary.featured,
+    isOutlet: summary.isOutlet ?? false,
+    outletNotes: summary.outletNotes ?? null,
+    outletDefects: summary.outletDefects ?? [],
+    outletBatteryPercent: summary.outletBatteryPercent ?? null,
+    outletGrade: summary.outletGrade ?? null,
+    outletWarrantyDays: summary.outletWarrantyDays ?? null,
+    outletAccessories: summary.outletAccessories ?? null,
+    outletDisplayIssues: summary.outletDisplayIssues ?? null,
+    outletCaseIssues: summary.outletCaseIssues ?? null,
     createdAt: summary.createdAt,
     updatedAt: undefined,
   }
@@ -618,7 +636,6 @@ export function useProducts() {
   }
   return context
 }
-
 
 
 

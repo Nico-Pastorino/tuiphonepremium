@@ -13,6 +13,7 @@ type ProductsSnapshot = {
 const DEFAULT_TTL_MS = 300_000
 const PRODUCTS_CACHE_TAG = "products-snapshot"
 const MAX_LIMIT = 60
+const OUTLET_SCHEMA_ENABLED = process.env.OUTLET_SCHEMA_ENABLED === "true"
 const CATEGORY_PRIORITY_ORDER = ["iphone", "ipad", "mac", "watch", "airpods", "accesorios"]
 const CATEGORY_PRIORITY = new Map(CATEGORY_PRIORITY_ORDER.map((value, index) => [value, index]))
 const CONDITION_PRIORITY = new Map<"nuevo" | "seminuevo", number>([
@@ -158,6 +159,15 @@ export const toProductSummary = (row: ProductRow): ProductSummary => ({
   images: row.images ?? [],
   stock: row.stock,
   featured: row.featured,
+  isOutlet: Boolean(row.is_outlet),
+  outletNotes: row.outlet_notes ?? null,
+  outletDefects: row.outlet_defects ?? [],
+  outletBatteryPercent: row.outlet_battery_percent ?? null,
+  outletGrade: row.outlet_grade ?? null,
+  outletWarrantyDays: row.outlet_warranty_days ?? null,
+  outletAccessories: row.outlet_accessories ?? null,
+  outletDisplayIssues: row.outlet_display_issues ?? null,
+  outletCaseIssues: row.outlet_case_issues ?? null,
   createdAt: row.created_at,
 })
 
@@ -181,13 +191,28 @@ export const toFullProduct = (row: ProductRow): Product => ({
   specifications: normalizeSpecificationsValue(row.specifications),
   stock: row.stock,
   featured: row.featured,
+  isOutlet: Boolean(row.is_outlet),
+  outletNotes: row.outlet_notes ?? null,
+  outletDefects: row.outlet_defects ?? [],
+  outletBatteryPercent: row.outlet_battery_percent ?? null,
+  outletGrade: row.outlet_grade ?? null,
+  outletWarrantyDays: row.outlet_warranty_days ?? null,
+  outletAccessories: row.outlet_accessories ?? null,
+  outletDisplayIssues: row.outlet_display_issues ?? null,
+  outletCaseIssues: row.outlet_case_issues ?? null,
   createdAt: row.created_at,
   updatedAt: row.updated_at ?? null,
 })
 
 const applyFilters = (
   rows: ProductRow[],
-  filters: { category?: string | null; condition?: string | null; featured?: boolean | null; search?: string | null },
+  filters: {
+    category?: string | null
+    condition?: string | null
+    featured?: boolean | null
+    search?: string | null
+    outletOnly?: boolean
+  },
 ): ProductRow[] => {
   const normalizedCategory = filters.category?.toLowerCase() ?? null
   const normalizedCondition = filters.condition ? normalizeCondition(filters.condition) : null
@@ -195,11 +220,24 @@ const applyFilters = (
   const normalizedSearch =
     filters.search && filters.search.trim().length > 0 ? normalizeText(filters.search) : null
 
-  if (!normalizedCategory && !normalizedCondition && normalizedFeatured === null && !normalizedSearch) {
+  const outletOnly = Boolean(filters.outletOnly)
+
+  if (!normalizedCategory && !normalizedCondition && normalizedFeatured === null && !normalizedSearch && !outletOnly) {
     return rows
   }
 
   return rows.filter((row) => {
+    if (outletOnly) {
+      if (!OUTLET_SCHEMA_ENABLED) {
+        return false
+      }
+      if (!row.is_outlet) {
+        return false
+      }
+    } else if (OUTLET_SCHEMA_ENABLED && row.is_outlet) {
+      return false
+    }
+
     const categoryMatches = !normalizedCategory || row.category.toLowerCase() === normalizedCategory
     const conditionMatches = !normalizedCondition || normalizeCondition(row.condition) === normalizedCondition
     const featuredMatches = normalizedFeatured === null || row.featured === normalizedFeatured
@@ -216,6 +254,7 @@ export type CatalogQueryOptions = {
   condition?: string | null
   featured?: boolean | null
   search?: string | null
+  outletOnly?: boolean
 }
 
 export const getCatalogProducts = async ({
@@ -226,6 +265,7 @@ export const getCatalogProducts = async ({
   condition = null,
   featured = null,
   search = null,
+  outletOnly = false,
 }: CatalogQueryOptions = {}): Promise<CatalogProductsResponse> => {
   const normalizedOffset = Math.max(0, Number.isFinite(offset) ? offset : 0)
   const normalizedLimit = Math.max(1, Math.min(Number.isFinite(limit) ? limit : 12, MAX_LIMIT))
@@ -241,6 +281,7 @@ export const getCatalogProducts = async ({
       condition: normalizedCondition,
       featured,
       search: normalizedSearch,
+      outletOnly: outletOnly && OUTLET_SCHEMA_ENABLED,
     })
 
     if (error || !data) {
@@ -261,6 +302,7 @@ export const getCatalogProducts = async ({
       condition: normalizedCondition,
       featured,
       search: normalizedSearch,
+      outletOnly,
     })
 
     const sorted = filtered.slice().sort((a, b) => {

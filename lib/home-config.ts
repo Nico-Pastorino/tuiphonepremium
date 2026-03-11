@@ -1,6 +1,6 @@
 import type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 
-export const HOME_SECTIONS_ORDER: HomeSectionId[] = ["categories", "featured", "benefits", "trade-in", "cta"]
+export const HOME_SECTIONS_ORDER: HomeSectionId[] = ["categories", "featured", "outlet", "benefits", "trade-in", "cta"]
 
 export const DEFAULT_HOME_CONFIG: HomeConfig = {
   whatsappNumber: "5491112345678",
@@ -9,6 +9,7 @@ export const DEFAULT_HOME_CONFIG: HomeConfig = {
   sections: [
     { id: "categories", label: "Explorar por categoria", enabled: true },
     { id: "featured", label: "Productos destacados", enabled: true },
+    { id: "outlet", label: "Outlet", enabled: true },
     { id: "benefits", label: "Beneficios", enabled: true },
     { id: "trade-in", label: "Plan canje", enabled: true },
     { id: "cta", label: "Llamado a la accion", enabled: true },

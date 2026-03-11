@@ -3,6 +3,8 @@ import { getProductsCached, invalidateProductsCache } from "@/lib/product-cache"
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductInsert } from "@/types/database"
 
+const OUTLET_SCHEMA_ENABLED = process.env.OUTLET_SCHEMA_ENABLED === "true"
+
 const buildProductInsert = (body: Record<string, unknown>): ProductInsert => ({
   name: String(body.name),
   description: typeof body.description === "string" ? body.description : "",
@@ -15,6 +17,31 @@ const buildProductInsert = (body: Record<string, unknown>): ProductInsert => ({
   specifications: (body.specifications as Json) ?? {},
   stock: body.stock !== undefined && body.stock !== null ? Number(body.stock) : 0,
   featured: Boolean(body.featured),
+  ...(OUTLET_SCHEMA_ENABLED
+    ? {
+        is_outlet: Boolean(body.isOutlet),
+        outlet_notes: typeof body.outletNotes === "string" ? body.outletNotes : null,
+        outlet_defects: Array.isArray(body.outletDefects) ? (body.outletDefects as string[]) : [],
+        outlet_battery_percent:
+          body.outletBatteryPercent !== undefined && body.outletBatteryPercent !== null
+            ? Number(body.outletBatteryPercent)
+            : null,
+        outlet_grade: typeof body.outletGrade === "string" ? body.outletGrade : null,
+        outlet_warranty_days:
+          body.outletWarrantyDays !== undefined && body.outletWarrantyDays !== null
+            ? Number(body.outletWarrantyDays)
+            : null,
+        outlet_accessories: typeof body.outletAccessories === "string" ? body.outletAccessories : null,
+        outlet_display_issues:
+          body.outletDisplayIssues !== undefined && body.outletDisplayIssues !== null
+            ? Boolean(body.outletDisplayIssues)
+            : null,
+        outlet_case_issues:
+          body.outletCaseIssues !== undefined && body.outletCaseIssues !== null
+            ? Boolean(body.outletCaseIssues)
+            : null,
+      }
+    : {}),
 })
 
 const getErrorMessage = (error: Error) => error.message || "Unexpected error"

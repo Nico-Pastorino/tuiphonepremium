@@ -13,12 +13,41 @@ export interface Product {
   specifications: Record<string, string | number | boolean>
   stock: number
   featured: boolean
+  isOutlet?: boolean
+  outletNotes?: string | null
+  outletDefects?: string[]
+  outletBatteryPercent?: number | null
+  outletGrade?: string | null
+  outletWarrantyDays?: number | null
+  outletAccessories?: string | null
+  outletDisplayIssues?: boolean | null
+  outletCaseIssues?: boolean | null
 }
 
 export interface ProductSummary
   extends Pick<
     Product,
-    "id" | "name" | "description" | "category" | "condition" | "price" | "originalPrice" | "priceUSD" | "images" | "stock" | "featured" | "createdAt"
+    | "id"
+    | "name"
+    | "description"
+    | "category"
+    | "condition"
+    | "price"
+    | "originalPrice"
+    | "priceUSD"
+    | "images"
+    | "stock"
+    | "featured"
+    | "createdAt"
+    | "isOutlet"
+    | "outletNotes"
+    | "outletDefects"
+    | "outletBatteryPercent"
+    | "outletGrade"
+    | "outletWarrantyDays"
+    | "outletAccessories"
+    | "outletDisplayIssues"
+    | "outletCaseIssues"
   > {}
 
 export interface ProductFormData {
@@ -33,6 +62,15 @@ export interface ProductFormData {
   specifications: Record<string, string | number | boolean>
   stock: number
   featured: boolean
+  isOutlet?: boolean
+  outletNotes?: string | null
+  outletDefects?: string[]
+  outletBatteryPercent?: number | null
+  outletGrade?: string | null
+  outletWarrantyDays?: number | null
+  outletAccessories?: string | null
+  outletDisplayIssues?: boolean | null
+  outletCaseIssues?: boolean | null
 }
 
 export interface ProductFilters {
@@ -52,5 +90,3 @@ export interface CatalogProductsResponse {
   supabaseConnected: boolean
   timestamp: number
 }
-
-

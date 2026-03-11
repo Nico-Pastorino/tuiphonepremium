@@ -10,6 +10,7 @@ import { useAdmin } from "@/contexts/AdminContext"
 
 export function MinimalNavbar() {
   const { homeConfig } = useAdmin()
+  const outletEnabled = process.env.NEXT_PUBLIC_OUTLET_ENABLED === "true"
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const pathname = usePathname()
@@ -59,6 +60,7 @@ export function MinimalNavbar() {
     { name: "Apple Watch", href: "/productos?category=watch", hasSubmenu: false },
     { name: "AirPods", href: "/productos?category=airpods", hasSubmenu: false },
     { name: "Accesorios", href: "/productos?category=accesorios", hasSubmenu: false },
+    ...(outletEnabled ? [{ name: "Outlet", href: "/outlet", hasSubmenu: false }] : []),
     { name: "Contacto", href: "/contacto", hasSubmenu: false },
   ]
 

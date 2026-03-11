@@ -34,8 +34,9 @@ export function ProductFilters({ onFilterChange, category = null, condition = nu
   ]
 
   const conditions = [
-    { id: "nuevo", name: "Nuevos", color: "bg-blue-500" },
-    { id: "seminuevo", name: "Seminuevos", color: "bg-emerald-500" },
+    { id: "nuevo", name: "Nuevos", color: "bg-emerald-500" },
+    { id: "seminuevo", name: "Seminuevos", color: "bg-blue-500" },
+    { id: "outlet", name: "Outlet", color: "bg-orange-500" },
   ]
 
   return (
@@ -122,7 +123,13 @@ export function ProductFilters({ onFilterChange, category = null, condition = nu
             )}
             {activeCondition && (
               <Badge
-                className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 cursor-pointer"
+                className={
+                  activeCondition === "outlet"
+                    ? "bg-orange-100 text-orange-800 hover:bg-orange-200 cursor-pointer"
+                    : activeCondition === "seminuevo"
+                      ? "bg-blue-100 text-blue-800 hover:bg-blue-200 cursor-pointer"
+                      : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 cursor-pointer"
+                }
                 onClick={() => {
                   setActiveCondition(null)
                   onFilterChange?.({ category: activeCategory, condition: null })
@@ -137,7 +144,5 @@ export function ProductFilters({ onFilterChange, category = null, condition = nu
     </Card>
   )
 }
-
-
 
 
