@@ -25,9 +25,10 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ onSubmit, initialData, isLoading = false }: ProductFormProps) {
-  const { getEffectiveDollarRate, imageLibrary } = useAdmin()
+  const { getEffectiveDollarRate } = useAdmin()
   const effectiveDollarRate = getEffectiveDollarRate()
   const outletEnabled = process.env.NEXT_PUBLIC_OUTLET_ENABLED === "true"
+  const IMAGE_SELECTOR_PAGE_SIZE = 12
 
   const OUTLET_DEFECT_OPTIONS = [
     "No marca % de bateria",
@@ -40,8 +41,8 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     "Altavoz con detalles",
   ]
 
-  const derivePriceFromUSD = (usd?: number) => {
-    if (usd === undefined || Number.isNaN(usd)) {
+  const derivePriceFromUSD = (usd?: number | null) => {
+    if (usd === undefined || usd === null || Number.isNaN(usd)) {
       return 0
     }
     return Number((usd * effectiveDollarRate).toFixed(2))
@@ -78,6 +79,12 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
   })
 
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false)
+  const [libraryImages, setLibraryImages] = useState<ImageLibraryItem[]>([])
+  const [libraryTotal, setLibraryTotal] = useState(0)
+  const [libraryPage, setLibraryPage] = useState(1)
+  const [libraryLoading, setLibraryLoading] = useState(false)
+  const [librarySearch, setLibrarySearch] = useState("")
 
   useEffect(() => {
     if (formData.category && formData.category !== libraryCategoryFilter) {
@@ -86,21 +93,87 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
   }, [formData.category]) // Remover libraryCategoryFilter de las dependencias
 
   const libraryCategories = useMemo(() => {
-    const categories = new Set(imageLibrary.map((item) => item.category || "general"))
+    const categories = new Set(libraryImages.map((item) => item.category || "general"))
     return Array.from(categories).sort((a, b) => a.localeCompare(b))
-  }, [imageLibrary])
+  }, [libraryImages])
+  const selectorCategoryOptions = useMemo(() => {
+    const categories = new Set<string>(["todos"])
+    if (formData.category) {
+      categories.add(formData.category)
+    }
+    for (const category of libraryCategories) {
+      categories.add(category)
+    }
+    return Array.from(categories)
+  }, [formData.category, libraryCategories])
 
   const filteredLibraryImages = useMemo(() => {
-    if (libraryCategoryFilter === "todos") {
-      return imageLibrary
-    }
-    return imageLibrary.filter((item) => item.category === libraryCategoryFilter)
-  }, [imageLibrary, libraryCategoryFilter])
+    return libraryImages
+  }, [libraryImages])
+  const totalLibraryPages = Math.max(1, Math.ceil(libraryTotal / IMAGE_SELECTOR_PAGE_SIZE))
 
   const [newImage, setNewImage] = useState("")
   const [newSpecKey, setNewSpecKey] = useState("")
   const [newSpecValue, setNewSpecValue] = useState("")
   const [newDefect, setNewDefect] = useState("")
+
+  useEffect(() => {
+    setLibraryPage(1)
+  }, [libraryCategoryFilter, librarySearch])
+
+  useEffect(() => {
+    if (!isLibraryOpen) {
+      return
+    }
+
+    let active = true
+
+    const loadLibraryPage = async () => {
+      try {
+        setLibraryLoading(true)
+        const params = new URLSearchParams()
+        params.set("limit", String(IMAGE_SELECTOR_PAGE_SIZE))
+        params.set("offset", String((libraryPage - 1) * IMAGE_SELECTOR_PAGE_SIZE))
+        if (libraryCategoryFilter !== "todos") {
+          params.set("category", libraryCategoryFilter)
+        }
+        if (librarySearch.trim().length > 0) {
+          params.set("search", librarySearch.trim())
+        }
+
+        const response = await fetch(`/api/admin/image-library?${params.toString()}`, { cache: "force-cache" })
+        if (!response.ok) {
+          const message = await response.text()
+          throw new Error(message || "No se pudo cargar la biblioteca de imagenes")
+        }
+
+        const result = (await response.json()) as { data?: ImageLibraryItem[]; total?: number }
+        if (!active) {
+          return
+        }
+
+        setLibraryImages(Array.isArray(result.data) ? result.data : [])
+        setLibraryTotal(result.total ?? 0)
+      } catch (error) {
+        if (!active) {
+          return
+        }
+        console.error("No se pudo cargar la biblioteca del selector:", error)
+        setLibraryImages([])
+        setLibraryTotal(0)
+      } finally {
+        if (active) {
+          setLibraryLoading(false)
+        }
+      }
+    }
+
+    void loadLibraryPage()
+
+    return () => {
+      active = false
+    }
+  }, [isLibraryOpen, libraryPage, libraryCategoryFilter, librarySearch])
 
   const toggleDefect = (defect: string) => {
     setFormData((prev) => {
@@ -521,76 +594,123 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
             </div>
             <div className="space-y-2">
               <Label>Biblioteca de imagenes</Label>
-              {imageLibrary.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Gestiona la biblioteca desde la seccion de configuracion para tener imagenes listas para tus
-                  productos.
-                </p>
-              ) : (
-                <>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                    <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-3 rounded-xl border border-dashed border-gray-200 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Selector bajo demanda</p>
+                    <p className="text-xs text-muted-foreground">
+                      La biblioteca solo se consulta cuando abres este panel.
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" onClick={() => setIsLibraryOpen((prev) => !prev)}>
+                    {isLibraryOpen ? "Ocultar biblioteca" : "Abrir biblioteca"}
+                  </Button>
+                </div>
+
+                {!isLibraryOpen ? (
+                  <p className="text-sm text-muted-foreground">
+                    Abre la biblioteca para buscar imagenes por categoria o texto sin cargar toda la coleccion.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                      <Input
+                        value={librarySearch}
+                        onChange={(e) => setLibrarySearch(e.target.value)}
+                        placeholder="Buscar imagenes..."
+                        className="lg:max-w-sm"
+                      />
                       <Select value={libraryCategoryFilter} onValueChange={(value) => setLibraryCategoryFilter(value)}>
-                        <SelectTrigger className="w-[220px]">
+                        <SelectTrigger className="w-full lg:w-[220px]">
                           <SelectValue placeholder="Filtrar por categoria" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="todos">Todas las categorias</SelectItem>
-                          {libraryCategories.map((category) => (
-                            <SelectItem key={category} value={category} className="capitalize">
-                              {category}
-                            </SelectItem>
-                          ))}
+                          {selectorCategoryOptions
+                            .filter((category) => category !== "todos")
+                            .map((category) => (
+                              <SelectItem key={category} value={category} className="capitalize">
+                                {category}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
-                      <Button type="button" variant="outline" onClick={() => setLibraryCategoryFilter("todos")}>
-                        Ver todas
-                      </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">Haz clic en una imagen para agregarla al producto.</p>
-                  </div>
-                  {filteredLibraryImages.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No hay imagenes para esta categoria.</p>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-                      {filteredLibraryImages.map((image) => (
-                        <button
-                          key={image.id}
-                          type="button"
-                          onClick={() => handleAddImageFromLibrary(image)}
-                          className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white text-left shadow-sm transition-all hover:border-blue-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <div className="relative h-32 w-full bg-gray-100">
-                            <StorageImage
-                              src={getAdminLibraryImageUrls(image.url).thumbnail || "/placeholder.svg"}
-                              optimizedSrc={getAdminLibraryImageUrls(image.url).optimized || "/placeholder.svg"}
-                              originalSrc={getAdminLibraryImageUrls(image.url).original || "/placeholder.svg"}
-                              alt={image.label}
-                              fill
-                              className="object-cover transition-transform group-hover:scale-105"
-                              loading="lazy"
-                              debugLabel={`ProductForm:library:${image.id}`}
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <div className="bg-blue-600 text-white rounded-full p-1">
-                                <Plus className="w-4 h-4" />
+                    {libraryLoading ? (
+                      <p className="text-sm text-muted-foreground">Cargando imagenes...</p>
+                    ) : filteredLibraryImages.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No hay imagenes para los filtros seleccionados.</p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                        {filteredLibraryImages.map((image) => (
+                          <button
+                            key={image.id}
+                            type="button"
+                            onClick={() => handleAddImageFromLibrary(image)}
+                            className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white text-left shadow-sm transition-all hover:border-blue-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <div className="relative h-32 w-full bg-gray-100">
+                              <StorageImage
+                                src={getAdminLibraryImageUrls(image.url).thumbnail || "/placeholder.svg"}
+                                optimizedSrc={getAdminLibraryImageUrls(image.url).optimized || "/placeholder.svg"}
+                                originalSrc={getAdminLibraryImageUrls(image.url).original || "/placeholder.svg"}
+                                alt={image.label}
+                                fill
+                                className="object-cover transition-transform group-hover:scale-105"
+                                loading="lazy"
+                                debugLabel={`ProductForm:library:${image.id}`}
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="bg-blue-600 text-white rounded-full p-1">
+                                  <Plus className="w-4 h-4" />
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="p-3 space-y-1">
-                            <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
-                            <p className="text-xs text-gray-500 capitalize">{image.category}</p>
-                            <p className="text-xs text-blue-600 font-medium group-hover:text-blue-700">
-                              Hacer clic para agregar
-                            </p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+                            <div className="p-3 space-y-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
+                              <p className="text-xs text-gray-500 capitalize">{image.category}</p>
+                              <p className="text-xs text-blue-600 font-medium group-hover:text-blue-700">
+                                Hacer clic para agregar
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {libraryTotal > IMAGE_SELECTOR_PAGE_SIZE && (
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs text-muted-foreground">
+                          Mostrando {(libraryPage - 1) * IMAGE_SELECTOR_PAGE_SIZE + 1}-
+                          {Math.min(libraryPage * IMAGE_SELECTOR_PAGE_SIZE, libraryTotal)} de {libraryTotal}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setLibraryPage((current) => Math.max(1, current - 1))}
+                            disabled={libraryPage === 1 || libraryLoading}
+                          >
+                            Anterior
+                          </Button>
+                          <span className="text-xs text-muted-foreground">
+                            Pagina {libraryPage} de {totalLibraryPages}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setLibraryPage((current) => Math.min(totalLibraryPages, current + 1))}
+                            disabled={libraryPage >= totalLibraryPages || libraryLoading}
+                          >
+                            Siguiente
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

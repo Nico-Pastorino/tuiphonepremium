@@ -24,8 +24,6 @@ import {
   sanitizeInstallmentPromotionCollection,
 } from "@/lib/finance-config"
 
-import type { ImageLibraryItem } from "@/types/image-library"
-
 export type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 export type { TradeInConfig } from "@/types/trade-in"
 export type { InstallmentPlan, InstallmentPromotion, InstallmentPromotionTerm, DollarConfig } from "@/types/finance"
@@ -50,7 +48,6 @@ type AdminBootstrapPayload = {
     tradeInConfig?: TradeInConfig
     installmentConfig?: InstallmentConfig
     dollarConfig?: DollarConfig
-    imageLibrary?: ImageLibraryItem[]
   }
 }
 
@@ -67,13 +64,7 @@ interface AdminContextType {
   deleteInstallmentPromotion: (id: string) => void
   getActiveInstallmentPromotions: () => InstallmentPromotion[]
 
-  imageLibrary: ImageLibraryItem[]
-  refreshImageLibrary: () => Promise<void>
-  addImageToLibrary: (image: { label: string; category: string; dataUrl: string }) => Promise<ImageLibraryItem>
-  updateImageInLibrary: (
-    id: string,
-    updates: Partial<Omit<ImageLibraryItem, "id" | "createdAt">>,
-  ) => Promise<void>
+  addImageToLibrary: (image: { label: string; category: string; dataUrl: string }) => Promise<{ id: string }>
   removeImageFromLibrary: (id: string) => Promise<void>
 
   dollarConfig: DollarConfig
@@ -129,7 +120,6 @@ export function AdminProvider({
     cloneInstallmentPromotions(resolvedInstallmentConfig.promotions),
   )
   const [dollarConfig, setDollarConfig] = useState<DollarConfig>({ ...resolvedDollarConfig })
-  const [imageLibrary, setImageLibrary] = useState<ImageLibraryItem[]>([])
   const [homeConfig, setHomeConfig] = useState<HomeConfig>(resolvedHomeConfig)
   const [tradeInConfig, setTradeInConfig] = useState<TradeInConfig>(resolvedTradeInConfig)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -143,24 +133,6 @@ export function AdminProvider({
   const tradeInConfigHasLocalUpdates = useRef(false)
   const tradeInConfigLoadedFromStorage = useRef(false)
 
-  const refreshImageLibrary = useCallback(async () => {
-    try {
-      const response = await fetch("/api/admin/image-library")
-      if (!response.ok) {
-        const message = await response.text()
-        throw new Error(message || "Unable to fetch image library")
-      }
-      const result = (await response.json()) as { data?: ImageLibraryItem[] }
-      if (Array.isArray(result?.data)) {
-        setImageLibrary(result.data)
-      } else {
-        setImageLibrary([])
-      }
-    } catch (error) {
-      console.error("Failed to fetch image library from API", error)
-      setImageLibrary([])
-    }
-  }, [])
   useEffect(() => {
     if (typeof window === "undefined") {
       return
@@ -277,9 +249,6 @@ export function AdminProvider({
           setTradeInConfig((prev) => mergeTradeInConfig(prev, bootstrap.tradeInConfig))
         }
 
-        if (Array.isArray(bootstrap.imageLibrary)) {
-          setImageLibrary(bootstrap.imageLibrary)
-        }
       } catch (error) {
         if (active) {
           console.error("Failed to fetch admin bootstrap from API", error)
@@ -291,12 +260,6 @@ export function AdminProvider({
 
     return () => {
       active = false
-    }
-  }, [isAuthenticated])
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setImageLibrary([])
     }
   }, [isAuthenticated])
 
@@ -518,23 +481,12 @@ export function AdminProvider({
       throw new Error(message || "No se pudo subir la imagen")
     }
 
-    const result = (await response.json()) as { data?: ImageLibraryItem }
+    const result = (await response.json()) as { data?: { id?: string } }
     if (!result?.data) {
       throw new Error("La respuesta del servidor no contiene la imagen")
     }
 
-    setImageLibrary((prev) => [...prev, result.data!])
-    return result.data
-  }
-
-  const updateImageInLibrary = async (
-    id: string,
-    updates: Partial<Omit<ImageLibraryItem, "id" | "createdAt">>,
-  ) => {
-    setImageLibrary((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
-    )
-    // TODO: Persist updates via API if needed
+    return { id: String(result.data.id ?? "") }
   }
 
   const removeImageFromLibrary = async (id: string) => {
@@ -551,12 +503,7 @@ export function AdminProvider({
       throw new Error(message || "No se pudo eliminar la imagen")
     }
 
-    const result = (await response.json()) as { data?: ImageLibraryItem[] }
-    if (Array.isArray(result?.data)) {
-      setImageLibrary(result.data)
-    } else {
-      setImageLibrary((prev) => prev.filter((item) => item.id !== id))
-    }
+    await response.json().catch(() => null)
   }
 
   const parseDateSafe = (value: string | null | undefined) => {
@@ -713,8 +660,6 @@ export function AdminProvider({
   const value: AdminContextType = {
     installmentPlans,
     installmentPromotions,
-    imageLibrary,
-    refreshImageLibrary,
     addInstallmentPlan,
     updateInstallmentPlan,
     deleteInstallmentPlan,
@@ -725,7 +670,6 @@ export function AdminProvider({
     getInstallmentPlansByCategory,
     getActiveInstallmentPromotions,
     addImageToLibrary,
-    updateImageInLibrary,
     removeImageFromLibrary,
     dollarConfig,
     updateDollarConfig,

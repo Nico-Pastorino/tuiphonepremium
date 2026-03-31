@@ -133,7 +133,6 @@ function AdminDashboard() {
     updateDollarConfig,
     getEffectiveDollarRate,
     getInstallmentPlansByCategory,
-    imageLibrary,
     addImageToLibrary,
     removeImageFromLibrary,
     homeConfig,
@@ -175,6 +174,14 @@ function AdminDashboard() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string>("")
   const [savingLibraryImage, setSavingLibraryImage] = useState(false)
+  const [activeTab, setActiveTab] = useState("products")
+  const [isLibrarySectionOpen, setIsLibrarySectionOpen] = useState(false)
+  const [libraryPage, setLibraryPage] = useState(1)
+  const [imageLibrary, setImageLibrary] = useState<ImageLibraryItem[]>([])
+  const [imageLibraryTotal, setImageLibraryTotal] = useState(0)
+  const [imageLibraryLoading, setImageLibraryLoading] = useState(false)
+  const [imageLibraryReloadToken, setImageLibraryReloadToken] = useState(0)
+  const IMAGE_LIBRARY_PAGE_SIZE = 12
 
   const [homeForm, setHomeForm] = useState<HomeConfig>(() => cloneHomeConfig(homeConfig))
   const [savingHomeConfig, setSavingHomeConfig] = useState(false)
@@ -196,6 +203,14 @@ function AdminDashboard() {
   useEffect(() => {
     setTradeInForm(cloneTradeInConfig(tradeInConfig))
   }, [tradeInConfig])
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview)
+      }
+    }
+  }, [imagePreview])
 
   const computeDisplayPrice = (product: Product) => {
     if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveAdminRate) {
@@ -355,12 +370,66 @@ function AdminDashboard() {
     return Array.from(categories).sort((a, b) => a.localeCompare(b))
   }, [imageLibrary])
 
-  const filteredLibraryImages = useMemo(() => {
-    if (libraryCategoryFilter === "todos") {
-      return imageLibrary
+  const filteredLibraryImages = imageLibrary
+  const totalLibraryPages = Math.max(1, Math.ceil(imageLibraryTotal / IMAGE_LIBRARY_PAGE_SIZE))
+
+  useEffect(() => {
+    setLibraryPage(1)
+  }, [libraryCategoryFilter])
+
+  useEffect(() => {
+    if (!isLibrarySectionOpen) {
+      return
     }
-    return imageLibrary.filter((item: ImageLibraryItem) => item.category === libraryCategoryFilter)
-  }, [imageLibrary, libraryCategoryFilter])
+    let active = true
+
+    const loadImageLibraryPage = async () => {
+      try {
+        setImageLibraryLoading(true)
+        const params = new URLSearchParams()
+        params.set("limit", String(IMAGE_LIBRARY_PAGE_SIZE))
+        params.set("offset", String((libraryPage - 1) * IMAGE_LIBRARY_PAGE_SIZE))
+        if (libraryCategoryFilter !== "todos") {
+          params.set("category", libraryCategoryFilter)
+        }
+
+        const response = await fetch(`/api/admin/image-library?${params.toString()}`, { cache: "force-cache" })
+        if (!response.ok) {
+          const message = await response.text()
+          throw new Error(message || "No se pudo cargar la biblioteca")
+        }
+
+        const result = (await response.json()) as {
+          data?: ImageLibraryItem[]
+          total?: number
+        }
+
+        if (!active) {
+          return
+        }
+
+        setImageLibrary(Array.isArray(result.data) ? result.data : [])
+        setImageLibraryTotal(result.total ?? 0)
+      } catch (error) {
+        if (!active) {
+          return
+        }
+        console.error("No se pudo cargar la biblioteca de imagenes:", error)
+        setImageLibrary([])
+        setImageLibraryTotal(0)
+      } finally {
+        if (active) {
+          setImageLibraryLoading(false)
+        }
+      }
+    }
+
+    void loadImageLibraryPage()
+
+    return () => {
+      active = false
+    }
+  }, [isLibrarySectionOpen, libraryPage, libraryCategoryFilter, imageLibraryReloadToken])
 
   const handleAddLibraryImage = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -383,6 +452,8 @@ function AdminDashboard() {
         setNewLibraryImage({ label: "", category, dataUrl: "" })
         setImagePreview("")
         setLibraryCategoryFilter(category)
+        setLibraryPage(1)
+        setImageLibraryReloadToken((current) => current + 1)
       } catch (error) {
         console.error("No se pudo guardar la imagen:", error)
         const message = error instanceof Error ? error.message : "No se pudo guardar la imagen. Intenta nuevamente."
@@ -397,6 +468,9 @@ function AdminDashboard() {
   const handleRemoveLibraryImage = async (id: string) => {
     try {
       await removeImageFromLibrary(id)
+      setImageLibrary((prev) => prev.filter((item) => item.id !== id))
+      setImageLibraryTotal((prev) => Math.max(0, prev - 1))
+      setImageLibraryReloadToken((current) => current + 1)
     } catch (error) {
       console.error("No se pudo eliminar la imagen:", error)
       const message = error instanceof Error ? error.message : "No se pudo eliminar la imagen. Intenta nuevamente."
@@ -627,7 +701,12 @@ function AdminDashboard() {
       const reader = new FileReader()
       reader.onload = (e) => {
         const result = e.target?.result as string
-        setImagePreview(result)
+        setImagePreview((prev) => {
+          if (prev.startsWith("blob:")) {
+            URL.revokeObjectURL(prev)
+          }
+          return URL.createObjectURL(file)
+        })
         setNewLibraryImage((prev) => ({ ...prev, dataUrl: result }))
         setUploadingImage(false)
       }
@@ -666,7 +745,7 @@ function AdminDashboard() {
             </Button>
           </div>
 
-          <Tabs defaultValue="products" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="products" className="flex items-center gap-2">
                 <Package className="w-4 h-4" />
@@ -917,10 +996,15 @@ function AdminDashboard() {
               )}
               <Card className="border-0 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="w-6 h-6 text-gray-600" />
-                    Biblioteca de imagenes
-                  </CardTitle>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-6 h-6 text-gray-600" />
+                      Biblioteca de imagenes
+                    </CardTitle>
+                    <Button type="button" variant="outline" onClick={() => setIsLibrarySectionOpen((prev) => !prev)}>
+                      {isLibrarySectionOpen ? "Ocultar biblioteca" : "Ver biblioteca"}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <form className="grid gap-4 md:grid-cols-4" onSubmit={handleAddLibraryImage}>
@@ -980,78 +1064,114 @@ function AdminDashboard() {
                     </div>
                   </form>
 
-                  <div className="space-y-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Imagenes disponibles</p>
-                        <p className="text-xs text-gray-500">
-                          Elige una imagen para los productos desde el formulario de carga.
-                        </p>
-                      </div>
-                      {imageLibrary.length > 0 && (
-                        <Select
-                          value={libraryCategoryFilter}
-                          onValueChange={(value) => setLibraryCategoryFilter(value)}
-                        >
-                          <SelectTrigger className="w-[200px]">
-                            <SelectValue placeholder="Filtrar por categoria" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Todas las categorias</SelectItem>
-                            {imageLibraryCategories.map((category) => (
-                              <SelectItem key={category} value={category} className="capitalize">
-                                {category}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                    {imageLibrary.length === 0 ? (
-                      <p className="text-sm text-gray-500">
-                        Todavia no cargaste imagenes. Usa el formulario superior para agregar la primera.
-                      </p>
-                    ) : filteredLibraryImages.length === 0 ? (
-                      <p className="text-sm text-gray-500">No hay imagenes para la categoria seleccionada.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {filteredLibraryImages.map((image) => (
-                          <div
-                            key={image.id}
-                            className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm flex flex-col gap-2"
-                          >
-                            <div className="relative h-28 w-full overflow-hidden rounded-md bg-gray-100">
-                              <StorageImage
-                                src={getAdminLibraryImageUrls(image.url).thumbnail || "/placeholder.svg"}
-                                optimizedSrc={getAdminLibraryImageUrls(image.url).optimized || "/placeholder.svg"}
-                                originalSrc={getAdminLibraryImageUrls(image.url).original || "/placeholder.svg"}
-                                alt={image.label}
-                                fill
-                                className="object-cover"
-                                unoptimized
-                                loading="lazy"
-                                debugLabel={`AdminLibrary:${image.id}`}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
-                              <p className="text-xs text-gray-500 capitalize">{image.category}</p>
-                            </div>
-                            <div className="flex justify-end">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveLibraryImage(image.id)}
+                  {!isLibrarySectionOpen ? (
+                    <p className="text-sm text-gray-500">
+                      La carga directa queda disponible siempre. La grilla de imagenes existentes solo se abre bajo demanda.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Imagenes disponibles</p>
+                            <p className="text-xs text-gray-500">
+                              Elige una imagen para los productos desde el formulario de carga.
+                            </p>
+                          </div>
+                          {imageLibrary.length > 0 && (
+                            <Select
+                              value={libraryCategoryFilter}
+                              onValueChange={(value) => setLibraryCategoryFilter(value)}
+                            >
+                              <SelectTrigger className="w-[200px]">
+                                <SelectValue placeholder="Filtrar por categoria" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="todos">Todas las categorias</SelectItem>
+                                {imageLibraryCategories.map((category) => (
+                                  <SelectItem key={category} value={category} className="capitalize">
+                                    {category}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                        {imageLibraryLoading ? (
+                          <p className="text-sm text-gray-500">Cargando imagenes...</p>
+                        ) : imageLibraryTotal === 0 ? (
+                          <p className="text-sm text-gray-500">
+                            Todavia no cargaste imagenes. Usa el formulario superior para agregar la primera.
+                          </p>
+                        ) : filteredLibraryImages.length === 0 ? (
+                          <p className="text-sm text-gray-500">No hay imagenes para la categoria seleccionada.</p>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {filteredLibraryImages.map((image) => (
+                              <div
+                                key={image.id}
+                                className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm flex flex-col gap-2"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <div className="relative h-28 w-full overflow-hidden rounded-md bg-gray-100">
+                                  <StorageImage
+                                    src={getAdminLibraryImageUrls(image.url).thumbnail || "/placeholder.svg"}
+                                    optimizedSrc={getAdminLibraryImageUrls(image.url).optimized || "/placeholder.svg"}
+                                    originalSrc={getAdminLibraryImageUrls(image.url).original || "/placeholder.svg"}
+                                    alt={image.label}
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
+                                    loading="lazy"
+                                    debugLabel={`AdminLibrary:${image.id}`}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-gray-900 truncate">{image.label}</p>
+                                  <p className="text-xs text-gray-500 capitalize">{image.category}</p>
+                                </div>
+                                <div className="flex justify-end">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveLibraryImage(image.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {imageLibraryTotal > IMAGE_LIBRARY_PAGE_SIZE && (
+                          <div className="flex items-center justify-between gap-4 pt-2">
+                            <p className="text-sm text-gray-600">
+                              Mostrando {(libraryPage - 1) * IMAGE_LIBRARY_PAGE_SIZE + 1}-{Math.min(libraryPage * IMAGE_LIBRARY_PAGE_SIZE, imageLibraryTotal)} de {imageLibraryTotal}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => setLibraryPage((current) => Math.max(1, current - 1))}
+                                disabled={libraryPage === 1 || imageLibraryLoading}
+                              >
+                                Anterior
+                              </Button>
+                              <span className="text-sm text-gray-600">
+                                Pagina {libraryPage} de {totalLibraryPages}
+                              </span>
+                              <Button
+                                variant="outline"
+                                onClick={() => setLibraryPage((current) => Math.min(totalLibraryPages, current + 1))}
+                                disabled={libraryPage >= totalLibraryPages || imageLibraryLoading}
+                              >
+                                Siguiente
                               </Button>
                             </div>
                           </div>
-                        ))}
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

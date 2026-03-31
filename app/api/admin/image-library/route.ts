@@ -16,14 +16,42 @@ const isAdminUnavailable = (error: unknown) => {
   return false
 }
 
-export async function GET() {
+const parseNumberParam = (value: string | null, fallback: number, max: number) => {
+  if (!value) return fallback
+  const parsed = Number.parseInt(value, 10)
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback
+  return Math.min(parsed, max)
+}
+
+export async function GET(request: NextRequest) {
   try {
     if (!supabaseAdmin) {
       return buildErrorResponse("El backend de almacenamiento no esta configurado", 503)
     }
 
-    const data = await getImageLibrary()
-    return NextResponse.json({ data })
+    const limit = Math.max(1, parseNumberParam(request.nextUrl.searchParams.get("limit"), 24, 60))
+    const offset = parseNumberParam(request.nextUrl.searchParams.get("offset"), 0, 10_000)
+    const category = request.nextUrl.searchParams.get("category")?.trim() || null
+    const search = request.nextUrl.searchParams.get("search")?.trim().toLowerCase() || null
+
+    const allItems = await getImageLibrary()
+    const filteredItems = allItems.filter((item) => {
+      const matchesCategory = !category || category === "todos" || item.category === category
+      const matchesSearch =
+        !search ||
+        item.label.toLowerCase().includes(search) ||
+        item.category.toLowerCase().includes(search)
+      return matchesCategory && matchesSearch
+    })
+    const data = filteredItems.slice(offset, offset + limit)
+    const response = NextResponse.json({
+      data,
+      total: filteredItems.length,
+      limit,
+      offset,
+    })
+    response.headers.set("Cache-Control", "private, max-age=3600, stale-while-revalidate=86400")
+    return response
   } catch (error) {
     console.error("Image library GET error:", error)
     if (isAdminUnavailable(error)) {
