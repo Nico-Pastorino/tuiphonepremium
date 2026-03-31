@@ -4,6 +4,7 @@ import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductInsert } from "@/types/database"
 
 const OUTLET_SCHEMA_ENABLED = process.env.OUTLET_SCHEMA_ENABLED === "true"
+const DEBUG_EGRESS_LOGS = process.env.DEBUG_EGRESS_LOGS === "true"
 
 const buildProductInsert = (body: Record<string, unknown>): ProductInsert => ({
   name: String(body.name),
@@ -47,10 +48,59 @@ const buildProductInsert = (body: Record<string, unknown>): ProductInsert => ({
 const getErrorMessage = (error: Error) => error.message || "Unexpected error"
 
 export async function GET(request: NextRequest) {
+  const startedAt = Date.now()
   try {
     const forceRefresh = request.nextUrl.searchParams.get("refresh") === "1"
-    const data = await getProductsCached({ force: forceRefresh })
-    return NextResponse.json({ data })
+    const limitParam = Number.parseInt(request.nextUrl.searchParams.get("limit") ?? "", 10)
+    const offsetParam = Number.parseInt(request.nextUrl.searchParams.get("offset") ?? "", 10)
+    const search = request.nextUrl.searchParams.get("search")
+    const condition = request.nextUrl.searchParams.get("condition")
+
+    if (forceRefresh) {
+      await invalidateProductsCache()
+    }
+
+    const hasPaginationParams =
+      Number.isFinite(limitParam) || Number.isFinite(offsetParam) || Boolean(search?.trim()) || Boolean(condition?.trim())
+
+    if (hasPaginationParams) {
+      const limit = Number.isFinite(limitParam) ? limitParam : 24
+      const offset = Number.isFinite(offsetParam) ? offsetParam : 0
+      const { data, error } = await ProductAdminService.getAdminProductsPage({
+        limit,
+        offset,
+        search: search && search.trim().length > 0 ? search.trim() : null,
+        condition: condition && condition.trim().length > 0 ? condition.trim() : null,
+      })
+
+      if (error || !data) {
+        throw error ?? new Error("No se pudieron cargar los productos")
+      }
+
+      const response = NextResponse.json({
+        data: data.rows,
+        total: data.total,
+        limit,
+        offset,
+      })
+      response.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120")
+      if (DEBUG_EGRESS_LOGS) {
+        console.info("[admin/products]", {
+          durationMs: Date.now() - startedAt,
+          limit,
+          offset,
+          total: data.total,
+          condition: condition ?? null,
+          search: search ?? null,
+        })
+      }
+      return response
+    }
+
+    const data = await getProductsCached()
+    const response = NextResponse.json({ data, total: data.length, limit: data.length, offset: 0 })
+    response.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120")
+    return response
   } catch (error) {
     console.error("API GET error:", error)
     const message = error instanceof Error ? error.message : "Error interno del servidor"

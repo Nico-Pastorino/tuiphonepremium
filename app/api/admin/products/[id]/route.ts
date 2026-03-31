@@ -4,6 +4,7 @@ import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductUpdate } from "@/types/database"
 
 const OUTLET_SCHEMA_ENABLED = process.env.OUTLET_SCHEMA_ENABLED === "true"
+const DEBUG_EGRESS_LOGS = process.env.DEBUG_EGRESS_LOGS === "true"
 
 const getErrorMessage = (error: Error) => error.message || "Unexpected error"
 
@@ -61,6 +62,35 @@ const buildProductUpdate = (body: Record<string, unknown>): ProductUpdate => {
   }
 
   return updateData
+}
+
+export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+  const startedAt = Date.now()
+  try {
+    const { data, error } = await ProductAdminService.getProductById(params.id)
+
+    if (error) {
+      console.error("API GET by id error:", error)
+      return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 })
+    }
+
+    if (!data) {
+      return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 })
+    }
+
+    const response = NextResponse.json({ data })
+    response.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120")
+    if (DEBUG_EGRESS_LOGS) {
+      console.info("[admin/products/:id]", {
+        durationMs: Date.now() - startedAt,
+        id: params.id,
+      })
+    }
+    return response
+  } catch (error) {
+    console.error("API GET by id error:", error)
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
+  }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {

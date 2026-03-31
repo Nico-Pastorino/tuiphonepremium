@@ -59,6 +59,14 @@ import type { TradeInConditionId, TradeInStorageId, TradeInRow } from "@/types/t
 import type { ImageLibraryItem } from "@/types/image-library"
 
 type NewLibraryImageForm = { label: string; category: string; dataUrl: string }
+type AdminListCondition = "nuevo" | "seminuevo" | "outlet" | null
+type AdminProductsResponse = {
+  data?: Product[]
+  total?: number
+  limit?: number
+  offset?: number
+  error?: string
+}
 
 export const dynamic = "force-dynamic"
 
@@ -110,7 +118,7 @@ export default function AdminPage() {
 }
 
 function AdminDashboard() {
-  const { products, addProduct, updateProduct, deleteProduct, loading: productsLoading } = useProducts()
+  const { addProduct, updateProduct, deleteProduct, ensureProductById } = useProducts()
   const {
     installmentPlans,
     installmentPromotions,
@@ -141,7 +149,6 @@ function AdminDashboard() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false)
   const [isAddInstallmentOpen, setIsAddInstallmentOpen] = useState(false)
   const [installmentCategory, setInstallmentCategory] = useState<"visa-mastercard" | "naranja">("visa-mastercard")
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editingInstallment, setEditingInstallment] = useState<InstallmentPlan | null>(null)
   const [isAddPromotionOpen, setIsAddPromotionOpen] = useState(false)
   const [editingPromotion, setEditingPromotion] = useState<InstallmentPromotion | null>(null)
@@ -152,8 +159,18 @@ function AdminDashboard() {
   })
   const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<string>("todos")
   const [searchTerm, setSearchTerm] = useState("")
-  const [conditionFilter, setConditionFilter] = useState<"nuevo" | "seminuevo" | "outlet" | null>(null)
+  const [conditionFilter, setConditionFilter] = useState<AdminListCondition>(null)
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
+  const [productsLoading, setProductsLoading] = useState(true)
+  const [productsError, setProductsError] = useState<string | null>(null)
+  const [productsPage, setProductsPage] = useState(1)
+  const [productsTotal, setProductsTotal] = useState(0)
+  const [pagedProducts, setPagedProducts] = useState<Product[]>([])
+  const [productsReloadToken, setProductsReloadToken] = useState(0)
+  const [editingProductDetail, setEditingProductDetail] = useState<Product | null>(null)
+  const [editingProductId, setEditingProductId] = useState<string | null>(null)
+  const [editingProductOpen, setEditingProductOpen] = useState(false)
+  const [editingProductLoading, setEditingProductLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string>("")
   const [savingLibraryImage, setSavingLibraryImage] = useState(false)
@@ -191,19 +208,69 @@ function AdminDashboard() {
   const naranjaPlans = getInstallmentPlansByCategory("naranja")
 
   // Filtrar productos
-  const filteredProducts = products.filter((product) => {
-    if (conditionFilter === "outlet") {
-      return Boolean(product.isOutlet)
+  const PRODUCTS_PAGE_SIZE = 24
+  const totalProductPages = Math.max(1, Math.ceil(productsTotal / PRODUCTS_PAGE_SIZE))
+  const trimmedSearch = searchTerm.trim()
+
+  useEffect(() => {
+    setProductsPage(1)
+  }, [trimmedSearch, conditionFilter])
+
+  useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+    const timer = window.setTimeout(async () => {
+      setProductsLoading(true)
+      setProductsError(null)
+
+      try {
+        const params = new URLSearchParams()
+        params.set("limit", String(PRODUCTS_PAGE_SIZE))
+        params.set("offset", String((productsPage - 1) * PRODUCTS_PAGE_SIZE))
+        if (trimmedSearch.length > 0) {
+          params.set("search", trimmedSearch)
+        }
+        if (conditionFilter) {
+          params.set("condition", conditionFilter)
+        }
+
+        const response = await fetch(`/api/admin/products?${params.toString()}`, {
+          cache: "default",
+          signal: controller.signal,
+        })
+        const result = (await response.json()) as AdminProductsResponse
+
+        if (!response.ok) {
+          throw new Error(result.error || `Error ${response.status}`)
+        }
+
+        if (!active) {
+          return
+        }
+
+        setPagedProducts(Array.isArray(result.data) ? result.data : [])
+        setProductsTotal(typeof result.total === "number" ? result.total : 0)
+      } catch (error) {
+        if (!active || (error instanceof DOMException && error.name === "AbortError")) {
+          return
+        }
+
+        setPagedProducts([])
+        setProductsTotal(0)
+        setProductsError(error instanceof Error ? error.message : "No se pudieron cargar los productos")
+      } finally {
+        if (active) {
+          setProductsLoading(false)
+        }
+      }
+    }, 250)
+
+    return () => {
+      active = false
+      controller.abort()
+      window.clearTimeout(timer)
     }
-    if (conditionFilter === "nuevo") {
-      return product.condition === "nuevo" && !product.isOutlet
-    }
-    if (conditionFilter === "seminuevo") {
-      return product.condition === "seminuevo" && !product.isOutlet
-    }
-    const term = searchTerm.toLowerCase()
-    return product.name.toLowerCase().includes(term) || product.category.toLowerCase().includes(term)
-  })
+  }, [productsPage, trimmedSearch, conditionFilter, productsReloadToken])
 
   const baseDollarRate = dollarRate?.blue ?? dollarConfig.blueRate
   const finalDollarValue = (baseDollarRate + dollarConfig.markup).toFixed(2)
@@ -254,6 +321,7 @@ function AdminDashboard() {
       const success = await deleteProduct(productId)
       if (success) {
         console.log("Producto eliminado exitosamente")
+        setProductsReloadToken((current) => current + 1)
       }
     } catch (error) {
       console.error("Error al eliminar producto:", error)
@@ -261,6 +329,25 @@ function AdminDashboard() {
       setDeletingProductId(null)
     }
   }
+
+  const handleOpenEditProduct = useCallback(
+    async (productId: string) => {
+      setEditingProductId(productId)
+      setEditingProductLoading(true)
+      setEditingProductOpen(true)
+
+      try {
+        const product = await ensureProductById(productId)
+        setEditingProductDetail(product)
+      } catch (error) {
+        console.error("No se pudo cargar el producto para edicion:", error)
+        setEditingProductDetail(null)
+      } finally {
+        setEditingProductLoading(false)
+      }
+    },
+    [ensureProductById],
+  )
 
   const imageLibraryCategories = useMemo(() => {
     const categories = new Set<string>(imageLibrary.map((item) => item.category || "general"))
@@ -667,7 +754,10 @@ function AdminDashboard() {
                     <ProductForm
                       onSubmit={async (productData) => {
                         const success = await addProduct(productData)
-                        if (success) setIsAddProductOpen(false)
+                        if (success) {
+                          setIsAddProductOpen(false)
+                          setProductsReloadToken((current) => current + 1)
+                        }
                         return success
                       }}
                     />
@@ -682,7 +772,7 @@ function AdminDashboard() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProducts.map((product) => (
+                  {pagedProducts.map((product) => (
                     <Card
                       key={product.id}
                       className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-sm"
@@ -717,26 +807,15 @@ function AdminDashboard() {
                           </div>
                         </div>
                         <div className="flex gap-2 mt-4">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-                                <Edit className="w-4 h-4 mr-1" />
-                                Editar
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                              <DialogHeader>
-                                <DialogTitle>Editar Producto</DialogTitle>
-                              </DialogHeader>
-                              <ProductForm
-                                initialData={product}
-                                onSubmit={async (productData) => {
-                                  const success = await updateProduct(product.id, productData)
-                                  return success
-                                }}
-                              />
-                            </DialogContent>
-                          </Dialog>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 bg-transparent"
+                            onClick={() => void handleOpenEditProduct(product.id)}
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Editar
+                          </Button>
 
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -780,7 +859,13 @@ function AdminDashboard() {
                 </div>
               )}
 
-              {filteredProducts.length === 0 && !productsLoading && (
+              {productsError && !productsLoading && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {productsError}
+                </div>
+              )}
+
+              {pagedProducts.length === 0 && !productsLoading && !productsError && (
                 <div className="text-center py-12">
                   <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No se encontraron productos</h3>
@@ -796,6 +881,33 @@ function AdminDashboard() {
                       Agregar Producto
                     </Button>
                   )}
+                </div>
+              )}
+              {productsTotal > PRODUCTS_PAGE_SIZE && !productsLoading && (
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+                  <p className="text-sm text-gray-600">
+                    Mostrando {(productsPage - 1) * PRODUCTS_PAGE_SIZE + 1}-
+                    {Math.min(productsPage * PRODUCTS_PAGE_SIZE, productsTotal)} de {productsTotal}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setProductsPage((current) => Math.max(1, current - 1))}
+                      disabled={productsPage === 1}
+                    >
+                      Anterior
+                    </Button>
+                    <span className="text-sm text-gray-600">
+                      Pagina {productsPage} de {totalProductPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      onClick={() => setProductsPage((current) => Math.min(totalProductPages, current + 1))}
+                      disabled={productsPage >= totalProductPages}
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
                 </div>
               )}
               <Card className="border-0 shadow-sm">
@@ -1534,6 +1646,44 @@ function AdminDashboard() {
           </Tabs>
         </div>
       </div>
+
+      <Dialog
+        open={editingProductOpen}
+        onOpenChange={(open) => {
+          setEditingProductOpen(open)
+          if (!open) {
+            setEditingProductDetail(null)
+            setEditingProductId(null)
+            setEditingProductLoading(false)
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Producto</DialogTitle>
+          </DialogHeader>
+          {editingProductLoading || !editingProductDetail || !editingProductId ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-600">Cargando detalle del producto...</span>
+            </div>
+          ) : (
+              <ProductForm
+              initialData={editingProductDetail}
+              onSubmit={async (productData) => {
+                const success = await updateProduct(editingProductId, productData)
+                if (success) {
+                  setEditingProductOpen(false)
+                  setEditingProductDetail(null)
+                  setEditingProductId(null)
+                  setProductsReloadToken((current) => current + 1)
+                }
+                return success
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

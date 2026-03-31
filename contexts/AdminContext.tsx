@@ -44,6 +44,16 @@ type InstallmentPromotionInput = {
   isActive: boolean
 }
 
+type AdminBootstrapPayload = {
+  data?: {
+    homeConfig?: HomeConfig
+    tradeInConfig?: TradeInConfig
+    installmentConfig?: InstallmentConfig
+    dollarConfig?: DollarConfig
+    imageLibrary?: ImageLibraryItem[]
+  }
+}
+
 interface AdminContextType {
   installmentPlans: InstallmentPlan[]
   addInstallmentPlan: (plan: Omit<InstallmentPlan, "id" | "createdAt">) => void
@@ -230,92 +240,51 @@ export function AdminProvider({
 
     let active = true
 
-    const loadRemoteInstallments = async () => {
+    const loadRemoteData = async () => {
       try {
-        const response = await fetch("/api/admin/installments")
+        const response = await fetch("/api/admin/bootstrap", { cache: "force-cache" })
         if (!response.ok) {
           const message = await response.text()
-          throw new Error(message || "Unable to fetch installment plans")
+          throw new Error(message || "Unable to fetch admin bootstrap")
         }
-        const result = (await response.json()) as { data?: InstallmentConfig }
-        if (result?.data && !installmentPlansHasLocalUpdates.current && active) {
-          const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, result.data)
+
+        const result = (await response.json()) as AdminBootstrapPayload
+        const bootstrap = result.data
+        if (!bootstrap || !active) {
+          return
+        }
+
+        if (bootstrap.installmentConfig && !installmentPlansHasLocalUpdates.current) {
+          const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, bootstrap.installmentConfig)
           setInstallmentPlans(cloneInstallmentPlans(merged.plans))
           setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
         }
-      } catch (error) {
-        if (active) {
-          console.error("Failed to fetch installment plans from API", error)
-        }
-      }
-    }
 
-    const loadRemoteDollarConfig = async () => {
-      try {
-        const response = await fetch("/api/admin/dollar")
-        if (!response.ok) {
-          const message = await response.text()
-          throw new Error(message || "Unable to fetch dollar config")
+        if (bootstrap.dollarConfig && !dollarConfigHasLocalUpdates.current) {
+          setDollarConfig(mergeDollarConfig(DEFAULT_DOLLAR_CONFIG, bootstrap.dollarConfig))
         }
-        const result = (await response.json()) as { data?: Partial<DollarConfig> }
-        if (result?.data && !dollarConfigHasLocalUpdates.current && active) {
-          setDollarConfig(mergeDollarConfig(DEFAULT_DOLLAR_CONFIG, result.data))
-        }
-      } catch (error) {
-        if (active) {
-          console.error("Failed to fetch dollar config from API", error)
-        }
-      }
-    }
 
-    const loadRemoteHomeConfig = async () => {
-      try {
-        const response = await fetch("/api/admin/home-config")
-        if (!response.ok) {
-          const message = await response.text()
-          throw new Error(message || "Unable to fetch home config")
+        if (bootstrap.homeConfig && !homeConfigHasLocalUpdates.current) {
+          setHomeConfig((prev) => mergeHomeConfig(prev, bootstrap.homeConfig))
         }
-        const result = (await response.json()) as { data?: Partial<HomeConfig> }
-        if (result?.data && !homeConfigHasLocalUpdates.current && active) {
-          setHomeConfig((prev) => mergeHomeConfig(prev, result.data))
-        }
-      } catch (error) {
-        if (active) {
-          console.error("Failed to fetch home config from API", error)
-        }
-      }
-    }
 
-    const loadRemoteTradeInConfig = async () => {
-      try {
-        const response = await fetch("/api/admin/trade-in")
-        if (!response.ok) {
-          const message = await response.text()
-          throw new Error(message || "Unable to fetch trade-in config")
-        }
-        const result = (await response.json()) as { data?: TradeInConfig; fallback?: boolean }
-        const shouldApplyRemote =
-          result?.data &&
+        const shouldApplyTradeIn =
+          bootstrap.tradeInConfig &&
           !tradeInConfigHasLocalUpdates.current &&
-          (!result.fallback || !tradeInConfigLoadedFromStorage.current)
+          !tradeInConfigLoadedFromStorage.current
 
-        if (shouldApplyRemote && active) {
-          setTradeInConfig((prev) => mergeTradeInConfig(prev, result.data))
+        if (shouldApplyTradeIn) {
+          setTradeInConfig((prev) => mergeTradeInConfig(prev, bootstrap.tradeInConfig))
+        }
+
+        if (Array.isArray(bootstrap.imageLibrary)) {
+          setImageLibrary(bootstrap.imageLibrary)
         }
       } catch (error) {
         if (active) {
-          console.error("Failed to fetch trade-in config from API", error)
+          console.error("Failed to fetch admin bootstrap from API", error)
         }
       }
-    }
-
-    const loadRemoteData = async () => {
-      await Promise.allSettled([
-        loadRemoteInstallments(),
-        loadRemoteDollarConfig(),
-        loadRemoteHomeConfig(),
-        loadRemoteTradeInConfig(),
-      ])
     }
 
     void loadRemoteData()
@@ -328,10 +297,8 @@ export function AdminProvider({
   useEffect(() => {
     if (!isAuthenticated) {
       setImageLibrary([])
-      return
     }
-    void refreshImageLibrary()
-  }, [isAuthenticated, refreshImageLibrary])
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (!installmentPlansInitialized || !isAuthenticated) return

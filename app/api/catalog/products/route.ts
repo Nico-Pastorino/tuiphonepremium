@@ -2,10 +2,11 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getCatalogProducts } from "@/lib/product-cache"
 
 export const revalidate = 300
-export const dynamic = "force-dynamic"
+// Mantener ISR activo para reducir consultas repetidas al backend.
 
 const DEFAULT_LIMIT = 12
 const MAX_LIMIT = 60
+const DEBUG_EGRESS_LOGS = process.env.DEBUG_EGRESS_LOGS === "true"
 
 const parseNumberParam = (value: string | null, fallback: number, max: number) => {
   if (!value) return fallback
@@ -23,6 +24,7 @@ const parseBooleanParam = (value: string | null): boolean | null => {
 }
 
 export async function GET(request: NextRequest) {
+  const startedAt = Date.now()
   try {
     const { searchParams } = request.nextUrl
     const limit = parseNumberParam(searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT)
@@ -46,6 +48,19 @@ export async function GET(request: NextRequest) {
     })
     const response = NextResponse.json(data)
     response.headers.set("Cache-Control", force ? "no-store" : "s-maxage=300, stale-while-revalidate=600")
+    if (DEBUG_EGRESS_LOGS) {
+      console.info("[catalog/products]", {
+        durationMs: Date.now() - startedAt,
+        limit,
+        offset,
+        total: data.total,
+        featured,
+        outletOnly,
+        category: category ?? null,
+        condition: condition ?? null,
+        search: search ?? null,
+      })
+    }
     return response
   } catch (error) {
     console.error("Catalog products API error:", error)

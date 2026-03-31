@@ -4,10 +4,15 @@ import type { Database, ProductInsert, ProductRow, ProductUpdate, SiteConfigInse
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const OUTLET_SCHEMA_ENABLED = process.env.OUTLET_SCHEMA_ENABLED === "true"
+const BASE_PRODUCT_SUMMARY_COLUMNS =
+  "id,name,price,original_price,price_usd,category,condition,images,stock,featured,created_at"
 const BASE_PRODUCT_SELECT_COLUMNS =
-  "id,name,description,price,original_price,price_usd,category,condition,images,specifications,stock,featured,created_at,updated_at"
+  `${BASE_PRODUCT_SUMMARY_COLUMNS},specifications,updated_at`
 const OUTLET_PRODUCT_COLUMNS =
   "is_outlet,outlet_notes,outlet_defects,outlet_battery_percent,outlet_grade,outlet_warranty_days,outlet_accessories,outlet_display_issues,outlet_case_issues"
+const PRODUCT_SUMMARY_COLUMNS = OUTLET_SCHEMA_ENABLED
+  ? `${BASE_PRODUCT_SUMMARY_COLUMNS},${OUTLET_PRODUCT_COLUMNS}`
+  : BASE_PRODUCT_SUMMARY_COLUMNS
 const PRODUCT_SELECT_COLUMNS = OUTLET_SCHEMA_ENABLED
   ? `${BASE_PRODUCT_SELECT_COLUMNS},${OUTLET_PRODUCT_COLUMNS}`
   : BASE_PRODUCT_SELECT_COLUMNS
@@ -172,7 +177,7 @@ export class ProductAdminService {
       const client = getAdminClient()
       const limit = options?.limit ?? 250
       const offset = options?.offset ?? 0
-      const safeLimit = Math.max(1, Math.min(limit, 500))
+      const safeLimit = Math.max(1, Math.min(limit, 2000))
       const safeOffset = Math.max(0, offset)
       const { data, error } = await client
         .from("products")
@@ -241,6 +246,92 @@ export class ProductAdminService {
     }
   }
 
+  static async getAdminProductsPage(options: {
+    limit: number
+    offset: number
+    search?: string | null
+    condition?: string | null
+  }): Promise<AdminResult<{ rows: ProductRow[]; total: number }>> {
+    if (!supabaseAdmin) {
+      return { data: null, error: new Error("Admin client not configured") }
+    }
+
+    try {
+      const client = getAdminClient()
+      const normalizedLimit = Math.max(1, Math.min(options.limit, 100))
+      const normalizedOffset = Math.max(0, options.offset)
+      const normalizedCondition = options.condition?.trim().toLowerCase() ?? null
+      const searchValue = options.search?.trim()
+
+      let query = client
+        .from("products")
+        .select(PRODUCT_SUMMARY_COLUMNS, { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(normalizedOffset, normalizedOffset + normalizedLimit - 1)
+
+      if (OUTLET_SCHEMA_ENABLED && normalizedCondition) {
+        if (normalizedCondition === "outlet") {
+          query = query.eq("is_outlet", true)
+        } else {
+          query = query.eq("is_outlet", false)
+        }
+      }
+
+      if (normalizedCondition && normalizedCondition !== "outlet") {
+        query = query.eq("condition", normalizedCondition)
+      }
+
+      if (searchValue && searchValue.length > 0) {
+        const sanitized = searchValue.replace(/[%_]/g, (match) => `\\${match}`)
+        const pattern = `%${sanitized}%`
+        query = query.or([`name.ilike.${pattern}`, `category.ilike.${pattern}`].join(","))
+      }
+
+      const { data, error, count } = await query
+
+      if (error) {
+        if (OUTLET_SCHEMA_ENABLED && isMissingOutletColumnError(error)) {
+          let fallbackQuery = client
+            .from("products")
+            .select(BASE_PRODUCT_SUMMARY_COLUMNS, { count: "exact" })
+            .order("created_at", { ascending: false })
+            .range(normalizedOffset, normalizedOffset + normalizedLimit - 1)
+
+          if (normalizedCondition && normalizedCondition !== "outlet") {
+            fallbackQuery = fallbackQuery.eq("condition", normalizedCondition)
+          }
+
+          if (searchValue && searchValue.length > 0) {
+            const sanitized = searchValue.replace(/[%_]/g, (match) => `\\${match}`)
+            const pattern = `%${sanitized}%`
+            fallbackQuery = fallbackQuery.or([`name.ilike.${pattern}`, `category.ilike.${pattern}`].join(","))
+          }
+
+          const fallbackResult = await fallbackQuery
+          if (fallbackResult.error) {
+            throw fallbackResult.error
+          }
+
+          return {
+            data: { rows: (fallbackResult.data as ProductRow[] | null) ?? [], total: fallbackResult.count ?? 0 },
+            error: null,
+          }
+        }
+
+        throw error
+      }
+
+      return {
+        data: { rows: (data as ProductRow[] | null) ?? [], total: count ?? 0 },
+        error: null,
+      }
+    } catch (error) {
+      const normalized = normalizeError(error)
+      console.error("Get admin products page error:", normalized)
+      return { data: null, error: normalized }
+    }
+  }
+
   static async getCatalogPage(options: {
     limit: number
     offset: number
@@ -265,7 +356,7 @@ export class ProductAdminService {
 
       let query = client
         .from("products")
-        .select(PRODUCT_SELECT_COLUMNS, { count: "exact" })
+        .select(PRODUCT_SUMMARY_COLUMNS, { count: "exact" })
         .order("condition", { ascending: true })
         .order("price", { ascending: false, nullsFirst: false })
         .order("category", { ascending: true })
@@ -316,7 +407,7 @@ export class ProductAdminService {
           }
           let fallbackQuery = client
             .from("products")
-            .select(BASE_PRODUCT_SELECT_COLUMNS, { count: "exact" })
+            .select(BASE_PRODUCT_SUMMARY_COLUMNS, { count: "exact" })
             .order("condition", { ascending: true })
             .order("price", { ascending: false, nullsFirst: false })
             .order("category", { ascending: true })

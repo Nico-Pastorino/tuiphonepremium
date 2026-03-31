@@ -16,14 +16,10 @@ export default async function HomePage() {
 
   const products = featuredResponse.items.map((item) => ({
     ...item,
-    description: "",
-    images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
   }))
 
   const outletProducts = outletResponse?.items.map((item) => ({
     ...item,
-    description: "",
-    images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
   }))
 
   return (

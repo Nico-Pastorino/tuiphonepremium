@@ -6,8 +6,6 @@ import type {
   Product,
   ProductFormData,
   ProductFilters,
-  ProductSummary,
-  CatalogProductsResponse,
 } from "@/types/product"
 import type { ProductRow } from "@/types/database"
 import { useAdmin } from "@/contexts/AdminContext"
@@ -30,7 +28,7 @@ interface ProductContextType {
   getFeaturedProducts: () => Product[]
   searchProducts: (query: string) => Product[]
   filterProducts: (filters: ProductFilters) => Product[]
-  refreshProducts: (options?: { preferAdmin?: boolean }) => Promise<void>
+  refreshProducts: () => Promise<void>
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined)
@@ -75,33 +73,6 @@ function mapProducts(rows?: ProductRow[]): Product[] {
   return (rows ?? []).map(transformSupabaseProduct)
 }
 
-function summaryToProduct(summary: ProductSummary): Product {
-  return {
-    id: summary.id,
-    name: summary.name,
-    description: summary.description ?? "",
-    price: summary.price,
-    originalPrice: summary.originalPrice ?? undefined,
-    priceUSD: summary.priceUSD ?? undefined,
-    category: summary.category,
-    condition: summary.condition,
-    images: summary.images ?? [],
-    specifications: {},
-    stock: summary.stock,
-    featured: summary.featured,
-    isOutlet: summary.isOutlet ?? false,
-    outletNotes: summary.outletNotes ?? null,
-    outletDefects: summary.outletDefects ?? [],
-    outletBatteryPercent: summary.outletBatteryPercent ?? null,
-    outletGrade: summary.outletGrade ?? null,
-    outletWarrantyDays: summary.outletWarrantyDays ?? null,
-    outletAccessories: summary.outletAccessories ?? null,
-    outletDisplayIssues: summary.outletDisplayIssues ?? null,
-    outletCaseIssues: summary.outletCaseIssues ?? null,
-    createdAt: summary.createdAt,
-    updatedAt: undefined,
-  }
-}
 const API_TIMEOUT_MS = 12_000
 const API_MAX_ATTEMPTS = 2
 const API_RETRY_DELAY_MS = 300
@@ -174,7 +145,7 @@ const fetchWithTimeout = async (
   }
 }
 
-const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, source: string): Promise<T> => {
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, source: string): Promise<T> => {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error(`Timeout al solicitar productos desde ${source}`))
@@ -197,7 +168,7 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
   const initialProducts = useMemo(() => (initialData ? mapProducts(initialData.products) : []), [initialData])
   const initialSupabaseConnected = initialData?.supabaseConnected ?? false
   const [products, setProducts] = useState<Product[]>(() => initialProducts)
-  const [loading, setLoading] = useState(initialProducts.length === 0)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [supabaseConnected, setSupabaseConnected] = useState(initialSupabaseConnected)
   const supabaseConnectedRef = useRef(initialSupabaseConnected)
@@ -284,10 +255,10 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
     updateProductsState(cached.products, cached.supabaseConnected, false, cached.timestamp)
     updateSupabaseState(cached.supabaseConnected)
     setLoading(false)
-  }, [updateProductsState])
+  }, [updateProductsState, updateSupabaseState])
 
   const loadProducts = useCallback(
-    async ({ force = false, preferAdmin = false }: { force?: boolean; preferAdmin?: boolean } = {}) => {
+    async ({ force = false }: { force?: boolean; preferAdmin?: boolean } = {}) => {
       const hasExistingProducts = productsRef.current.length > 0
       const lastUpdated = lastUpdateRef.current
       const isReliableData = supabaseConnectedRef.current
@@ -308,23 +279,20 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
       }
 
-      type SourceName = "admin" | "catalog"
+      const adminUrl = force ? "/api/admin/products?refresh=1" : "/api/admin/products"
+      // Evita no-store en lecturas normales para permitir cache de red y reducir requests repetidas.
+      const readCacheMode: RequestCache = force ? "no-store" : "default"
 
-      const adminUrl = force || preferAdmin ? "/api/admin/products?refresh=1" : "/api/admin/products"
-      const catalogUrl = `/api/catalog/products?limit=200${force ? "&refresh=1" : ""}`
-
-      const fetchFromAdmin = async (
-        attempt = 1,
-      ): Promise<{ source: SourceName; products: Product[]; connected: boolean }> => {
+      const fetchFromAdmin = async (attempt = 1): Promise<Product[]> => {
         try {
-          const response = await fetchWithTimeout(adminUrl, { cache: "no-store" }, API_TIMEOUT_MS, "Admin API")
+          const response = await fetchWithTimeout(adminUrl, { cache: readCacheMode }, API_TIMEOUT_MS, "Admin API")
           const result = (await response.json()) as ApiListResponse
 
           if (!response.ok) {
             throw new Error(result?.error || `API responded with status ${response.status}`)
           }
 
-          return { source: "admin" as const, products: mapProducts(result.data), connected: true }
+          return mapProducts(result.data)
         } catch (error) {
           if (attempt < API_MAX_ATTEMPTS) {
             console.warn(`Retrying product API fetch (attempt ${attempt + 1})`, error)
@@ -335,69 +303,11 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
       }
 
-      const fetchFromCatalog = async (): Promise<{ source: SourceName; products: Product[]; connected: boolean }> => {
-        const response = await fetchWithTimeout(catalogUrl, { cache: "no-store" }, API_TIMEOUT_MS, "Catalog API")
-        const result = (await response.json()) as CatalogProductsResponse & { error?: string }
-
-        if (!response.ok) {
-          throw new Error(result?.error || `Catalog API responded with status ${response.status}`)
-        }
-
-        const productsList = (result.items ?? []).map(summaryToProduct)
-        return { source: "catalog" as const, products: productsList, connected: Boolean(result.supabaseConnected) }
-      }
-
       try {
-        const errors: Array<{ source: SourceName; error: unknown }> = []
-        let resolvedSource: SourceName | null = null
-        let resolvedPriority = 0
-        const sourcePriority: Record<SourceName, number> = {
-          catalog: 1,
-          admin: 2,
-        }
-
-        const recordError = (source: SourceName, error: unknown) => {
-          console.warn(`Failed to load products from ${source}:`, error)
-          errors.push({ source, error })
-        }
-
-        const applyResult = (source: SourceName, productsList: Product[], connected: boolean) => {
-          const priority = sourcePriority[source]
-          if (priority < resolvedPriority && productsRef.current.length > 0) {
-            return
-          }
-
-          resolvedSource = source
-          resolvedPriority = priority
-          updateProductsState(productsList, connected)
-          updateSupabaseState(connected)
-          clearLoading()
-        }
-
-        const preferAdminSource = preferAdmin || force || isAuthenticated
-        const sources: SourceName[] = preferAdminSource ? ["admin", "catalog"] : ["catalog", "admin"]
-
-        for (const source of sources) {
-          try {
-            const { products: productsList, connected } =
-              source === "admin" ? await fetchFromAdmin() : await fetchFromCatalog()
-            if (source === "admin" && productsList.length === 0) {
-              continue
-            }
-            applyResult(source, productsList, connected)
-            if (resolvedSource) {
-              break
-            }
-          } catch (error) {
-            recordError(source, error)
-          }
-        }
-
-        if (resolvedSource === null) {
-          const fallbackError = errors[0]?.error
-          throw fallbackError instanceof Error ? fallbackError : new Error("No se pudo cargar productos")
-        }
-
+        const productsList = await fetchFromAdmin()
+        updateProductsState(productsList, true)
+        updateSupabaseState(true)
+        clearLoading()
       } catch (err) {
         console.error("Error loading products:", err)
         setError(err instanceof Error ? err.message : "Error desconocido")
@@ -411,19 +321,8 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         clearLoading()
       }
     },
-    [showToast, updateProductsState, updateSupabaseState, isAuthenticated],
+    [showToast, updateProductsState, updateSupabaseState],
   )
-
-  useEffect(() => {
-    hydrateFromCache()
-    loadProducts()
-  }, [hydrateFromCache, loadProducts])
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      void loadProducts({ force: true, preferAdmin: true })
-    }
-  }, [isAuthenticated, loadProducts])
 
   const handleSuccess = (message: string) => {
     showToast(message, "success")
@@ -452,8 +351,12 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         throw new Error(result.error || "Error al agregar producto")
       }
 
+      if (result.data) {
+        const nextProduct = transformSupabaseProduct(result.data)
+        const nextProducts = [nextProduct, ...productsRef.current.filter((item) => item.id !== nextProduct.id)]
+        updateProductsState(nextProducts, true)
+      }
       handleSuccess("Producto agregado exitosamente")
-      await loadProducts({ force: true })
       return true
     } catch (err) {
       return handleError("agregar", err)
@@ -476,8 +379,14 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         throw new Error(result.error || "Error al actualizar producto")
       }
 
+      if (result.data) {
+        const nextProduct = transformSupabaseProduct(result.data)
+        const nextProducts = productsRef.current.some((item) => item.id === nextProduct.id)
+          ? productsRef.current.map((item) => (item.id === nextProduct.id ? nextProduct : item))
+          : [nextProduct, ...productsRef.current]
+        updateProductsState(nextProducts, true)
+      }
       handleSuccess("Producto actualizado exitosamente")
-      await loadProducts({ force: true })
       return true
     } catch (err) {
       return handleError("actualizar", err)
@@ -496,8 +405,8 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         throw new Error(result.error || "Error al eliminar producto")
       }
 
+      updateProductsState(productsRef.current.filter((item) => item.id !== id), true)
       handleSuccess("Producto eliminado exitosamente")
-      await loadProducts({ force: true })
       return true
     } catch (err) {
       return handleError("eliminar", err)
@@ -546,67 +455,43 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
 
       try {
         const response = await fetchWithTimeout(
-          `/api/catalog/product/${id}`,
-          { cache: "no-store" },
+          `/api/admin/products/${id}`,
+          { cache: "default" },
           API_TIMEOUT_MS,
-          "Catalog product API",
+          "Admin product API",
         )
 
         if (response.status === 404) {
           return null
         }
 
-        const result = (await response.json()) as { data?: ProductRow; supabaseConnected?: boolean; error?: string }
+        const result = (await response.json()) as { data?: ProductRow; error?: string }
 
         if (!response.ok || !result.data) {
-          throw new Error(result?.error || `Catalog responded with status ${response.status}`)
+          throw new Error(result?.error || `Admin API responded with status ${response.status}`)
         }
 
         const product = transformSupabaseProduct(result.data)
         const updatedProducts = [...productsRef.current.filter((item) => item.id !== id), product].sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )
-        updateProductsState(updatedProducts, Boolean(result.supabaseConnected))
-        updateSupabaseState(Boolean(result.supabaseConnected))
+        updateProductsState(updatedProducts, true)
+        updateSupabaseState(true)
         return product
-      } catch (error) {
-        console.error(`Error al obtener el producto ${id} desde el catalogo:`, error)
-      }
-
-      try {
-        const response = await fetchWithTimeout(
-          "/api/admin/products",
-          { cache: "no-store" },
-          API_TIMEOUT_MS,
-          "Admin API",
-        )
-        const result = (await response.json()) as ApiListResponse
-
-        if (!response.ok) {
-          throw new Error(result?.error || `API responded with status ${response.status}`)
-        }
-
-        const fallbackProduct = (result.data ? mapProducts(result.data) : []).find((item) => item.id === id) ?? null
-
-        if (fallbackProduct) {
-          const updatedProducts = [...productsRef.current.filter((item) => item.id !== id), fallbackProduct].sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-          )
-          updateProductsState(updatedProducts, true)
-          updateSupabaseState(true)
-          return fallbackProduct
-        }
       } catch (error) {
         console.error(`Error al obtener el producto ${id} desde la API de admin:`, error)
       }
 
       return null
     },
-    [updateProductsState, setSupabaseConnected],
+    [updateProductsState, updateSupabaseState],
   )
 
-  const refreshProducts = async (options?: { preferAdmin?: boolean }) => {
-    await loadProducts({ force: true, preferAdmin: options?.preferAdmin ?? false })
+  const refreshProducts = async () => {
+    if (!isAuthenticated) {
+      return
+    }
+    await loadProducts({ force: true })
   }
 
   const value: ProductContextType = {
@@ -636,6 +521,3 @@ export function useProducts() {
   }
   return context
 }
-
-
-

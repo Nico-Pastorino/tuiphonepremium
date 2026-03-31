@@ -120,16 +120,23 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
   }, [initialProduct, initialRelated])
 
   useEffect(() => {
+    // Evita un segundo fetch cuando el producto ya fue resuelto en el server component.
+    if (initialProduct && initialProduct.id === productId) {
+      setIsLoadingProduct(false)
+      return
+    }
+
     let active = true
 
     const syncProduct = async () => {
-      const shouldShowLoader = !product
+      const shouldShowLoader = !initialProduct
       if (shouldShowLoader) {
         setIsLoadingProduct(true)
       }
 
       try {
-        const response = await fetch(`/api/catalog/product/${productId}`, { cache: "no-store" })
+        // Lectura no forzada: permite aprovechar cache HTTP/CDN del endpoint.
+        const response = await fetch(`/api/catalog/product/${productId}`, { cache: "force-cache" })
 
         if (!response.ok) {
           return
@@ -153,7 +160,7 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
     return () => {
       active = false
     }
-  }, [productId])
+  }, [productId, initialProduct])
 
   const [openInstallmentCategory, setOpenInstallmentCategory] = useState<InstallmentCategory | null>(null)
 

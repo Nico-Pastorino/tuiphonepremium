@@ -13,6 +13,7 @@ import { Filter, RefreshCw, Search } from "lucide-react"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
 
 const ProductFilters = dynamic(() => import("@/components/ProductFilters").then((mod) => mod.ProductFilters))
+const MAX_CATALOG_PAGES = 5
 
 const CATEGORY_PRIORITY = ["iphone", "ipad", "mac", "watch", "airpods", "accesorios"]
 const CONDITION_PRIORITY: Record<ProductSummary["condition"], number> = {
@@ -72,7 +73,7 @@ interface ProductsPageClientProps {
 }
 
 const fetchCatalogProducts = async (requestUrl: string): Promise<CatalogProductsResponse> => {
-  const response = await fetch(requestUrl)
+  const response = await fetch(requestUrl, { cache: "force-cache" })
   if (!response.ok) {
     throw new Error(`Error ${response.status}`)
   }
@@ -118,16 +119,16 @@ export function ProductsPageClient({
     }
 
     handleChange(media)
-    if ("addEventListener" in media) {
+    if (typeof media.addEventListener === "function") {
       media.addEventListener("change", handleChange)
-    } else {
+    } else if (typeof media.addListener === "function") {
       media.addListener(handleChange)
     }
 
     return () => {
-      if ("removeEventListener" in media) {
+      if (typeof media.removeEventListener === "function") {
         media.removeEventListener("change", handleChange)
-      } else {
+      } else if (typeof media.removeListener === "function") {
         media.removeListener(handleChange)
       }
     }
@@ -180,8 +181,12 @@ export function ProductsPageClient({
     fetchCatalogProducts,
     {
       revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
       dedupingInterval: 60_000,
       keepPreviousData: true,
+      persistSize: true,
+      revalidateFirstPage: false,
       fallbackData,
     },
   )
@@ -244,11 +249,11 @@ export function ProductsPageClient({
   }, [searchInput, activeFilters.search, handleFilterChange])
 
   const handleLoadMore = useCallback(() => {
-    if (loadingMore || outletFilteredProducts.length >= total) {
+    if (loadingMore || outletFilteredProducts.length >= total || size >= MAX_CATALOG_PAGES) {
       return
     }
     void setSize((currentSize) => currentSize + 1)
-  }, [loadingMore, outletFilteredProducts.length, total, setSize])
+  }, [loadingMore, outletFilteredProducts.length, total, setSize, size])
 
   useEffect(() => {
     if (initialLoadingEmpty) {
@@ -390,7 +395,7 @@ export function ProductsPageClient({
                   </div>
                 )}
               </AnimatedSection>
-              {outletFilteredProducts.length < total && (
+              {outletFilteredProducts.length < total && size < MAX_CATALOG_PAGES && (
                 <div className="mt-8 flex justify-center">
                   <Button
                     variant="outline"

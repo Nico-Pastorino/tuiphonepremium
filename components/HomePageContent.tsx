@@ -56,7 +56,8 @@ type HomePageContentProps = {
 async function fetchCatalogFeatured(force = false): Promise<CatalogProductsResponse> {
   const refreshParam = force ? "&refresh=1" : ""
   const response = await fetch(`/api/catalog/products?limit=16&featured=1${refreshParam}`, {
-    cache: "no-store",
+    // Solo bypass de cache cuando se pide refresh explicito.
+    cache: force ? "no-store" : "default",
     headers: { "Content-Type": "application/json" },
   })
 
@@ -70,7 +71,8 @@ async function fetchCatalogFeatured(force = false): Promise<CatalogProductsRespo
 async function fetchCatalogOutlet(force = false): Promise<CatalogProductsResponse> {
   const refreshParam = force ? "&refresh=1" : ""
   const response = await fetch(`/api/catalog/products?limit=12&outlet=1${refreshParam}`, {
-    cache: "no-store",
+    // Solo bypass de cache cuando se pide refresh explicito.
+    cache: force ? "no-store" : "default",
     headers: { "Content-Type": "application/json" },
   })
 
@@ -83,7 +85,8 @@ async function fetchCatalogOutlet(force = false): Promise<CatalogProductsRespons
 
 async function fetchTradeInConfig(): Promise<TradeInConfig> {
   const response = await fetch("/api/admin/trade-in", {
-    cache: "no-store",
+    // Config estable: se puede reutilizar cache en cliente/CDN.
+    cache: "default",
     headers: { "Content-Type": "application/json" },
   })
 
@@ -123,11 +126,7 @@ export function HomePageContent({
       const data = await fetchCatalogFeatured(force)
       const trimmed = data.items
         .filter((item) => item.featured)
-        .map((item) => ({
-          ...item,
-          description: item.description ?? "",
-          images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
-        }))
+        .map((item) => item)
       setProducts(trimmed)
     } catch (err) {
       console.error("No se pudieron actualizar los productos destacados:", err)
@@ -146,11 +145,7 @@ export function HomePageContent({
 
     try {
       const data = await fetchCatalogOutlet(force)
-      const trimmed = data.items.map((item) => ({
-        ...item,
-        description: item.description ?? "",
-        images: Array.isArray(item.images) && item.images.length > 0 ? [item.images[0]] : [],
-      }))
+      const trimmed = data.items.map((item) => item)
       setOutletProducts(trimmed)
     } catch (err) {
       console.error("No se pudieron actualizar los productos outlet:", err)

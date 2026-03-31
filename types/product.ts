@@ -29,7 +29,6 @@ export interface ProductSummary
     Product,
     | "id"
     | "name"
-    | "description"
     | "category"
     | "condition"
     | "price"
