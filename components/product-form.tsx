@@ -15,7 +15,8 @@ import { X, Plus } from "lucide-react"
 import { useAdmin } from "@/contexts/AdminContext"
 import type { ImageLibraryItem } from "@/types/image-library"
 import type { ProductFormData } from "@/types/product"
-import { getAdminLibraryImageUrl, getProductThumbnailImageUrl } from "@/lib/image-cdn"
+import { getAdminLibraryImageUrls, getProductThumbnailImageUrls } from "@/lib/image-cdn"
+import { StorageImage } from "@/components/StorageImage"
 
 interface ProductFormProps {
   onSubmit: (product: ProductFormData) => Promise<boolean>
@@ -480,14 +481,17 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                   {formData.images.map((image, index) => (
                     <div key={index} className="relative group">
                       <div className="relative h-24 w-full bg-gray-100 rounded-lg overflow-hidden border">
-                        <Image
-                          src={getProductThumbnailImageUrl(image) || "/placeholder.svg"}
+                        <StorageImage
+                          src={getProductThumbnailImageUrls(image).thumbnail || "/placeholder.svg"}
+                          optimizedSrc={getProductThumbnailImageUrls(image).optimized || "/placeholder.svg"}
+                          originalSrc={getProductThumbnailImageUrls(image).original || "/placeholder.svg"}
                           alt={`Imagen ${index + 1}`}
                           fill
                           className="object-cover"
                           unoptimized
                           sizes="150px"
                           loading="lazy"
+                          debugLabel={`ProductForm:selected:${index}`}
                         />
                       </div>
                       <Button
@@ -557,14 +561,15 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                           className="group relative overflow-hidden rounded-lg border-2 border-gray-200 bg-white text-left shadow-sm transition-all hover:border-blue-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
                           <div className="relative h-32 w-full bg-gray-100">
-                            <Image
-                              src={getAdminLibraryImageUrl(image.url) || "/placeholder.svg"}
+                            <StorageImage
+                              src={getAdminLibraryImageUrls(image.url).thumbnail || "/placeholder.svg"}
+                              optimizedSrc={getAdminLibraryImageUrls(image.url).optimized || "/placeholder.svg"}
+                              originalSrc={getAdminLibraryImageUrls(image.url).original || "/placeholder.svg"}
                               alt={image.label}
                               fill
                               className="object-cover transition-transform group-hover:scale-105"
-                              unoptimized
-                              sizes="200px"
                               loading="lazy"
+                              debugLabel={`ProductForm:library:${image.id}`}
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -32,7 +32,8 @@ import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { cloneHomeConfig } from "@/lib/home-config"
 import { cloneTradeInConfig } from "@/lib/trade-in-config"
 import Image from "next/image"
-import { getAdminLibraryImageUrl, getProductListImageUrl } from "@/lib/image-cdn"
+import { getAdminLibraryImageUrls, getProductListImageUrls } from "@/lib/image-cdn"
+import { StorageImage } from "@/components/StorageImage"
 import type { Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
@@ -778,13 +779,16 @@ function AdminDashboard() {
                       className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-sm"
                     >
                       <div className="relative aspect-square overflow-hidden">
-                        <Image
-                          src={getProductListImageUrl(product.images[0]) || "/placeholder.svg?height=300&width=300"}
+                        <StorageImage
+                          src={getProductListImageUrls(product.images[0]).thumbnail || "/placeholder.svg?height=300&width=300"}
+                          optimizedSrc={getProductListImageUrls(product.images[0]).optimized || "/placeholder.svg?height=300&width=300"}
+                          originalSrc={getProductListImageUrls(product.images[0]).original || "/placeholder.svg?height=300&width=300"}
                           alt={product.name}
                           fill
                           className="object-cover"
                           unoptimized
                           loading="lazy"
+                          debugLabel={`AdminProduct:${product.id}`}
                         />
                         <div className="absolute top-2 left-2 flex gap-2">
                           {product.isOutlet ? (
@@ -1017,14 +1021,16 @@ function AdminDashboard() {
                             className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm flex flex-col gap-2"
                           >
                             <div className="relative h-28 w-full overflow-hidden rounded-md bg-gray-100">
-                              <Image
-                                src={getAdminLibraryImageUrl(image.url) || "/placeholder.svg"}
+                              <StorageImage
+                                src={getAdminLibraryImageUrls(image.url).thumbnail || "/placeholder.svg"}
+                                optimizedSrc={getAdminLibraryImageUrls(image.url).optimized || "/placeholder.svg"}
+                                originalSrc={getAdminLibraryImageUrls(image.url).original || "/placeholder.svg"}
                                 alt={image.label}
                                 fill
                                 className="object-cover"
-                                sizes="200px"
                                 unoptimized
                                 loading="lazy"
+                                debugLabel={`AdminLibrary:${image.id}`}
                               />
                             </div>
                             <div className="space-y-1">

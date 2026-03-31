@@ -20,13 +20,13 @@ import {
   ChevronDown,
 } from "lucide-react"
 import { useAdmin } from "@/contexts/AdminContext"
-import Image from "next/image"
 import Link from "next/link"
 import type { Product, ProductSummary } from "@/types/product"
 import type { InstallmentPlan } from "@/types/finance"
 import type { ProductRow } from "@/types/database"
 import { TradeInEstimator } from "@/components/trade-in-estimator"
-import { getProductDetailImageUrl, getProductListImageUrl, getProductThumbnailImageUrl } from "@/lib/image-cdn"
+import { getProductDetailImageUrls, getProductListImageUrls, getProductThumbnailImageUrls } from "@/lib/image-cdn"
+import { StorageImage } from "@/components/StorageImage"
 
 const CATEGORY_LABELS = {
   "visa-mastercard": "Visa / Mastercard",
@@ -462,16 +462,15 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                   <div className="group relative mx-auto aspect-[4/5] w-full overflow-hidden rounded-3xl bg-gradient-to-br from-slate-100 via-white to-white shadow-md ring-1 ring-white/60 sm:mx-0 sm:aspect-[4/5] lg:aspect-[5/6]">
                     <div className="pointer-events-none absolute inset-0">
                       <div className="relative h-full w-full p-5 sm:p-8 md:p-10">
-                        <Image
-                          src={
-                            getProductDetailImageUrl(product.images[selectedImageIndex]) ||
-                            "/placeholder.svg?height=600&width=600"
-                          }
+                        <StorageImage
+                          src={getProductDetailImageUrls(product.images[selectedImageIndex]).thumbnail || "/placeholder.svg?height=600&width=600"}
+                          optimizedSrc={getProductDetailImageUrls(product.images[selectedImageIndex]).optimized || "/placeholder.svg?height=600&width=600"}
+                          originalSrc={getProductDetailImageUrls(product.images[selectedImageIndex]).original || "/placeholder.svg?height=600&width=600"}
                           alt={product.name}
                           fill
                           priority
                           className="object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-[1.05]"
-                          sizes="(min-width: 1280px) 520px, (min-width: 1024px) 45vw, (min-width: 640px) 70vw, 92vw"
+                          debugLabel={`ProductDetail:main:${product.id}`}
                         />
                       </div>
                     </div>
@@ -525,13 +524,15 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                               : "hover:border-gray-200 hover:opacity-90"
                           }`}
                         >
-                          <Image
-                            src={getProductThumbnailImageUrl(image) || "/placeholder.svg"}
+                          <StorageImage
+                            src={getProductThumbnailImageUrls(image).thumbnail || "/placeholder.svg"}
+                            optimizedSrc={getProductThumbnailImageUrls(image).optimized || "/placeholder.svg"}
+                            originalSrc={getProductThumbnailImageUrls(image).original || "/placeholder.svg"}
                             alt={`${product.name} ${index + 1}`}
                             fill
                             className="object-contain drop-shadow-md"
-                            sizes="96px"
                             loading="lazy"
+                            debugLabel={`ProductDetail:thumb:${product.id}:${index}`}
                           />
                         </button>
                       ))}
@@ -833,13 +834,15 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                     <Link href={`/productos/${relatedProduct.id}`}>
                       <Card className="group cursor-pointer border-0 shadow-sm transition-all duration-300 hover:shadow-lg">
                         <div className="relative aspect-square overflow-hidden rounded-t-xl bg-gray-50">
-                          <Image
-                            src={getProductListImageUrl(relatedProduct.images[0]) || "/placeholder.svg?height=300&width=300"}
+                          <StorageImage
+                            src={getProductListImageUrls(relatedProduct.images[0]).thumbnail || "/placeholder.svg?height=300&width=300"}
+                            optimizedSrc={getProductListImageUrls(relatedProduct.images[0]).optimized || "/placeholder.svg?height=300&width=300"}
+                            originalSrc={getProductListImageUrls(relatedProduct.images[0]).original || "/placeholder.svg?height=300&width=300"}
                             alt={relatedProduct.name}
                             fill
                             className="object-contain transition-transform duration-300 group-hover:scale-105"
-                            sizes="(min-width: 1024px) 210px, 40vw"
                             loading="lazy"
+                            debugLabel={`ProductDetail:related:${relatedProduct.id}`}
                           />
                         </div>
                         <CardContent className="p-4">
