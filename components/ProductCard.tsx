@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import type { ProductSummary } from "@/types/product"
 import { useAdmin } from "@/contexts/AdminContext"
-import { resolveImageUrl } from "@/lib/image-cdn"
+import { getProductListImageUrl } from "@/lib/image-cdn"
 
 interface ProductCardProps {
   product: ProductSummary
@@ -65,11 +65,12 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
       <CardContent className="p-0">
         <div className="relative aspect-[3/4] bg-gray-50 sm:aspect-[4/5]">
           <Image
-            src={resolveImageUrl(product.images[0]) || "/placeholder.svg"}
+            src={getProductListImageUrl(product.images[0]) || "/placeholder.svg"}
             alt={product.name}
             fill
             className="object-contain drop-shadow-xl transition-transform duration-500 scale-[1.12] group-hover:scale-[1.18]"
             sizes="(min-width: 1024px) 260px, (min-width: 640px) 45vw, 82vw"
+            loading="lazy"
           />
         </div>
         <div className={`space-y-3 ${basePadding}`}>

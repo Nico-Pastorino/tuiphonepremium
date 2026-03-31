@@ -57,7 +57,7 @@ async function fetchCatalogFeatured(force = false): Promise<CatalogProductsRespo
   const refreshParam = force ? "&refresh=1" : ""
   const response = await fetch(`/api/catalog/products?limit=16&featured=1${refreshParam}`, {
     // Solo bypass de cache cuando se pide refresh explicito.
-    cache: force ? "no-store" : "default",
+    cache: force ? "no-store" : "force-cache",
     headers: { "Content-Type": "application/json" },
   })
 
@@ -72,7 +72,7 @@ async function fetchCatalogOutlet(force = false): Promise<CatalogProductsRespons
   const refreshParam = force ? "&refresh=1" : ""
   const response = await fetch(`/api/catalog/products?limit=12&outlet=1${refreshParam}`, {
     // Solo bypass de cache cuando se pide refresh explicito.
-    cache: force ? "no-store" : "default",
+    cache: force ? "no-store" : "force-cache",
     headers: { "Content-Type": "application/json" },
   })
 
@@ -86,7 +86,7 @@ async function fetchCatalogOutlet(force = false): Promise<CatalogProductsRespons
 async function fetchTradeInConfig(): Promise<TradeInConfig> {
   const response = await fetch("/api/admin/trade-in", {
     // Config estable: se puede reutilizar cache en cliente/CDN.
-    cache: "default",
+    cache: "force-cache",
     headers: { "Content-Type": "application/json" },
   })
 

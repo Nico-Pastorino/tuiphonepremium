@@ -2,8 +2,7 @@ import { HomePageContent } from "@/components/HomePageContent"
 import { getCatalogProducts } from "@/lib/product-cache"
 import { getHomeConfigCached, getTradeInConfigCached } from "@/lib/site-config-cache"
 
-export const revalidate = 300
-export const dynamic = "force-dynamic"
+export const revalidate = 3600
 
 export default async function HomePage() {
   const outletEnabled = process.env.NEXT_PUBLIC_OUTLET_ENABLED === "true"
@@ -14,13 +13,8 @@ export default async function HomePage() {
     getTradeInConfigCached(),
   ])
 
-  const products = featuredResponse.items.map((item) => ({
-    ...item,
-  }))
-
-  const outletProducts = outletResponse?.items.map((item) => ({
-    ...item,
-  }))
+  const products = featuredResponse.items
+  const outletProducts = outletResponse?.items
 
   return (
     <HomePageContent

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 import { getDollarConfigCached, getHomeConfigCached, getInstallmentConfigCached, getTradeInConfigCached } from "@/lib/site-config-cache"
 import { getImageLibrary } from "@/lib/image-library"
 
-export const revalidate = 300
+export const revalidate = 3600
 
 const DEBUG_EGRESS_LOGS = process.env.DEBUG_EGRESS_LOGS === "true"
 
@@ -35,7 +35,7 @@ export async function GET() {
         imageLibrary,
       },
     })
-    response.headers.set("Cache-Control", "private, max-age=300, stale-while-revalidate=600")
+    response.headers.set("Cache-Control", "private, max-age=3600, stale-while-revalidate=86400")
     return response
   } catch (error) {
     console.error("Admin bootstrap GET error:", error)

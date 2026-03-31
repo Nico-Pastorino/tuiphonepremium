@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import { ProductAdminService } from "@/lib/supabase-admin"
 
-export const revalidate = 300
+export const revalidate = 3600
 const DEBUG_EGRESS_LOGS = process.env.DEBUG_EGRESS_LOGS === "true"
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
@@ -23,7 +23,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       supabaseConnected: true,
       timestamp: Date.now(),
     })
-    response.headers.set("Cache-Control", "s-maxage=300, stale-while-revalidate=600")
+    response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400")
     if (DEBUG_EGRESS_LOGS) {
       console.info("[catalog/product]", {
         durationMs: Date.now() - startedAt,

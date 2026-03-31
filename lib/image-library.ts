@@ -7,8 +7,9 @@ import type { ImageLibraryItem } from "@/types/image-library"
 
 const IMAGE_LIBRARY_KEY = "image-library"
 const DEFAULT_BUCKET = "image-library"
-const MAX_UPLOAD_BYTES = 2 * 1024 * 1024
-const MAX_IMAGE_WIDTH = 1600
+const MAX_SOURCE_UPLOAD_BYTES = 8 * 1024 * 1024
+const MAX_OPTIMIZED_UPLOAD_BYTES = 300 * 1024
+const MAX_IMAGE_WIDTH = 1400
 
 const getBucketName = () => process.env.SUPABASE_IMAGE_LIBRARY_BUCKET || DEFAULT_BUCKET
 
@@ -59,8 +60,8 @@ const parseDataUrl = (dataUrl: string) => {
   const contentType = match[1]
   const base64Data = match[2]
   const buffer = Buffer.from(base64Data, "base64")
-  if (buffer.byteLength > MAX_UPLOAD_BYTES) {
-    throw new Error("La imagen excede el tamaño máximo permitido (2MB)")
+  if (buffer.byteLength > MAX_SOURCE_UPLOAD_BYTES) {
+    throw new Error("La imagen original excede el tamaño máximo permitido (8MB)")
   }
   const extension = contentType.split("/")[1]?.split("+")[0] || "png"
   return { buffer, contentType, extension }
@@ -72,24 +73,44 @@ const optimizeImage = async (
   extension: string,
 ): Promise<{ buffer: Buffer; contentType: string; extension: string }> => {
   try {
-    const transformer = sharp(buffer).rotate()
-    const metadata = await transformer.metadata()
-    const shouldResize = (metadata.width ?? 0) > MAX_IMAGE_WIDTH
+    const metadata = await sharp(buffer).metadata()
+    let targetWidth = Math.min(metadata.width ?? MAX_IMAGE_WIDTH, MAX_IMAGE_WIDTH)
+    let quality = 78
+    let optimizedBuffer = buffer
 
-    if (shouldResize) {
-      transformer.resize({ width: MAX_IMAGE_WIDTH, withoutEnlargement: true })
+    while (true) {
+      optimizedBuffer = await sharp(buffer)
+        .rotate()
+        .resize({ width: targetWidth, withoutEnlargement: true })
+        .webp({ quality })
+        .toBuffer()
+
+      if (optimizedBuffer.byteLength <= MAX_OPTIMIZED_UPLOAD_BYTES) {
+        break
+      }
+
+      if (quality > 56) {
+        quality -= 6
+        continue
+      }
+
+      if (targetWidth > 900) {
+        targetWidth -= 150
+        continue
+      }
+
+      throw new Error("La imagen optimizada excede el tamaño máximo permitido (300KB)")
     }
 
-    const targetFormat = extension === "png" ? "png" : "webp"
-    const optimizedBuffer =
-      targetFormat === "png"
-        ? await transformer.png({ quality: 80, compressionLevel: 9 }).toBuffer()
-        : await transformer.webp({ quality: 80 }).toBuffer()
-
-    const optimizedContentType = targetFormat === "png" ? "image/png" : "image/webp"
-    return { buffer: optimizedBuffer, contentType: optimizedContentType, extension: targetFormat }
+    return { buffer: optimizedBuffer, contentType: "image/webp", extension: "webp" }
   } catch (error) {
+    if (error instanceof Error && error.message.includes("300KB")) {
+      throw error
+    }
     console.warn("No se pudo optimizar la imagen para la biblioteca. Se utilizara el archivo original.", error)
+    if (buffer.byteLength > MAX_OPTIMIZED_UPLOAD_BYTES) {
+      throw new Error("La imagen no pudo comprimirse por debajo de 300KB")
+    }
     return { buffer, contentType, extension }
   }
 }

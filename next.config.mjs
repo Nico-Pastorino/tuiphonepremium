@@ -8,6 +8,11 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
       hostname: supabaseHostname,
       pathname: "/storage/v1/object/public/**",
     })
+    imageRemotePatterns.push({
+      protocol: "https",
+      hostname: supabaseHostname,
+      pathname: "/storage/v1/render/image/public/**",
+    })
   } catch (error) {
     console.warn("No se pudo procesar NEXT_PUBLIC_SUPABASE_URL para configurar remotePatterns:", error)
   }

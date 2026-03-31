@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import type { ProductSummary } from "@/types/product"
 import { useAdmin } from "@/contexts/AdminContext"
-import { resolveImageUrl } from "@/lib/image-cdn"
+import { getProductListImageUrl } from "@/lib/image-cdn"
 
 const IMAGE_PLACEHOLDER =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNFQkVCRUYiLz48cGF0aCBkPSJNMTAgODBMMzQgNTZsMTYuMjUgMTYuMjVMMzQgOTBMMTAgODAiem0wLTRMNDIgMzhsMTYuMjUgMTYuMjVMNDIgODRMMTAgNzZ6IiBmaWxsPSIjRURFRUY0IiBvcGFjaXR5PSIwLjciLz48L3N2Zz4="
@@ -90,7 +90,7 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
       <CardContent className="flex h-full flex-col p-0">
         <div className="relative aspect-[5/6] overflow-hidden bg-gradient-to-br from-slate-100 via-white to-white sm:aspect-[4/5]">
           <Image
-            src={resolveImageUrl(product.images[0]) || "/placeholder.svg?height=400&width=400"}
+            src={getProductListImageUrl(product.images[0]) || "/placeholder.svg?height=400&width=400"}
             alt={product.name}
             fill
             priority={priority}
@@ -99,6 +99,7 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
             blurDataURL={IMAGE_PLACEHOLDER}
             className="object-contain drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
             sizes="(min-width: 1280px) 320px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 80vw"
+            loading={priority ? "eager" : "lazy"}
           />
         </div>
         <div className="flex flex-1 flex-col gap-4 px-5 pb-5 pt-6 sm:gap-5 sm:px-6 sm:pb-6">

@@ -15,7 +15,7 @@ import { X, Plus } from "lucide-react"
 import { useAdmin } from "@/contexts/AdminContext"
 import type { ImageLibraryItem } from "@/types/image-library"
 import type { ProductFormData } from "@/types/product"
-import { resolveImageUrl } from "@/lib/image-cdn"
+import { getAdminLibraryImageUrl, getProductThumbnailImageUrl } from "@/lib/image-cdn"
 
 interface ProductFormProps {
   onSubmit: (product: ProductFormData) => Promise<boolean>
@@ -481,12 +481,13 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                     <div key={index} className="relative group">
                       <div className="relative h-24 w-full bg-gray-100 rounded-lg overflow-hidden border">
                         <Image
-                          src={resolveImageUrl(image) || "/placeholder.svg"}
+                          src={getProductThumbnailImageUrl(image) || "/placeholder.svg"}
                           alt={`Imagen ${index + 1}`}
                           fill
                           className="object-cover"
                           unoptimized
                           sizes="150px"
+                          loading="lazy"
                         />
                       </div>
                       <Button
@@ -557,12 +558,13 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
                         >
                           <div className="relative h-32 w-full bg-gray-100">
                             <Image
-                              src={resolveImageUrl(image.url) || "/placeholder.svg"}
+                              src={getAdminLibraryImageUrl(image.url) || "/placeholder.svg"}
                               alt={image.label}
                               fill
                               className="object-cover transition-transform group-hover:scale-105"
                               unoptimized
                               sizes="200px"
+                              loading="lazy"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">

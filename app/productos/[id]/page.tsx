@@ -8,7 +8,7 @@ type ProductDetailPageProps = {
   params: { id: string }
 }
 
-export const revalidate = 300
+export const revalidate = 3600
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { data: productRow, error } = await ProductAdminService.getProductById(params.id)

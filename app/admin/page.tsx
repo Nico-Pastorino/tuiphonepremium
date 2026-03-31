@@ -32,7 +32,7 @@ import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { cloneHomeConfig } from "@/lib/home-config"
 import { cloneTradeInConfig } from "@/lib/trade-in-config"
 import Image from "next/image"
-import { resolveImageUrl } from "@/lib/image-cdn"
+import { getAdminLibraryImageUrl, getProductListImageUrl } from "@/lib/image-cdn"
 import type { Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
@@ -779,11 +779,12 @@ function AdminDashboard() {
                     >
                       <div className="relative aspect-square overflow-hidden">
                         <Image
-                          src={resolveImageUrl(product.images[0]) || "/placeholder.svg?height=300&width=300"}
+                          src={getProductListImageUrl(product.images[0]) || "/placeholder.svg?height=300&width=300"}
                           alt={product.name}
                           fill
                           className="object-cover"
                           unoptimized
+                          loading="lazy"
                         />
                         <div className="absolute top-2 left-2 flex gap-2">
                           {product.isOutlet ? (
@@ -1017,12 +1018,13 @@ function AdminDashboard() {
                           >
                             <div className="relative h-28 w-full overflow-hidden rounded-md bg-gray-100">
                               <Image
-                                src={resolveImageUrl(image.url) || "/placeholder.svg"}
+                                src={getAdminLibraryImageUrl(image.url) || "/placeholder.svg"}
                                 alt={image.label}
                                 fill
                                 className="object-cover"
                                 sizes="200px"
                                 unoptimized
+                                loading="lazy"
                               />
                             </div>
                             <div className="space-y-1">

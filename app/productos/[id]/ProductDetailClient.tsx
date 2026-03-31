@@ -26,7 +26,7 @@ import type { Product, ProductSummary } from "@/types/product"
 import type { InstallmentPlan } from "@/types/finance"
 import type { ProductRow } from "@/types/database"
 import { TradeInEstimator } from "@/components/trade-in-estimator"
-import { resolveImageUrl } from "@/lib/image-cdn"
+import { getProductDetailImageUrl, getProductListImageUrl, getProductThumbnailImageUrl } from "@/lib/image-cdn"
 
 const CATEGORY_LABELS = {
   "visa-mastercard": "Visa / Mastercard",
@@ -464,7 +464,7 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                       <div className="relative h-full w-full p-5 sm:p-8 md:p-10">
                         <Image
                           src={
-                            resolveImageUrl(product.images[selectedImageIndex]) ||
+                            getProductDetailImageUrl(product.images[selectedImageIndex]) ||
                             "/placeholder.svg?height=600&width=600"
                           }
                           alt={product.name}
@@ -526,11 +526,12 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                           }`}
                         >
                           <Image
-                            src={resolveImageUrl(image) || "/placeholder.svg"}
+                            src={getProductThumbnailImageUrl(image) || "/placeholder.svg"}
                             alt={`${product.name} ${index + 1}`}
                             fill
                             className="object-contain drop-shadow-md"
                             sizes="96px"
+                            loading="lazy"
                           />
                         </button>
                       ))}
@@ -833,11 +834,12 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                       <Card className="group cursor-pointer border-0 shadow-sm transition-all duration-300 hover:shadow-lg">
                         <div className="relative aspect-square overflow-hidden rounded-t-xl bg-gray-50">
                           <Image
-                            src={resolveImageUrl(relatedProduct.images[0]) || "/placeholder.svg?height=300&width=300"}
+                            src={getProductListImageUrl(relatedProduct.images[0]) || "/placeholder.svg?height=300&width=300"}
                             alt={relatedProduct.name}
                             fill
                             className="object-contain transition-transform duration-300 group-hover:scale-105"
                             sizes="(min-width: 1024px) 210px, 40vw"
+                            loading="lazy"
                           />
                         </div>
                         <CardContent className="p-4">
