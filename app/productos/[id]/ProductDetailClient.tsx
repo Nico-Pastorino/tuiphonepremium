@@ -25,7 +25,12 @@ import type { Product, ProductSummary } from "@/types/product"
 import type { InstallmentPlan } from "@/types/finance"
 import type { ProductRow } from "@/types/database"
 import { TradeInEstimator } from "@/components/trade-in-estimator"
-import { getProductDetailImageUrls, getProductListImageUrls, getProductThumbnailImageUrls } from "@/lib/image-cdn"
+import {
+  getProductDetailImageUrls,
+  getProductListImageUrls,
+  getProductThumbnailImageUrls,
+  sanitizeImageList,
+} from "@/lib/image-cdn"
 import { StorageImage } from "@/components/StorageImage"
 
 const CATEGORY_LABELS = {
@@ -83,7 +88,7 @@ const transformProductRow = (row: ProductRow): Product => ({
   priceUSD: row.price_usd ?? null,
   category: row.category,
   condition: row.condition === "nuevo" ? "nuevo" : "seminuevo",
-  images: row.images ?? [],
+  images: sanitizeImageList(row.images),
   specifications:
     row.specifications && typeof row.specifications === "object" && !Array.isArray(row.specifications)
       ? (row.specifications as Record<string, string | number | boolean>)

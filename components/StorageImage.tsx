@@ -11,8 +11,6 @@ type StorageImageProps = ImgHTMLAttributes<HTMLImageElement> & {
   fill?: boolean
   priority?: boolean
   quality?: number
-  placeholder?: string
-  blurDataURL?: string
   unoptimized?: boolean
 }
 
@@ -27,8 +25,6 @@ export function StorageImage({
   fill,
   priority,
   quality,
-  placeholder,
-  blurDataURL,
   unoptimized,
   style,
   className,

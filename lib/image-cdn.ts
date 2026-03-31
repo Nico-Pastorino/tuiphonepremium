@@ -19,6 +19,38 @@ const SUPABASE_OBJECT_PATH_FRAGMENT = "/storage/v1/object/public/"
 const VERCEL_BLOB_HOST_SNIPPET = "vercel-storage"
 const DEBUG_IMAGE_URLS = process.env.NEXT_PUBLIC_DEBUG_IMAGE_URLS === "true" || process.env.NODE_ENV !== "production"
 
+export const isEmbeddedImageDataUrl = (value: string | null | undefined): boolean => {
+  if (!value) {
+    return false
+  }
+
+  const normalized = value.trim().toLowerCase()
+  return normalized.startsWith("data:image/") || normalized.includes(";base64,")
+}
+
+export const sanitizeImageValue = (value: string | null | undefined): string => {
+  if (!value) {
+    return ""
+  }
+
+  const normalized = value.trim()
+  if (!normalized || isEmbeddedImageDataUrl(normalized)) {
+    return ""
+  }
+
+  return normalized
+}
+
+export const sanitizeImageList = (values: unknown): string[] => {
+  if (!Array.isArray(values)) {
+    return []
+  }
+
+  return values
+    .map((value) => sanitizeImageValue(typeof value === "string" ? value : null))
+    .filter((value, index, array) => value.length > 0 && array.indexOf(value) === index)
+}
+
 export const getImageCdnMode = (): ImageCdnMode => {
   const raw = (process.env.NEXT_PUBLIC_IMAGE_CDN_MODE ?? process.env.IMAGE_CDN_MODE ?? DEFAULT_MODE).toLowerCase()
   return raw === "blob" ? "blob" : "supabase"
@@ -145,30 +177,31 @@ const logResolvedImage = (label: string, variants: ImageVariantUrls) => {
 }
 
 export const resolveImageUrl = (url: string | null | undefined): string => {
-  if (!url) {
+  const sanitized = sanitizeImageValue(url)
+  if (!sanitized) {
     return ""
   }
 
-  if (isDataOrLocalUrl(url) || isVercelBlobUrl(url)) {
-    return url
+  if (isDataOrLocalUrl(sanitized) || isVercelBlobUrl(sanitized)) {
+    return sanitized
   }
 
-  if (!isSupabaseStorageUrl(url)) {
-    return url
+  if (!isSupabaseStorageUrl(sanitized)) {
+    return sanitized
   }
 
   const mode = getImageCdnMode()
   if (mode === "supabase") {
-    const reference = parseStorageReferenceFromUrl(url)
-    return reference ? buildPublicStorageUrl(reference.bucket, reference.path) : url
+    const reference = parseStorageReferenceFromUrl(sanitized)
+    return reference ? buildPublicStorageUrl(reference.bucket, reference.path) : sanitized
   }
 
-  const mapped = (imageCdnMapping as Record<string, string>)[url]
+  const mapped = (imageCdnMapping as Record<string, string>)[sanitized]
   if (mapped) {
     return mapped
   }
 
-  return `/api/img?url=${encodeURIComponent(url)}`
+  return `/api/img?url=${encodeURIComponent(sanitized)}`
 }
 
 export const getStorageImageUrls = (value: string | null | undefined, label = "storage-image"): ImageVariantUrls => {

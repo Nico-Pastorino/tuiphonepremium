@@ -1,6 +1,7 @@
 import { revalidateTag, unstable_cache } from "next/cache"
 
 import { ProductAdminService } from "@/lib/supabase-admin"
+import { sanitizeImageList } from "@/lib/image-cdn"
 import type { ProductRow } from "@/types/database"
 import type { CatalogProductsResponse, Product, ProductSummary } from "@/types/product"
 
@@ -38,28 +39,31 @@ const normalizeCondition = (condition: string | null): "nuevo" | "seminuevo" => 
   return "nuevo"
 }
 
-export const toProductSummary = (row: ProductRow): ProductSummary => ({
-  id: row.id,
-  name: row.name,
-  category: row.category,
-  condition: normalizeCondition(row.condition),
-  price: row.price,
-  originalPrice: row.original_price ?? null,
-  priceUSD: row.price_usd ?? null,
-  images: Array.isArray(row.images) && row.images.length > 0 ? [row.images[0]] : [],
-  stock: row.stock,
-  featured: row.featured,
-  isOutlet: Boolean(row.is_outlet),
-  outletNotes: row.outlet_notes ?? null,
-  outletDefects: row.outlet_defects ?? [],
-  outletBatteryPercent: row.outlet_battery_percent ?? null,
-  outletGrade: row.outlet_grade ?? null,
-  outletWarrantyDays: row.outlet_warranty_days ?? null,
-  outletAccessories: row.outlet_accessories ?? null,
-  outletDisplayIssues: row.outlet_display_issues ?? null,
-  outletCaseIssues: row.outlet_case_issues ?? null,
-  createdAt: row.created_at,
-})
+export const toProductSummary = (row: ProductRow): ProductSummary => {
+  const sanitizedImages = sanitizeImageList(row.images)
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    condition: normalizeCondition(row.condition),
+    price: row.price,
+    originalPrice: row.original_price ?? null,
+    priceUSD: row.price_usd ?? null,
+    images: sanitizedImages.length > 0 ? [sanitizedImages[0]] : [],
+    stock: row.stock,
+    featured: row.featured,
+    isOutlet: Boolean(row.is_outlet),
+    outletNotes: row.outlet_notes ?? null,
+    outletDefects: row.outlet_defects ?? [],
+    outletBatteryPercent: row.outlet_battery_percent ?? null,
+    outletGrade: row.outlet_grade ?? null,
+    outletWarrantyDays: row.outlet_warranty_days ?? null,
+    outletAccessories: row.outlet_accessories ?? null,
+    outletDisplayIssues: row.outlet_display_issues ?? null,
+    outletCaseIssues: row.outlet_case_issues ?? null,
+    createdAt: row.created_at,
+  }
+}
 
 const normalizeSpecificationsValue = (value: ProductRow["specifications"]): Record<string, string | number | boolean> => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -68,31 +72,34 @@ const normalizeSpecificationsValue = (value: ProductRow["specifications"]): Reco
   return value as Record<string, string | number | boolean>
 }
 
-export const toFullProduct = (row: ProductRow): Product => ({
-  id: row.id,
-  name: row.name,
-  description: row.description ?? "",
-  category: row.category,
-  condition: normalizeCondition(row.condition),
-  price: row.price,
-  originalPrice: row.original_price ?? null,
-  priceUSD: row.price_usd ?? null,
-  images: row.images ?? [],
-  specifications: normalizeSpecificationsValue(row.specifications),
-  stock: row.stock,
-  featured: row.featured,
-  isOutlet: Boolean(row.is_outlet),
-  outletNotes: row.outlet_notes ?? null,
-  outletDefects: row.outlet_defects ?? [],
-  outletBatteryPercent: row.outlet_battery_percent ?? null,
-  outletGrade: row.outlet_grade ?? null,
-  outletWarrantyDays: row.outlet_warranty_days ?? null,
-  outletAccessories: row.outlet_accessories ?? null,
-  outletDisplayIssues: row.outlet_display_issues ?? null,
-  outletCaseIssues: row.outlet_case_issues ?? null,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at ?? null,
-})
+export const toFullProduct = (row: ProductRow): Product => {
+  const sanitizedImages = sanitizeImageList(row.images)
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description ?? "",
+    category: row.category,
+    condition: normalizeCondition(row.condition),
+    price: row.price,
+    originalPrice: row.original_price ?? null,
+    priceUSD: row.price_usd ?? null,
+    images: sanitizedImages,
+    specifications: normalizeSpecificationsValue(row.specifications),
+    stock: row.stock,
+    featured: row.featured,
+    isOutlet: Boolean(row.is_outlet),
+    outletNotes: row.outlet_notes ?? null,
+    outletDefects: row.outlet_defects ?? [],
+    outletBatteryPercent: row.outlet_battery_percent ?? null,
+    outletGrade: row.outlet_grade ?? null,
+    outletWarrantyDays: row.outlet_warranty_days ?? null,
+    outletAccessories: row.outlet_accessories ?? null,
+    outletDisplayIssues: row.outlet_display_issues ?? null,
+    outletCaseIssues: row.outlet_case_issues ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at ?? null,
+  }
+}
 
 const loadAdminProducts = async (): Promise<ProductRow[]> => {
   const { data, error } = await ProductAdminService.getAllProducts({ limit: ADMIN_PRODUCTS_LIMIT, offset: 0 })

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getProductsCached, invalidateProductsCache } from "@/lib/product-cache"
+import { sanitizeImageList } from "@/lib/image-cdn"
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductInsert } from "@/types/database"
 
@@ -14,7 +15,7 @@ const buildProductInsert = (body: Record<string, unknown>): ProductInsert => ({
   price_usd: body.priceUSD !== undefined && body.priceUSD !== null ? Number(body.priceUSD) : null,
   category: String(body.category),
   condition: typeof body.condition === "string" ? body.condition : "nuevo",
-  images: Array.isArray(body.images) ? (body.images as string[]) : [],
+  images: sanitizeImageList(body.images),
   specifications: (body.specifications as Json) ?? {},
   stock: body.stock !== undefined && body.stock !== null ? Number(body.stock) : 0,
   featured: Boolean(body.featured),

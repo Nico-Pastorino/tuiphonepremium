@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { toFullProduct } from "@/lib/product-cache"
 import { ProductAdminService } from "@/lib/supabase-admin"
 
 export const revalidate = 3600
@@ -19,7 +20,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     }
 
     const response = NextResponse.json({
-      data,
+      data: toFullProduct(data),
       supabaseConnected: true,
       timestamp: Date.now(),
     })

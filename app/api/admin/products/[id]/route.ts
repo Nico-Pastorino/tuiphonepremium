@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { invalidateProductsCache } from "@/lib/product-cache"
+import { sanitizeImageList } from "@/lib/image-cdn"
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductUpdate } from "@/types/database"
 
@@ -23,7 +24,7 @@ const buildProductUpdate = (body: Record<string, unknown>): ProductUpdate => {
   if (body.category !== undefined) updateData.category = String(body.category)
   if (body.condition !== undefined) updateData.condition = String(body.condition)
   if (body.images !== undefined) {
-    updateData.images = Array.isArray(body.images) ? (body.images as string[]) : []
+    updateData.images = sanitizeImageList(body.images)
   }
   if (body.specifications !== undefined) {
     updateData.specifications = body.specifications as Json
