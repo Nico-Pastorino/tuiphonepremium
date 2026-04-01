@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react"
+import { useAppState } from "@/hooks/use-app-state"
 
 import type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 import { DEFAULT_HOME_CONFIG, mergeHomeConfig } from "@/lib/home-config"
@@ -132,6 +133,7 @@ export function AdminProvider({
   const homeConfigHasLocalUpdates = useRef(false)
   const tradeInConfigHasLocalUpdates = useRef(false)
   const tradeInConfigLoadedFromStorage = useRef(false)
+  const addNotification = useAppState((state) => state.addNotification)
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -161,6 +163,7 @@ export function AdminProvider({
             const merged = mergeInstallmentConfig(DEFAULT_INSTALLMENT_CONFIG, parsed as Partial<InstallmentConfig>)
             setInstallmentPlans(cloneInstallmentPlans(merged.plans))
             setInstallmentPromotions(cloneInstallmentPromotions(merged.promotions))
+            installmentPlansHasLocalUpdates.current = true
           }
         } catch (error) {
           console.error("Failed to parse saved installment plans", error)
@@ -346,6 +349,12 @@ export function AdminProvider({
       }
     } catch (error) {
       console.error("Failed to persist installment config", error)
+      const message = error instanceof Error ? error.message : "No se pudieron guardar las cuotas"
+      addNotification({
+        type: "error",
+        title: "Error al guardar cuotas",
+        message,
+      })
     }
   }
 

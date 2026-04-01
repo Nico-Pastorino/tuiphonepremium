@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 import { SiteConfigService, SITE_CONFIG_TABLE_NOT_FOUND } from "@/lib/supabase-admin"
 import { DEFAULT_INSTALLMENT_CONFIG, mergeInstallmentConfig } from "@/lib/finance-config"
+import { invalidateInstallmentConfigCache } from "@/lib/site-config-cache"
 import type { InstallmentConfig } from "@/types/finance"
 import type { Json } from "@/types/database"
 
@@ -76,6 +77,8 @@ export async function POST(request: NextRequest) {
       }
       return buildErrorResponse("No se pudo guardar la configuracion de cuotas")
     }
+
+    await invalidateInstallmentConfigCache()
 
     return NextResponse.json({ data: mergedConfig })
   } catch (error) {
