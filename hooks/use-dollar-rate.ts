@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useCallback } from "react"
+import useSWR from "swr"
 
 interface DollarRate {
   blue: number
@@ -11,50 +12,40 @@ interface DollarRate {
 
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000
 
+const fetchDollarRate = async (): Promise<DollarRate> => {
+  const response = await fetch("/api/dollar", { cache: "force-cache" })
+  if (!response.ok) {
+    const message = await response.text()
+    throw new Error(message || `Dollar API responded with status ${response.status}`)
+  }
+
+  const rate = (await response.json()) as DollarRate
+  if (rate.blue <= 0 || rate.official <= 0) {
+    throw new Error("Datos del dolar incompletos")
+  }
+
+  return rate
+}
+
 export function useDollarRate() {
-  const [dollarRate, setDollarRate] = useState<DollarRate | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
-
-  const fetchDollarRate = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch("/api/dollar-rate")
-      if (!response.ok) {
-        const message = await response.text()
-        throw new Error(message || `Dollar API responded with status ${response.status}`)
-      }
-
-      const rate = (await response.json()) as DollarRate
-      if (rate.blue <= 0 || rate.official <= 0) {
-        throw new Error("Datos del dolar incompletos")
-      }
-      setDollarRate(rate)
-    } catch (err) {
-      const errorInstance = err instanceof Error ? err : new Error(String(err))
-      setError(errorInstance)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const { data, error, isLoading, mutate } = useSWR<DollarRate>("/api/dollar", fetchDollarRate, {
+    dedupingInterval: 60_000,
+    focusThrottleInterval: 60_000,
+    refreshInterval: REFRESH_INTERVAL_MS,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+    keepPreviousData: true,
+  })
 
   const refresh = useCallback(() => {
-    return fetchDollarRate()
-  }, [fetchDollarRate])
-
-  useEffect(() => {
-    fetchDollarRate()
-    const interval = window.setInterval(fetchDollarRate, REFRESH_INTERVAL_MS)
-
-    return () => window.clearInterval(interval)
-  }, [fetchDollarRate])
+    return mutate()
+  }, [mutate])
 
   return {
-    dollarRate,
-    loading,
-    error,
+    dollarRate: data ?? null,
+    loading: isLoading,
+    error: error instanceof Error ? error : error ? new Error(String(error)) : null,
     refresh,
   }
 }

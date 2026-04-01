@@ -5,6 +5,7 @@ import { ProductAdminService } from "@/lib/supabase-admin"
 
 export const revalidate = 3600
 const DEBUG_EGRESS_LOGS = process.env.DEBUG_EGRESS_LOGS === "true"
+const PUBLIC_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const startedAt = Date.now()
@@ -24,7 +25,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       supabaseConnected: true,
       timestamp: Date.now(),
     })
-    response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400")
+    response.headers.set("Cache-Control", PUBLIC_CACHE_CONTROL)
     if (DEBUG_EGRESS_LOGS) {
       console.info("[catalog/product]", {
         durationMs: Date.now() - startedAt,

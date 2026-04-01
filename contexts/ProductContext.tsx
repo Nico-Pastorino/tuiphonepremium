@@ -279,7 +279,14 @@ export function ProductProvider({ children, initialData = null }: ProductProvide
         }
       }
 
-      const adminUrl = force ? "/api/admin/products?refresh=1" : "/api/admin/products"
+      const adminParams = new URLSearchParams({
+        limit: "24",
+        offset: "0",
+      })
+      if (force) {
+        adminParams.set("refresh", "1")
+      }
+      const adminUrl = `/api/admin/products?${adminParams.toString()}`
       // Evita no-store en lecturas normales para permitir cache de red y reducir requests repetidas.
       const readCacheMode: RequestCache = force ? "no-store" : "default"
 

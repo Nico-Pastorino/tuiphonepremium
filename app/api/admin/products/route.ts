@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getProductsCached, invalidateProductsCache } from "@/lib/product-cache"
+import { invalidateProductsCache } from "@/lib/product-cache"
 import { sanitizeImageList } from "@/lib/image-cdn"
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductInsert } from "@/types/database"
@@ -61,46 +61,36 @@ export async function GET(request: NextRequest) {
       await invalidateProductsCache()
     }
 
-    const hasPaginationParams =
-      Number.isFinite(limitParam) || Number.isFinite(offsetParam) || Boolean(search?.trim()) || Boolean(condition?.trim())
+    const limit = Number.isFinite(limitParam) ? limitParam : 24
+    const offset = Number.isFinite(offsetParam) ? offsetParam : 0
+    const { data, error } = await ProductAdminService.getAdminProductsPage({
+      limit,
+      offset,
+      search: search && search.trim().length > 0 ? search.trim() : null,
+      condition: condition && condition.trim().length > 0 ? condition.trim() : null,
+    })
 
-    if (hasPaginationParams) {
-      const limit = Number.isFinite(limitParam) ? limitParam : 24
-      const offset = Number.isFinite(offsetParam) ? offsetParam : 0
-      const { data, error } = await ProductAdminService.getAdminProductsPage({
-        limit,
-        offset,
-        search: search && search.trim().length > 0 ? search.trim() : null,
-        condition: condition && condition.trim().length > 0 ? condition.trim() : null,
-      })
-
-      if (error || !data) {
-        throw error ?? new Error("No se pudieron cargar los productos")
-      }
-
-      const response = NextResponse.json({
-        data: data.rows,
-        total: data.total,
-        limit,
-        offset,
-      })
-      response.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120")
-      if (DEBUG_EGRESS_LOGS) {
-        console.info("[admin/products]", {
-          durationMs: Date.now() - startedAt,
-          limit,
-          offset,
-          total: data.total,
-          condition: condition ?? null,
-          search: search ?? null,
-        })
-      }
-      return response
+    if (error || !data) {
+      throw error ?? new Error("No se pudieron cargar los productos")
     }
 
-    const data = await getProductsCached()
-    const response = NextResponse.json({ data, total: data.length, limit: data.length, offset: 0 })
+    const response = NextResponse.json({
+      data: data.rows,
+      total: data.total,
+      limit,
+      offset,
+    })
     response.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120")
+    if (DEBUG_EGRESS_LOGS) {
+      console.info("[admin/products]", {
+        durationMs: Date.now() - startedAt,
+        limit,
+        offset,
+        total: data.total,
+        condition: condition ?? null,
+        search: search ?? null,
+      })
+    }
     return response
   } catch (error) {
     console.error("API GET error:", error)

@@ -3,6 +3,7 @@ import { getCatalogProducts } from "@/lib/product-cache"
 
 export const revalidate = 3600
 // Mantener ISR activo para reducir consultas repetidas al backend.
+const PUBLIC_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
 
 const DEFAULT_LIMIT = 12
 const MAX_LIMIT = 60
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
       outletOnly,
     })
     const response = NextResponse.json(data)
-    response.headers.set("Cache-Control", force ? "no-store" : "public, s-maxage=3600, stale-while-revalidate=86400")
+    response.headers.set("Cache-Control", force ? "no-store" : PUBLIC_CACHE_CONTROL)
     if (DEBUG_EGRESS_LOGS) {
       console.info("[catalog/products]", {
         durationMs: Date.now() - startedAt,

@@ -84,7 +84,7 @@ async function fetchCatalogOutlet(force = false): Promise<CatalogProductsRespons
 }
 
 async function fetchTradeInConfig(): Promise<TradeInConfig> {
-  const response = await fetch("/api/admin/trade-in", {
+  const response = await fetch("/api/config", {
     // Config estable: se puede reutilizar cache en cliente/CDN.
     cache: "force-cache",
     headers: { "Content-Type": "application/json" },
@@ -94,12 +94,12 @@ async function fetchTradeInConfig(): Promise<TradeInConfig> {
     throw new Error(`Trade-in fetch failed with status ${response.status}`)
   }
 
-  const result = (await response.json()) as { data?: TradeInConfig }
-  if (!result.data) {
+  const result = (await response.json()) as { data?: { tradeInConfig?: TradeInConfig } }
+  if (!result.data?.tradeInConfig) {
     throw new Error("Trade-in config payload vacío")
   }
 
-  return result.data
+  return result.data.tradeInConfig
 }
 
 export function HomePageContent({

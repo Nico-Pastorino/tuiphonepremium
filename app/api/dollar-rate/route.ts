@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server"
 
+export const revalidate = 60
+const PUBLIC_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
+
 interface DollarRate {
   blue: number
   official: number
@@ -121,7 +124,9 @@ export async function GET() {
         ])
 
         if (rate.blue > 0 && rate.official > 0) {
-          return NextResponse.json(rate)
+          const response = NextResponse.json(rate)
+          response.headers.set("Cache-Control", PUBLIC_CACHE_CONTROL)
+          return response
         }
       } catch (error) {
         console.warn(`Error with ${fetchAPI.name}:`, error)
