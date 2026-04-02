@@ -221,7 +221,7 @@ function AdminDashboard() {
   // Obtener planes por categoria
   const visaMastercardPlans = getInstallmentPlansByCategory("visa-mastercard")
   const naranjaPlans = getInstallmentPlansByCategory("naranja")
-  const formatFactorValue = useCallback((interestRate: number) => (1 + interestRate / 100).toFixed(2), [])
+  const formatInterestRateValue = useCallback((interestRate: number) => `${Number(interestRate.toFixed(2))}%`, [])
   const formatPromotionRange = useCallback((startDate: string | null, endDate: string | null) => {
     const formatDate = (value: string | null) => {
       if (!value) return null
@@ -1246,7 +1246,7 @@ function AdminDashboard() {
               <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
                   <h3 className="text-lg font-semibold text-slate-900">Planes base</h3>
-                  <p className="mt-1 text-sm text-slate-600">Define en segundos cuántos pagos ofreces y qué factor aplica.</p>
+                  <p className="mt-1 text-sm text-slate-600">Define en segundos cuántos pagos ofreces y qué porcentaje aplica.</p>
                 </div>
                 <div className="grid grid-cols-1 gap-6 p-5 sm:p-6 lg:grid-cols-2">
                   {[
@@ -1291,7 +1291,7 @@ function AdminDashboard() {
                             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                               <tr>
                                 <th className="px-4 py-3 font-medium">Pagos</th>
-                                <th className="px-4 py-3 font-medium">Factor</th>
+                                <th className="px-4 py-3 font-medium">Porcentaje</th>
                                 <th className="px-4 py-3 font-medium">Estado</th>
                                 <th className="px-4 py-3 font-medium text-right">Acciones</th>
                               </tr>
@@ -1300,7 +1300,7 @@ function AdminDashboard() {
                               {section.plans.map((plan) => (
                                 <tr key={plan.id} className="align-middle">
                                   <td className="px-4 py-3 font-medium text-slate-900">{plan.months}</td>
-                                  <td className="px-4 py-3 text-slate-700">{formatFactorValue(plan.interestRate)}</td>
+                                  <td className="px-4 py-3 text-slate-700">{formatInterestRateValue(plan.interestRate)}</td>
                                   <td className="px-4 py-3">
                                     <span
                                       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -1377,15 +1377,18 @@ function AdminDashboard() {
                 </Dialog>
               )}
 
-              <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="rounded-3xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 via-white to-amber-50 shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-fuchsia-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold text-slate-900">Promociones por banco o tarjeta</h3>
-                    <p className="text-sm text-slate-600">Carga campañas temporales con una tabla simple y planes editables.</p>
+                    <div className="inline-flex rounded-full bg-fuchsia-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-fuchsia-700">
+                      Temporales
+                    </div>
+                    <h3 className="mt-3 text-xl font-semibold text-slate-900">Promociones por banco o tarjeta</h3>
+                    <p className="text-sm text-slate-600">Campañas destacadas por tiempo limitado, separadas visualmente de los planes base.</p>
                   </div>
                   <Dialog open={isAddPromotionOpen} onOpenChange={setIsAddPromotionOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50">
+                      <Button variant="outline" className="border-fuchsia-300 bg-white text-fuchsia-700 hover:bg-fuchsia-50">
                         <Plus className="mr-2 h-4 w-4" />
                         Nueva promocion
                       </Button>
@@ -1407,9 +1410,9 @@ function AdminDashboard() {
 
                 <div className="px-5 py-5">
                   {installmentPromotions.length > 0 ? (
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto rounded-2xl border border-fuchsia-100 bg-white/90">
                       <table className="min-w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                        <thead className="bg-fuchsia-50 text-left text-xs uppercase tracking-wide text-fuchsia-700">
                           <tr>
                             <th className="px-4 py-3 font-medium">Nombre</th>
                             <th className="px-4 py-3 font-medium">Planes</th>
@@ -1418,9 +1421,9 @@ function AdminDashboard() {
                             <th className="px-4 py-3 font-medium text-right">Acciones</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-fuchsia-100">
                           {installmentPromotions.map((promotion) => (
-                            <tr key={promotion.id} className="align-top">
+                            <tr key={promotion.id} className="align-top bg-white/80">
                               <td className="px-4 py-3">
                                 <p className="font-semibold text-slate-900">{promotion.name}</p>
                               </td>
@@ -1428,7 +1431,7 @@ function AdminDashboard() {
                                 <div className="space-y-1">
                                   {promotion.terms.map((term) => (
                                     <p key={term.id}>
-                                      {term.months} pagos · factor {formatFactorValue(term.interestRate)}
+                                      {term.months} pagos · {formatInterestRateValue(term.interestRate)}
                                     </p>
                                   ))}
                                 </div>
@@ -1441,7 +1444,7 @@ function AdminDashboard() {
                                   type="button"
                                   onClick={() => updateInstallmentPromotion(promotion.id, { isActive: !promotion.isActive })}
                                   className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                    promotion.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                                    promotion.isActive ? "bg-fuchsia-100 text-fuchsia-700" : "bg-slate-100 text-slate-600"
                                   }`}
                                 >
                                   {promotion.isActive ? "Activa" : "Pausada"}
@@ -1469,11 +1472,11 @@ function AdminDashboard() {
                       </table>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-slate-600">
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-fuchsia-200 bg-fuchsia-50/70 py-10 text-center text-fuchsia-700">
                       <p className="text-sm">Todavia no agregaste promociones temporales.</p>
                       <Button
                         variant="outline"
-                        className="border-slate-300 text-slate-700 hover:bg-slate-100"
+                        className="border-fuchsia-300 bg-white text-fuchsia-700 hover:bg-fuchsia-100"
                         onClick={() => setIsAddPromotionOpen(true)}
                       >
                         <Plus className="mr-2 h-4 w-4" />

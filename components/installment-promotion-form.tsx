@@ -39,19 +39,27 @@ const formatDateInput = (value: string | null) => {
   return iso.slice(0, 10)
 }
 
-const createEmptyTerm = (): InstallmentPromotionFormTermState => ({
-  months: 6,
-  factor: 1,
-})
-
 type InstallmentPromotionFormTermState = {
   id?: string
   months: NumericInputValue
-  factor: NumericInputValue
+  interestRateInput: string
 }
 
-const toFactorValue = (interestRate: number) => Number((1 + interestRate / 100).toFixed(2))
-const toInterestRate = (factorValue: NumericInputValue) => Number(((toRequiredNumber(factorValue, 1) - 1) * 100).toFixed(2))
+const createEmptyTerm = (): InstallmentPromotionFormTermState => ({
+  months: 6,
+  interestRateInput: "0",
+})
+
+const formatInterestRateInput = (interestRate: number) => String(Number(interestRate.toFixed(2)))
+const parseInterestRateInput = (value: string) => {
+  const normalized = value.replace("%", "").replace(",", ".").trim()
+  if (normalized === "") {
+    return 0
+  }
+
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : 0
+}
 
 export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: InstallmentPromotionFormProps) {
   const [data, setData] = useState<Omit<InstallmentPromotionFormData, "terms">>(() => ({
@@ -65,7 +73,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
       return promotion.terms.map((term) => ({
         id: term.id,
         months: term.months,
-        factor: toFactorValue(term.interestRate),
+        interestRateInput: formatInterestRateInput(term.interestRate),
       }))
     }
     return [createEmptyTerm()]
@@ -86,7 +94,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
         ? promotion.terms.map((term) => ({
             id: term.id,
             months: term.months,
-            factor: toFactorValue(term.interestRate),
+            interestRateInput: formatInterestRateInput(term.interestRate),
           }))
         : [createEmptyTerm()],
     )
@@ -94,7 +102,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
 
   const isEdit = useMemo(() => Boolean(promotion), [promotion])
 
-  const handleTermChange = (index: number, key: "months" | "factor", value: NumericInputValue) => {
+  const handleTermChange = (index: number, key: "months", value: NumericInputValue) => {
     setTerms((prev) =>
       prev.map((term, termIndex) =>
         termIndex === index
@@ -125,7 +133,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
           terms: terms.map((term) => ({
             id: term.id,
             months: toRequiredNumber(term.months, 1),
-            interestRate: toInterestRate(term.factor),
+            interestRate: parseInterestRateInput(term.interestRateInput),
           })),
           startDate: data.startDate ?? null,
           endDate: data.endDate ?? null,
@@ -171,16 +179,27 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
                 />
               </div>
               <div className="space-y-2">
-                <Label>Factor / multiplicador</Label>
+                <Label>Porcentaje (%)</Label>
                 <Input
-                  type="number"
-                  step="0.1"
-                  min={1}
-                  value={term.factor}
-                  onChange={(event) => handleTermChange(index, "factor", toNumericInputValue(event.target.value))}
+                  type="text"
+                  inputMode="decimal"
+                  value={term.interestRateInput}
+                  onChange={(event) =>
+                    setTerms((prev) =>
+                      prev.map((termItem, termIndex) =>
+                        termIndex === index
+                          ? {
+                              ...termItem,
+                              interestRateInput: event.target.value,
+                            }
+                          : termItem,
+                      ),
+                    )
+                  }
+                  placeholder="Ej: 55%"
                   required
                 />
-                <p className="text-xs text-slate-500">Ejemplo: 1.30 equivale a un 30% sobre el precio base.</p>
+                <p className="text-xs text-slate-500">Puedes escribir `55` o `55%`.</p>
               </div>
               <div className="flex items-end justify-end md:justify-start">
                 <Button

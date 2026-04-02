@@ -22,13 +22,21 @@ export interface InstallmentFormData {
 
 type InstallmentFormState = {
   months: NumericInputValue
-  factor: NumericInputValue
+  interestRateInput: string
   isActive: boolean
   category: "visa-mastercard" | "naranja"
 }
 
-const toFactorValue = (interestRate: number) => Number((1 + interestRate / 100).toFixed(2))
-const toInterestRate = (factorValue: NumericInputValue) => Number(((toRequiredNumber(factorValue, 1) - 1) * 100).toFixed(2))
+const formatInterestRateInput = (interestRate: number) => String(Number(interestRate.toFixed(2)))
+const parseInterestRateInput = (value: string) => {
+  const normalized = value.replace("%", "").replace(",", ".").trim()
+  if (normalized === "") {
+    return 0
+  }
+
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : 0
+}
 
 export function InstallmentForm({
   category,
@@ -43,7 +51,7 @@ export function InstallmentForm({
 }) {
   const [data, setData] = useState<InstallmentFormState>(() => ({
     months: plan?.months ?? 3,
-    factor: plan ? toFactorValue(plan.interestRate) : 1,
+    interestRateInput: formatInterestRateInput(plan?.interestRate ?? 0),
     isActive: plan?.isActive ?? true,
     category: plan?.category ?? category,
   }))
@@ -52,7 +60,7 @@ export function InstallmentForm({
     if (plan) {
       setData({
         months: plan?.months,
-        factor: toFactorValue(plan.interestRate),
+        interestRateInput: formatInterestRateInput(plan.interestRate),
         isActive: plan.isActive,
         category: plan.category,
       })
@@ -74,7 +82,7 @@ export function InstallmentForm({
         event.preventDefault()
         onSubmit({
           months: toRequiredNumber(data.months, 1),
-          interestRate: toInterestRate(data.factor),
+          interestRate: parseInterestRateInput(data.interestRateInput),
           isActive: data.isActive,
           category: data.category,
         })
@@ -99,16 +107,16 @@ export function InstallmentForm({
           />
         </div>
         <div className="space-y-2">
-          <Label>Factor / multiplicador</Label>
+          <Label>Porcentaje (%)</Label>
           <Input
-            type="number"
-            step="0.1"
-            min={1}
-            value={data.factor}
-            onChange={(event) => setData({ ...data, factor: toNumericInputValue(event.target.value) })}
+            type="text"
+            inputMode="decimal"
+            value={data.interestRateInput}
+            onChange={(event) => setData({ ...data, interestRateInput: event.target.value })}
+            placeholder="Ej: 55%"
             required
           />
-          <p className="text-xs text-slate-500">1.00 mantiene el precio. 1.15 agrega un 15% sobre el precio base.</p>
+          <p className="text-xs text-slate-500">Puedes escribir `55` o `55%`. El sistema lo guarda como recargo porcentual.</p>
         </div>
       </div>
 
