@@ -16,60 +16,9 @@ interface ModernProductCardProps {
 }
 
 export function ModernProductCard({ product, priority = false }: ModernProductCardProps) {
-  const { getEffectiveDollarRate, homeConfig, getActiveInstallmentPromotions } = useAdmin()
-  const effectiveDollarRate = getEffectiveDollarRate()
-
-  const priceInPesos = useMemo(() => {
-    if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveDollarRate) {
-      return Math.round(product.priceUSD * effectiveDollarRate)
-    }
-    return product.price
-  }, [product.price, product.priceUSD, effectiveDollarRate])
-
-  const priceInDollars = useMemo(() => {
-    if (product.priceUSD !== undefined && product.priceUSD !== null) {
-      return product.priceUSD
-    }
-    if (effectiveDollarRate) {
-      return Number((product.price / effectiveDollarRate).toFixed(0))
-    }
-    return null
-  }, [product.price, product.priceUSD, effectiveDollarRate])
-
-  const activePromotions = getActiveInstallmentPromotions()
-  const highlightedPromotion = useMemo(() => {
-    if (!Number.isFinite(priceInPesos) || priceInPesos <= 0 || activePromotions.length === 0) {
-      return null
-    }
-
-    const entries: Array<{
-      name: string
-      months: number
-      interestRate: number
-      monthlyAmount: number
-    }> = []
-
-    for (const promotion of activePromotions) {
-      for (const term of promotion.terms) {
-        const totalAmount = priceInPesos * (1 + term.interestRate / 100)
-        const monthlyAmount = term.months > 0 ? totalAmount / term.months : totalAmount
-        entries.push({
-          name: promotion.name,
-          months: term.months,
-          interestRate: term.interestRate,
-          monthlyAmount,
-        })
-      }
-    }
-
-    if (entries.length === 0) {
-      return null
-    }
-
-    return entries.reduce((best, current) =>
-      current.monthlyAmount < best.monthlyAmount ? current : best,
-    )
-  }, [activePromotions, priceInPesos])
+  const { homeConfig } = useAdmin()
+  const pricing = product.pricing ?? null
+  const priceInPesos = pricing?.display_price ?? product.price
 
   const whatsappNumber = useMemo(() => {
     const rawNumber = homeConfig.whatsappNumber?.trim()
@@ -134,16 +83,13 @@ export function ModernProductCard({ product, priority = false }: ModernProductCa
               ${priceInPesos.toLocaleString("es-AR")}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {priceInDollars !== null && (
-                <div className="text-[11px] text-gray-500 sm:text-xs">
-                  USD {priceInDollars.toLocaleString("es-AR")}
+              {pricing?.best_installment ? (
+                <div className="text-[11px] font-semibold text-blue-600 sm:text-xs">
+                  {pricing.best_installment.months > 1
+                    ? `Hasta ${pricing.best_installment.months} cuotas fijas`
+                    : "En 1 pago"}
                 </div>
-              )}
-              {highlightedPromotion && (
-                <div className="inline-flex items-center whitespace-nowrap rounded-full bg-purple-100 px-2.5 py-0.5 text-[11px] font-semibold text-purple-700 sm:text-xs">
-                  Promociones activas
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
           <div className="mt-auto grid grid-cols-1 gap-2 sm:grid-cols-2">

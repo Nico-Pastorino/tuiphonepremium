@@ -31,21 +31,21 @@ import type { HomeConfig, InstallmentPlan, InstallmentPromotion, TradeInConfig }
 import { useDollarRate } from "@/hooks/use-dollar-rate"
 import { cloneHomeConfig } from "@/lib/home-config"
 import { cloneTradeInConfig } from "@/lib/trade-in-config"
+import { toNumericInputValue } from "@/lib/number-input"
 import Image from "next/image"
 import { getAdminLibraryImageUrls, getProductListImageUrls } from "@/lib/image-cdn"
 import { StorageImage } from "@/components/StorageImage"
-import type { Product } from "@/types/product"
+import type { CatalogProductPricing, Product } from "@/types/product"
 import { ProductForm } from "@/components/product-form"
 import { InstallmentForm, type InstallmentFormData } from "@/components/installment-form"
-import { InstallmentPlanCard } from "@/components/installment-plan-card"
 import {
   InstallmentPromotionForm,
   type InstallmentPromotionFormData,
 } from "@/components/installment-promotion-form"
-import { InstallmentPromotionCard } from "@/components/installment-promotion-card"
 import {
   Trash2,
   Edit,
+  Copy,
   Plus,
   RefreshCw,
   DollarSign,
@@ -61,8 +61,9 @@ import type { ImageLibraryItem } from "@/types/image-library"
 
 type NewLibraryImageForm = { label: string; category: string; dataUrl: string }
 type AdminListCondition = "nuevo" | "seminuevo" | "outlet" | null
+type AdminProduct = Product & { pricing?: CatalogProductPricing | null }
 type AdminProductsResponse = {
-  data?: Product[]
+  data?: AdminProduct[]
   total?: number
   limit?: number
   offset?: number
@@ -131,7 +132,6 @@ function AdminDashboard() {
     deleteInstallmentPromotion,
     dollarConfig,
     updateDollarConfig,
-    getEffectiveDollarRate,
     getInstallmentPlansByCategory,
     addImageToLibrary,
     removeImageFromLibrary,
@@ -142,7 +142,6 @@ function AdminDashboard() {
     updateTradeInConfig,
     logout,
   } = useAdmin()
-  const effectiveAdminRate = getEffectiveDollarRate()
   const { dollarRate, refresh: refreshDollarRate, loading, error } = useDollarRate()
   const outletEnabled = process.env.NEXT_PUBLIC_OUTLET_ENABLED === "true"
 
@@ -165,7 +164,7 @@ function AdminDashboard() {
   const [productsError, setProductsError] = useState<string | null>(null)
   const [productsPage, setProductsPage] = useState(1)
   const [productsTotal, setProductsTotal] = useState(0)
-  const [pagedProducts, setPagedProducts] = useState<Product[]>([])
+  const [pagedProducts, setPagedProducts] = useState<AdminProduct[]>([])
   const [productsReloadToken, setProductsReloadToken] = useState(0)
   const [editingProductDetail, setEditingProductDetail] = useState<Product | null>(null)
   const [editingProductId, setEditingProductId] = useState<string | null>(null)
@@ -188,6 +187,7 @@ function AdminDashboard() {
 
   const [tradeInForm, setTradeInForm] = useState<TradeInConfig>(() => cloneTradeInConfig(tradeInConfig))
   const [savingTradeInConfig, setSavingTradeInConfig] = useState(false)
+  const [markupInput, setMarkupInput] = useState(() => String(dollarConfig.markup))
   const [tradeInRowDialog, setTradeInRowDialog] = useState<{ sectionId: string | null; label: string; error: string | null }>(
     {
       sectionId: null,
@@ -205,6 +205,10 @@ function AdminDashboard() {
   }, [tradeInConfig])
 
   useEffect(() => {
+    setMarkupInput(String(dollarConfig.markup))
+  }, [dollarConfig.markup])
+
+  useEffect(() => {
     return () => {
       if (imagePreview.startsWith("blob:")) {
         URL.revokeObjectURL(imagePreview)
@@ -212,16 +216,31 @@ function AdminDashboard() {
     }
   }, [imagePreview])
 
-  const computeDisplayPrice = (product: Product) => {
-    if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveAdminRate) {
-      return Number((product.priceUSD * effectiveAdminRate).toFixed(2))
-    }
-    return product.price
-  }
+  const getDisplayPrice = (product: AdminProduct) => product.pricing?.display_price ?? product.price
 
   // Obtener planes por categoria
   const visaMastercardPlans = getInstallmentPlansByCategory("visa-mastercard")
   const naranjaPlans = getInstallmentPlansByCategory("naranja")
+  const formatFactorValue = useCallback((interestRate: number) => (1 + interestRate / 100).toFixed(2), [])
+  const formatPromotionRange = useCallback((startDate: string | null, endDate: string | null) => {
+    const formatDate = (value: string | null) => {
+      if (!value) return null
+      const parsed = new Date(value)
+      if (Number.isNaN(parsed.getTime())) return null
+      return parsed.toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    }
+
+    const startLabel = formatDate(startDate)
+    const endLabel = formatDate(endDate)
+    if (startLabel && endLabel) return `${startLabel} - ${endLabel}`
+    if (startLabel) return `Desde ${startLabel}`
+    if (endLabel) return `Hasta ${endLabel}`
+    return "Siempre activa"
+  }, [])
 
   // Filtrar productos
   const PRODUCTS_PAGE_SIZE = 24
@@ -251,7 +270,7 @@ function AdminDashboard() {
         }
 
         const response = await fetch(`/api/admin/products?${params.toString()}`, {
-          cache: "default",
+          cache: "no-store",
           signal: controller.signal,
         })
         const result = (await response.json()) as AdminProductsResponse
@@ -393,7 +412,7 @@ function AdminDashboard() {
           params.set("category", libraryCategoryFilter)
         }
 
-        const response = await fetch(`/api/admin/image-library?${params.toString()}`, { cache: "force-cache" })
+        const response = await fetch(`/api/admin/image-library?${params.toString()}`, { cache: "default" })
         if (!response.ok) {
           const message = await response.text()
           throw new Error(message || "No se pudo cargar la biblioteca")
@@ -885,7 +904,7 @@ function AdminDashboard() {
                           <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
                           <div className="flex justify-between items-center">
                             <span className="text-xl font-bold">
-                              ${computeDisplayPrice(product).toLocaleString("es-AR")}
+                              ${getDisplayPrice(product).toLocaleString("es-AR")}
                             </span>
                             <span className="text-sm text-gray-600">Stock: {product.stock}</span>
                           </div>
@@ -1180,8 +1199,8 @@ function AdminDashboard() {
             <TabsContent value="installments" className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Gestion de Cuotas</h2>
-                  <p className="text-gray-600">Configura los planes de financiacion disponibles</p>
+                  <h2 className="text-2xl font-bold text-gray-900">Financiacion</h2>
+                  <p className="text-gray-600">Carga medios de pago y promociones con una estructura simple.</p>
                 </div>
                 <Dialog open={isAddInstallmentOpen} onOpenChange={setIsAddInstallmentOpen}>
                   <DialogTrigger asChild>
@@ -1190,9 +1209,9 @@ function AdminDashboard() {
                       Agregar Plan
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
-                      <DialogTitle>Agregar Plan de Cuotas</DialogTitle>
+                      <DialogTitle>Agregar plan</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="flex gap-2">
@@ -1224,62 +1243,126 @@ function AdminDashboard() {
                 </Dialog>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Visa/Mastercard Plans */}
-                <div>
-                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-blue-500 rounded"></div>
-                    Planes Visa/Mastercard
-                  </h3>
-                  <div className="space-y-4">
-                    {visaMastercardPlans.map((plan) => (
-                      <InstallmentPlanCard
-                        key={plan.id}
-                        plan={plan}
-                        onEdit={setEditingInstallment}
-                        onDelete={deleteInstallmentPlan}
-                      />
-                    ))}
-                    {visaMastercardPlans.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <CreditCard className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                        <p>No hay planes configurados</p>
-                      </div>
-                    )}
-                  </div>
+              <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
+                  <h3 className="text-lg font-semibold text-slate-900">Planes base</h3>
+                  <p className="mt-1 text-sm text-slate-600">Define en segundos cuántos pagos ofreces y qué factor aplica.</p>
                 </div>
-
-                {/* Naranja Plans */}
-                <div>
-                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-orange-500 rounded"></div>
-                    Planes Naranja
-                  </h3>
-                  <div className="space-y-4">
-                    {naranjaPlans.map((plan) => (
-                      <InstallmentPlanCard
-                        key={plan.id}
-                        plan={plan}
-                        onEdit={setEditingInstallment}
-                        onDelete={deleteInstallmentPlan}
-                      />
-                    ))}
-                    {naranjaPlans.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <CreditCard className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                        <p>No hay planes configurados</p>
+                <div className="grid grid-cols-1 gap-6 p-5 sm:p-6 lg:grid-cols-2">
+                  {[
+                    {
+                      category: "visa-mastercard" as const,
+                      label: "Visa / MasterCard",
+                      accent: "bg-blue-500",
+                      plans: visaMastercardPlans,
+                    },
+                    {
+                      category: "naranja" as const,
+                      label: "Otros medios",
+                      accent: "bg-orange-500",
+                      plans: naranjaPlans,
+                    },
+                  ].map((section) => (
+                    <div key={section.category} className="rounded-2xl border border-slate-200">
+                      <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <span className={`h-3 w-3 rounded-full ${section.accent}`} />
+                          <div>
+                            <p className="font-semibold text-slate-900">{section.label}</p>
+                            <p className="text-xs text-slate-500">Tipo de plan: cuotas fijas</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setInstallmentCategory(section.category)
+                            setIsAddInstallmentOpen(true)
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Agregar
+                        </Button>
                       </div>
-                    )}
-                  </div>
+
+                      {section.plans.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                              <tr>
+                                <th className="px-4 py-3 font-medium">Pagos</th>
+                                <th className="px-4 py-3 font-medium">Factor</th>
+                                <th className="px-4 py-3 font-medium">Estado</th>
+                                <th className="px-4 py-3 font-medium text-right">Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {section.plans.map((plan) => (
+                                <tr key={plan.id} className="align-middle">
+                                  <td className="px-4 py-3 font-medium text-slate-900">{plan.months}</td>
+                                  <td className="px-4 py-3 text-slate-700">{formatFactorValue(plan.interestRate)}</td>
+                                  <td className="px-4 py-3">
+                                    <span
+                                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                        plan.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                                      }`}
+                                    >
+                                      {plan.isActive ? "Activo" : "Pausado"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex justify-end gap-2">
+                                      <Button variant="outline" size="sm" onClick={() => setEditingInstallment(plan)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Editar
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          addInstallmentPlan({
+                                            months: plan.months,
+                                            interestRate: plan.interestRate,
+                                            isActive: plan.isActive,
+                                            category: plan.category,
+                                          })
+                                        }
+                                      >
+                                        <Copy className="mr-2 h-4 w-4" />
+                                        Duplicar
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-red-200 text-red-600 hover:bg-red-50"
+                                        onClick={() => deleteInstallmentPlan(plan.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 text-center text-slate-500">
+                          <CreditCard className="h-10 w-10 text-slate-300" />
+                          <p className="text-sm">Aun no cargaste planes para este medio.</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {/* Edit Installment Dialog */}
               {editingInstallment && (
                 <Dialog open={!!editingInstallment} onOpenChange={() => setEditingInstallment(null)}>
-                  <DialogContent>
+                  <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
-                      <DialogTitle>Editar Plan de Cuotas</DialogTitle>
+                      <DialogTitle>Editar plan</DialogTitle>
                     </DialogHeader>
                     <InstallmentForm
                       category={editingInstallment.category}
@@ -1294,22 +1377,20 @@ function AdminDashboard() {
                 </Dialog>
               )}
 
-              <div className="rounded-2xl border border-purple-100 bg-white shadow-sm">
-                <div className="flex flex-col gap-3 border-b border-purple-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold text-purple-900">Promociones especiales</h3>
-                    <p className="text-sm text-purple-600">
-                      Registra campañas temporales con cuotas bonificadas o sin interes.
-                    </p>
+                    <h3 className="text-xl font-semibold text-slate-900">Promociones por banco o tarjeta</h3>
+                    <p className="text-sm text-slate-600">Carga campañas temporales con una tabla simple y planes editables.</p>
                   </div>
                   <Dialog open={isAddPromotionOpen} onOpenChange={setIsAddPromotionOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
+                      <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-50">
                         <Plus className="mr-2 h-4 w-4" />
                         Nueva promocion
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-4xl">
                       <DialogHeader>
                         <DialogTitle>Crear promocion</DialogTitle>
                       </DialogHeader>
@@ -1324,23 +1405,75 @@ function AdminDashboard() {
                   </Dialog>
                 </div>
 
-                <div className="space-y-4 px-5 py-5">
+                <div className="px-5 py-5">
                   {installmentPromotions.length > 0 ? (
-                    installmentPromotions.map((promotion) => (
-                      <InstallmentPromotionCard
-                        key={promotion.id}
-                        promotion={promotion}
-                        onEdit={setEditingPromotion}
-                        onDelete={deleteInstallmentPromotion}
-                        onToggleActive={(id, value) => updateInstallmentPromotion(id, { isActive: value })}
-                      />
-                    ))
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                          <tr>
+                            <th className="px-4 py-3 font-medium">Nombre</th>
+                            <th className="px-4 py-3 font-medium">Planes</th>
+                            <th className="px-4 py-3 font-medium">Vigencia</th>
+                            <th className="px-4 py-3 font-medium">Estado</th>
+                            <th className="px-4 py-3 font-medium text-right">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {installmentPromotions.map((promotion) => (
+                            <tr key={promotion.id} className="align-top">
+                              <td className="px-4 py-3">
+                                <p className="font-semibold text-slate-900">{promotion.name}</p>
+                              </td>
+                              <td className="px-4 py-3 text-slate-700">
+                                <div className="space-y-1">
+                                  {promotion.terms.map((term) => (
+                                    <p key={term.id}>
+                                      {term.months} pagos · factor {formatFactorValue(term.interestRate)}
+                                    </p>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">
+                                {formatPromotionRange(promotion.startDate, promotion.endDate)}
+                              </td>
+                              <td className="px-4 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => updateInstallmentPromotion(promotion.id, { isActive: !promotion.isActive })}
+                                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                    promotion.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                                  }`}
+                                >
+                                  {promotion.isActive ? "Activa" : "Pausada"}
+                                </button>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" size="sm" className="bg-white" onClick={() => setEditingPromotion(promotion)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-red-200 bg-white text-red-600 hover:bg-red-50"
+                                    onClick={() => deleteInstallmentPromotion(promotion.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-purple-200 bg-purple-50/60 py-10 text-center text-purple-600">
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-slate-600">
                       <p className="text-sm">Todavia no agregaste promociones temporales.</p>
                       <Button
                         variant="outline"
-                        className="border-purple-300 text-purple-700 hover:bg-purple-100"
+                        className="border-slate-300 text-slate-700 hover:bg-slate-100"
                         onClick={() => setIsAddPromotionOpen(true)}
                       >
                         <Plus className="mr-2 h-4 w-4" />
@@ -1360,7 +1493,7 @@ function AdminDashboard() {
                     }
                   }}
                 >
-                  <DialogContent>
+                    <DialogContent className="sm:max-w-4xl">
                     <DialogHeader>
                       <DialogTitle>Editar promocion</DialogTitle>
                     </DialogHeader>
@@ -1422,8 +1555,21 @@ function AdminDashboard() {
                       <Input
                         type="number"
                         step="1"
-                        value={dollarConfig.markup}
-                        onChange={(e) => updateDollarConfig({ markup: Number(e.target.value) })}
+                        value={markupInput}
+                        onChange={(e) => {
+                          const nextValue = e.target.value
+                          setMarkupInput(nextValue)
+                          const parsed = toNumericInputValue(nextValue)
+                          if (parsed !== "") {
+                            updateDollarConfig({ markup: parsed })
+                          }
+                        }}
+                        onBlur={() => {
+                          const parsed = toNumericInputValue(markupInput)
+                          if (parsed === "") {
+                            setMarkupInput(String(dollarConfig.markup))
+                          }
+                        }}
                         placeholder="Ej: 50"
                       />
                     </div>

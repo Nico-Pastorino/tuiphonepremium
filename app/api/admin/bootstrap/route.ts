@@ -30,7 +30,7 @@ export async function GET() {
         dollarConfig,
       },
     })
-    response.headers.set("Cache-Control", "private, max-age=3600, stale-while-revalidate=86400")
+    response.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate")
     return response
   } catch (error) {
     console.error("Admin bootstrap GET error:", error)

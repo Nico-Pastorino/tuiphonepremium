@@ -24,6 +24,7 @@ import {
   sanitizeInstallmentPlanCollection,
   sanitizeInstallmentPromotionCollection,
 } from "@/lib/finance-config"
+import { getActivePromotions, getEffectiveDollarRateFromConfig } from "@/lib/pricing"
 
 export type { HomeConfig, HomeSectionConfig, HomeSectionId } from "@/types/home"
 export type { TradeInConfig } from "@/types/trade-in"
@@ -147,7 +148,7 @@ export function AdminProvider({
       setIsAuthenticated(true)
 
       const savedPlans = localStorage.getItem(INSTALLMENT_STORAGE_KEY)
-      if (savedPlans) {
+      if (savedPlans && !initialInstallmentConfig) {
         try {
           const parsed = JSON.parse(savedPlans) as unknown
 
@@ -171,7 +172,7 @@ export function AdminProvider({
       }
 
       const savedDollarConfig = localStorage.getItem(DOLLAR_STORAGE_KEY)
-      if (savedDollarConfig) {
+      if (savedDollarConfig && !initialDollarConfig) {
         try {
           const parsed = JSON.parse(savedDollarConfig) as Partial<DollarConfig>
           setDollarConfig(mergeDollarConfig(DEFAULT_DOLLAR_CONFIG, parsed))
@@ -217,7 +218,7 @@ export function AdminProvider({
 
     const loadRemoteData = async () => {
       try {
-        const response = await fetch("/api/admin/bootstrap", { cache: "force-cache" })
+        const response = await fetch("/api/admin/bootstrap", { cache: "no-store" })
         if (!response.ok) {
           const message = await response.text()
           throw new Error(message || "Unable to fetch admin bootstrap")
@@ -515,37 +516,8 @@ export function AdminProvider({
     await response.json().catch(() => null)
   }
 
-  const parseDateSafe = (value: string | null | undefined) => {
-    if (!value) {
-      return null
-    }
-    const parsed = new Date(value)
-    return Number.isNaN(parsed.getTime()) ? null : parsed
-  }
-
-  const isPromotionActiveNow = (promotion: InstallmentPromotion, referenceDate = new Date()) => {
-    if (!promotion.isActive) {
-      return false
-    }
-    const start = parseDateSafe(promotion.startDate)
-    if (start && referenceDate < start) {
-      return false
-    }
-    const end = parseDateSafe(promotion.endDate)
-    if (end && referenceDate > end) {
-      return false
-    }
-    return true
-  }
-
   const getActiveInstallmentPromotions = () => {
-    const now = new Date()
-    return installmentPromotions
-      .filter((promotion) => promotion.terms.length > 0 && isPromotionActiveNow(promotion, now))
-      .map((promotion) => ({
-        ...promotion,
-        terms: [...promotion.terms].sort((a, b) => a.months - b.months),
-      }))
+    return getActivePromotions(installmentPromotions)
   }
 
   const getActiveInstallmentPlans = () => installmentPlans.filter((plan) => plan.isActive)
@@ -566,7 +538,7 @@ export function AdminProvider({
   }
 
   const getEffectiveDollarRate = () => {
-    return Number((dollarConfig.blueRate + dollarConfig.markup).toFixed(2))
+    return getEffectiveDollarRateFromConfig(dollarConfig)
   }
 
   const persistHomeConfig = async (partial: Partial<HomeConfig>): Promise<HomeConfig> => {
@@ -702,10 +674,4 @@ export function useAdmin() {
     throw new Error("useAdmin must be used within an AdminProvider")
   }
   return context
-}
-
-export function getProductPriceWithDollar(priceUSD: number | null | undefined, dollarRate: number) {
-  if (!priceUSD) return null
-  const effective = Number((priceUSD * dollarRate).toFixed(2))
-  return effective
 }

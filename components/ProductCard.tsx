@@ -15,25 +15,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, variant = "default" }: ProductCardProps) {
-  const { getEffectiveDollarRate, homeConfig } = useAdmin()
-  const effectiveDollarRate = getEffectiveDollarRate()
-
-  const priceInPesos = useMemo(() => {
-    if (product.priceUSD !== undefined && product.priceUSD !== null && effectiveDollarRate) {
-      return Math.round(product.priceUSD * effectiveDollarRate)
-    }
-    return product.price
-  }, [product.price, product.priceUSD, effectiveDollarRate])
-
-  const priceInDollars = useMemo(() => {
-    if (product.priceUSD !== undefined && product.priceUSD !== null) {
-      return product.priceUSD
-    }
-    if (effectiveDollarRate) {
-      return Number((product.price / effectiveDollarRate).toFixed(0))
-    }
-    return null
-  }, [product.price, product.priceUSD, effectiveDollarRate])
+  const { homeConfig } = useAdmin()
+  const pricing = product.pricing ?? null
+  const priceInPesos = pricing?.display_price ?? product.price
 
   const whatsappNumber = useMemo(() => {
     const rawNumber = homeConfig.whatsappNumber?.trim()
@@ -98,9 +82,13 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
           )}
           <div className="space-y-1">
             <div className="text-xl font-bold text-gray-900 sm:text-2xl">${priceInPesos.toLocaleString("es-AR")}</div>
-            {priceInDollars !== null && (
-              <div className="text-xs text-gray-500 sm:text-sm">USD {priceInDollars.toLocaleString("es-AR")}</div>
-            )}
+            {pricing?.best_installment ? (
+              <div className="text-xs font-medium text-blue-600 sm:text-sm">
+                {pricing.best_installment.months > 1
+                  ? `Hasta ${pricing.best_installment.months} cuotas fijas`
+                  : "En 1 pago"}
+              </div>
+            ) : null}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button

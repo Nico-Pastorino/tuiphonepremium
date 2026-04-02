@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCatalogProducts } from "@/lib/product-cache"
 
-export const revalidate = 3600
+export const revalidate = 300
 // Mantener ISR activo para reducir consultas repetidas al backend.
 const PUBLIC_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
 

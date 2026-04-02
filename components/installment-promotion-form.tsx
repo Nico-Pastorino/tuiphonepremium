@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { toNumericInputValue, toRequiredNumber, type NumericInputValue } from "@/lib/number-input"
 
 export interface InstallmentPromotionFormTermData {
   id?: string
@@ -38,10 +39,19 @@ const formatDateInput = (value: string | null) => {
   return iso.slice(0, 10)
 }
 
-const createEmptyTerm = (): InstallmentPromotionFormTermData => ({
+const createEmptyTerm = (): InstallmentPromotionFormTermState => ({
   months: 6,
-  interestRate: 0,
+  factor: 1,
 })
+
+type InstallmentPromotionFormTermState = {
+  id?: string
+  months: NumericInputValue
+  factor: NumericInputValue
+}
+
+const toFactorValue = (interestRate: number) => Number((1 + interestRate / 100).toFixed(2))
+const toInterestRate = (factorValue: NumericInputValue) => Number(((toRequiredNumber(factorValue, 1) - 1) * 100).toFixed(2))
 
 export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: InstallmentPromotionFormProps) {
   const [data, setData] = useState<Omit<InstallmentPromotionFormData, "terms">>(() => ({
@@ -50,12 +60,12 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
     endDate: promotion?.endDate ?? null,
     isActive: promotion?.isActive ?? true,
   }))
-  const [terms, setTerms] = useState<InstallmentPromotionFormTermData[]>(() => {
+  const [terms, setTerms] = useState<InstallmentPromotionFormTermState[]>(() => {
     if (promotion?.terms && promotion.terms.length > 0) {
       return promotion.terms.map((term) => ({
         id: term.id,
         months: term.months,
-        interestRate: term.interestRate,
+        factor: toFactorValue(term.interestRate),
       }))
     }
     return [createEmptyTerm()]
@@ -76,7 +86,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
         ? promotion.terms.map((term) => ({
             id: term.id,
             months: term.months,
-            interestRate: term.interestRate,
+            factor: toFactorValue(term.interestRate),
           }))
         : [createEmptyTerm()],
     )
@@ -84,7 +94,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
 
   const isEdit = useMemo(() => Boolean(promotion), [promotion])
 
-  const handleTermChange = (index: number, key: "months" | "interestRate", value: number) => {
+  const handleTermChange = (index: number, key: "months" | "factor", value: NumericInputValue) => {
     setTerms((prev) =>
       prev.map((term, termIndex) =>
         termIndex === index
@@ -114,8 +124,8 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
           ...data,
           terms: terms.map((term) => ({
             id: term.id,
-            months: Number(term.months),
-            interestRate: Number(term.interestRate),
+            months: toRequiredNumber(term.months, 1),
+            interestRate: toInterestRate(term.factor),
           })),
           startDate: data.startDate ?? null,
           endDate: data.endDate ?? null,
@@ -131,48 +141,52 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
           placeholder="Ej: Hot Sale 12 cuotas sin interes"
           required
         />
+        <p className="text-xs text-slate-500">Usa un nombre simple, por ejemplo: Visa Banco Nacion o Amex.</p>
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label className="text-sm font-semibold text-gray-700">Combinaciones de cuotas</Label>
-          <Button type="button" variant="outline" size="sm" onClick={handleAddTerm}>
-            Agregar opcion
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Label className="text-sm font-semibold text-gray-700">Opciones de pago</Label>
+            <p className="mt-1 text-xs text-slate-500">Carga las variantes disponibles para este medio.</p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={handleAddTerm} className="w-full sm:w-auto">
+            Agregar plan
           </Button>
         </div>
-        <div className="space-y-3">
+        <div className="max-h-[45vh] space-y-3 overflow-y-auto pr-1">
           {terms.map((term, index) => (
             <div
               key={term.id ?? `term-${index}`}
-              className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-[1fr,1fr,auto]"
+              className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr),minmax(0,1fr),auto]"
             >
               <div className="space-y-2">
-                <Label>Cuotas</Label>
+                <Label>Pagos</Label>
                 <Input
                   type="number"
                   min={1}
                   value={term.months}
-                  onChange={(event) => handleTermChange(index, "months", Number(event.target.value) || 1)}
+                  onChange={(event) => handleTermChange(index, "months", toNumericInputValue(event.target.value))}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Interes (%)</Label>
+                <Label>Factor / multiplicador</Label>
                 <Input
                   type="number"
                   step="0.1"
-                  value={term.interestRate}
-                  onChange={(event) =>
-                    handleTermChange(index, "interestRate", Number(event.target.value) || 0)
-                  }
+                  min={1}
+                  value={term.factor}
+                  onChange={(event) => handleTermChange(index, "factor", toNumericInputValue(event.target.value))}
                   required
                 />
+                <p className="text-xs text-slate-500">Ejemplo: 1.30 equivale a un 30% sobre el precio base.</p>
               </div>
-              <div className="flex items-end justify-end">
+              <div className="flex items-end justify-end md:justify-start">
                 <Button
                   type="button"
                   variant="ghost"
-                  className="text-red-600 hover:text-red-700"
+                  className="w-full text-red-600 hover:text-red-700 md:w-auto"
                   onClick={() => handleRemoveTerm(index)}
                   disabled={terms.length === 1}
                 >

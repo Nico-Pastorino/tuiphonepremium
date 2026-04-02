@@ -4,6 +4,8 @@ import { ProductAdminService } from "@/lib/supabase-admin"
 import { sanitizeImageList } from "@/lib/image-cdn"
 import type { ProductRow } from "@/types/database"
 import type { CatalogProductsResponse, Product, ProductSummary } from "@/types/product"
+import { buildProductPricingResponse, toCatalogProductPricing } from "@/lib/pricing"
+import { getDollarConfigCached, getInstallmentConfigCached } from "@/lib/site-config-cache"
 
 const DEFAULT_TTL_MS = 300_000
 const PRODUCTS_CACHE_TAG = "products-list"
@@ -163,22 +165,44 @@ export const getCatalogProducts = async ({
     await revalidateTag(PRODUCTS_CACHE_TAG)
   }
 
-  const { data, error } = await ProductAdminService.getCatalogPage({
-    limit: normalizedLimit,
-    offset: normalizedOffset,
-    category: normalizedCategory,
-    condition: normalizedCondition,
-    featured,
-    search: normalizedSearch,
-    outletOnly,
-  })
+  const [{ data, error }, [installmentConfig, dollarConfig]] = await Promise.all([
+    ProductAdminService.getCatalogPage({
+      limit: normalizedLimit,
+      offset: normalizedOffset,
+      category: normalizedCategory,
+      condition: normalizedCondition,
+      featured,
+      search: normalizedSearch,
+      outletOnly,
+    }),
+    Promise.all([getInstallmentConfigCached(), getDollarConfigCached()]),
+  ])
 
   if (error || !data) {
     throw error ?? new Error("Catalog query failed")
   }
 
+  const items = data.rows.map((row) => {
+    const summary = toProductSummary(row)
+    const pricing = buildProductPricingResponse({
+      product: {
+        ...summary,
+        updatedAt: null,
+      },
+      dollarConfig,
+      installmentPlans: installmentConfig.plans,
+      installmentPromotions: installmentConfig.promotions,
+      installmentConfigUpdatedAt: installmentConfig.updatedAt,
+    })
+
+    return {
+      ...summary,
+      pricing: toCatalogProductPricing(pricing),
+    }
+  })
+
   return {
-    items: data.rows.map(toProductSummary),
+    items,
     total: data.total,
     supabaseConnected: true,
     timestamp: Date.now(),

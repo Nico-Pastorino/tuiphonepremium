@@ -1,3 +1,24 @@
+export interface CatalogBestInstallment {
+  source: "promotion" | "plan"
+  label: string
+  groupLabel: string
+  paymentLabel: string
+  months: number
+  interestRate: number
+  monthlyAmount: number
+  promotionId?: string
+  termId?: string
+  planId?: string
+  category?: "visa-mastercard" | "naranja"
+}
+
+export interface CatalogProductPricing {
+  display_price: number
+  display_currency: "ARS"
+  best_installment: CatalogBestInstallment | null
+  pricing_updated_at: string
+}
+
 export interface Product {
   id: string
   name: string
@@ -47,7 +68,9 @@ export interface ProductSummary
     | "outletAccessories"
     | "outletDisplayIssues"
     | "outletCaseIssues"
-  > {}
+  > {
+  pricing?: CatalogProductPricing | null
+}
 
 export interface ProductFormData {
   name: string

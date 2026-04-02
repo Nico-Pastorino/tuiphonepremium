@@ -146,3 +146,7 @@ export const invalidateInstallmentConfigCache = async (): Promise<void> => {
 export const invalidateDollarConfigCache = async (): Promise<void> => {
   await revalidateTag(DOLLAR_CONFIG_CACHE_TAG)
 }
+
+export const invalidatePricingConfigCaches = async (): Promise<void> => {
+  await Promise.all([invalidateInstallmentConfigCache(), invalidateDollarConfigCache()])
+}

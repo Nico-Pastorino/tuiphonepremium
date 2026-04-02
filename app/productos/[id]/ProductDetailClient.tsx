@@ -22,8 +22,6 @@ import {
 import { useAdmin } from "@/contexts/AdminContext"
 import Link from "next/link"
 import type { Product, ProductSummary } from "@/types/product"
-import type { InstallmentPlan } from "@/types/finance"
-import type { ProductRow } from "@/types/database"
 import { TradeInEstimator } from "@/components/trade-in-estimator"
 import {
   getProductDetailImageUrls,
@@ -32,11 +30,19 @@ import {
   sanitizeImageList,
 } from "@/lib/image-cdn"
 import { StorageImage } from "@/components/StorageImage"
+import {
+  type InstallmentOption as PricingInstallmentOption,
+  type ProductPricingResponse,
+} from "@/lib/pricing"
 
 const CATEGORY_LABELS = {
   "visa-mastercard": "Visa / Mastercard",
   naranja: "Tarjeta Naranja",
 } as const
+
+type ProductWithPricing = Product & {
+  pricing?: ProductPricingResponse | null
+}
 
 type InstallmentCategory = keyof typeof CATEGORY_LABELS
 
@@ -53,66 +59,96 @@ type InstallmentGroup = {
   options: InstallmentOption[]
 }
 
-const buildInstallmentGroups = (priceInPesos: number, installmentPlans: InstallmentPlan[]): InstallmentGroup[] => {
+type PromotionGroup = {
+  id: string
+  label: string
+  options: Array<{
+    id: string
+    months: number
+    paymentLabel: string
+    monthlyAmount: number
+  }>
+}
+
+const groupInstallmentOptions = (installmentOptions: PricingInstallmentOption[]): InstallmentGroup[] => {
   return (Object.entries(CATEGORY_LABELS) as Array<[InstallmentCategory, string]>).map(([category, label]) => {
-    const options = installmentPlans
-      .filter((plan) => plan.category === category && plan.isActive)
-      .map((plan) => {
-        const totalAmount = priceInPesos * (1 + plan.interestRate / 100)
-        const monthlyAmount = plan.months > 0 ? totalAmount / plan.months : totalAmount
-        return {
-          id: plan.id,
-          months: plan.months,
-          interestRate: plan.interestRate,
-          monthlyAmount,
-        }
-      })
+    const options = installmentOptions
+      .filter((plan) => plan.category === category)
       .sort((a, b) => a.months - b.months)
 
     return { category, label, options }
   })
 }
 
+const groupPromotions = (promotions: ProductPricingResponse["promotions"]): PromotionGroup[] => {
+  const groups = promotions.reduce<PromotionGroup[]>((acc, promotion) => {
+    const existing = acc.find((group) => group.label === promotion.groupLabel)
+    if (existing) {
+      existing.options.push({
+        id: `${promotion.promotionId}-${promotion.termId}`,
+        months: promotion.months,
+        paymentLabel: promotion.paymentLabel,
+        monthlyAmount: promotion.monthlyAmount,
+      })
+      return acc
+    }
+
+    acc.push({
+      id: promotion.promotionId,
+      label: promotion.groupLabel,
+      options: [
+        {
+          id: `${promotion.promotionId}-${promotion.termId}`,
+          months: promotion.months,
+          paymentLabel: promotion.paymentLabel,
+          monthlyAmount: promotion.monthlyAmount,
+        },
+      ],
+    })
+    return acc
+  }, [])
+
+  return groups.map((group) => ({
+    ...group,
+    options: [...group.options].sort((a, b) => a.months - b.months),
+  }))
+}
+
+type FinancingListGroup = {
+  id: string
+  label: string
+  options: Array<{
+    id: string
+    months: number
+    paymentLabel: string
+    monthlyAmount: number
+  }>
+}
+
+const formatCurrency = (amount: number) => `$${Math.round(amount).toLocaleString("es-AR")}`
+
+const getBestInstallmentCopy = (bestInstallment: ProductPricingResponse["best_installment"]) => {
+  if (!bestInstallment) {
+    return null
+  }
+
+  if (bestInstallment.months <= 1) {
+    return `En 1 pago fijo de ${formatCurrency(bestInstallment.monthlyAmount)}`
+  }
+
+  return `Hasta ${bestInstallment.months} cuotas fijas de ${formatCurrency(bestInstallment.monthlyAmount)}`
+}
+
 type ProductDetailClientProps = {
   productId: string
-  initialProduct: Product
+  initialProduct: ProductWithPricing
   relatedProducts: ProductSummary[]
 }
 
-const transformProductRow = (row: ProductRow): Product => ({
-  id: row.id,
-  name: row.name,
-  description: row.description ?? "",
-  price: row.price,
-  originalPrice: row.original_price ?? null,
-  priceUSD: row.price_usd ?? null,
-  category: row.category,
-  condition: row.condition === "nuevo" ? "nuevo" : "seminuevo",
-  images: sanitizeImageList(row.images),
-  specifications:
-    row.specifications && typeof row.specifications === "object" && !Array.isArray(row.specifications)
-      ? (row.specifications as Record<string, string | number | boolean>)
-      : {},
-  stock: row.stock,
-  featured: row.featured,
-  isOutlet: Boolean(row.is_outlet),
-  outletNotes: row.outlet_notes ?? null,
-  outletDefects: row.outlet_defects ?? [],
-  outletBatteryPercent: row.outlet_battery_percent ?? null,
-  outletGrade: row.outlet_grade ?? null,
-  outletWarrantyDays: row.outlet_warranty_days ?? null,
-  outletAccessories: row.outlet_accessories ?? null,
-  outletDisplayIssues: row.outlet_display_issues ?? null,
-  outletCaseIssues: row.outlet_case_issues ?? null,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at ?? null,
-})
-
 export function ProductDetailClient({ productId, initialProduct, relatedProducts: initialRelated }: ProductDetailClientProps) {
   const router = useRouter()
-  const { installmentPlans, getEffectiveDollarRate, homeConfig, getActiveInstallmentPromotions } = useAdmin()
-  const effectiveDollarRate = getEffectiveDollarRate()
-  const [product, setProduct] = useState<Product | null>(initialProduct ?? null)
+  const { homeConfig } = useAdmin()
+  const [product, setProduct] = useState<ProductWithPricing | null>(initialProduct ?? null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isLoadingProduct, setIsLoadingProduct] = useState(!initialProduct)
   const [relatedProducts, setRelatedProducts] = useState<ProductSummary[]>(initialRelated)
@@ -140,16 +176,18 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
       }
 
       try {
-        // Lectura no forzada: permite aprovechar cache HTTP/CDN del endpoint.
-        const response = await fetch(`/api/catalog/product/${productId}`, { cache: "force-cache" })
+        const response = await fetch(`/api/catalog/product/${productId}`, { cache: "no-store" })
 
         if (!response.ok) {
           return
         }
 
-        const result = (await response.json()) as { data?: ProductRow }
+        const result = (await response.json()) as { data?: ProductWithPricing }
         if (result?.data && active) {
-          setProduct(transformProductRow(result.data))
+          setProduct({
+            ...result.data,
+            images: sanitizeImageList(result.data.images),
+          })
         }
       } catch (error) {
         console.error("No se pudo sincronizar el producto:", error)
@@ -167,32 +205,7 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
     }
   }, [productId, initialProduct])
 
-  const [openInstallmentCategory, setOpenInstallmentCategory] = useState<InstallmentCategory | null>(null)
-
-  useEffect(() => {
-    if (!product) {
-      setOpenInstallmentCategory(null)
-      return
-    }
-
-    const computedPriceInPesos =
-      product.priceUSD !== undefined && product.priceUSD !== null
-        ? product.priceUSD * effectiveDollarRate
-        : product.price
-
-    const groups = buildInstallmentGroups(computedPriceInPesos, installmentPlans)
-
-    setOpenInstallmentCategory((current) => {
-      if (current && groups.some((group) => group.category === current && group.options.length > 0)) {
-        return current
-      }
-      return null
-    })
-  }, [product, installmentPlans, effectiveDollarRate])
-
-  const toggleInstallmentCategory = (category: InstallmentCategory) => {
-    setOpenInstallmentCategory((current) => (current === category ? null : category))
-  }
+  const [showAllFinancingOptions, setShowAllFinancingOptions] = useState(false)
 
   const whatsappNumber = useMemo(() => {
     const configuredNumber = homeConfig.whatsappNumber?.trim()
@@ -211,16 +224,12 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
     return `${baseLink}?text=${encodeURIComponent(message)}`
   }, [product?.name, product?.condition, whatsappNumber])
 
-  const priceInPesos =
-    product && product.priceUSD !== undefined && product.priceUSD !== null && effectiveDollarRate
-      ? product.priceUSD * effectiveDollarRate
-      : product?.price ?? 0
+  const resolvedPricing = product?.pricing ?? null
+  const priceInPesos = resolvedPricing?.display_price ?? product?.price ?? 0
   const priceInUSD =
     product && product.priceUSD !== undefined && product.priceUSD !== null
       ? product.priceUSD
-      : product && effectiveDollarRate
-        ? Number((product.price / effectiveDollarRate).toFixed(0))
-        : null
+      : null
   const originalPrice =
     product &&
     product.condition === "nuevo" &&
@@ -228,46 +237,60 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
     product.originalPrice !== null
       ? product.originalPrice
       : null
-  const activePromotions = getActiveInstallmentPromotions()
-  const promotionBreakdown = useMemo(() => {
-    if (!product || !Number.isFinite(priceInPesos) || priceInPesos <= 0 || activePromotions.length === 0) {
-      return [] as Array<{
-        promotionId: string
-        termId: string
-        name: string
-        months: number
-        interestRate: number
-        monthlyAmount: number
-      }>
+  const promotionBreakdown = useMemo(() => resolvedPricing?.promotions ?? [], [resolvedPricing])
+  const promotionGroups = useMemo(() => groupPromotions(promotionBreakdown), [promotionBreakdown])
+  const installmentGroups = useMemo(
+    () => groupInstallmentOptions(resolvedPricing?.installment_options ?? []),
+    [resolvedPricing],
+  )
+  const financingGroups = useMemo<FinancingListGroup[]>(() => {
+    const grouped = new Map<string, FinancingListGroup>()
+
+    for (const group of promotionGroups) {
+      grouped.set(group.label, {
+        id: group.id,
+        label: group.label,
+        options: [...group.options],
+      })
     }
 
-    const entries: Array<{
-      promotionId: string
-      termId: string
-      name: string
-      months: number
-      interestRate: number
-      monthlyAmount: number
-    }> = []
+    for (const group of installmentGroups) {
+      if (group.options.length === 0) {
+        continue
+      }
 
-    for (const promotion of activePromotions) {
-      for (const term of promotion.terms) {
-        const totalAmount = priceInPesos * (1 + term.interestRate / 100)
-        const monthlyAmount = term.months > 0 ? totalAmount / term.months : totalAmount
-        entries.push({
-          promotionId: promotion.id,
-          termId: term.id,
-          name: promotion.name,
-          months: term.months,
-          interestRate: term.interestRate,
-          monthlyAmount,
+      const current = grouped.get(group.label)
+      const nextOptions = group.options.map((option) => ({
+        id: `${group.category}-${option.id}`,
+        months: option.months,
+        paymentLabel: option.paymentLabel,
+        monthlyAmount: option.monthlyAmount,
+      }))
+
+      if (current) {
+        current.options = [...current.options, ...nextOptions].sort((a, b) => a.months - b.months)
+      } else {
+        grouped.set(group.label, {
+          id: group.category,
+          label: group.label,
+          options: nextOptions,
         })
       }
     }
 
-    return entries.sort((a, b) => a.monthlyAmount - b.monthlyAmount)
-  }, [activePromotions, priceInPesos, product])
-  const hasPromotionOptions = promotionBreakdown.length > 0
+    return Array.from(grouped.values())
+      .map((group) => ({
+        ...group,
+        options: group.options.sort((a, b) => a.months - b.months),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, "es"))
+  }, [installmentGroups, promotionGroups])
+  const bestInstallmentCopy = useMemo(() => getBestInstallmentCopy(resolvedPricing?.best_installment ?? null), [resolvedPricing])
+  const hasInstallmentOptions = financingGroups.length > 0
+
+  useEffect(() => {
+    setShowAllFinancingOptions(false)
+  }, [productId])
 
   if (isLoadingProduct || !product) {
     return (
@@ -306,9 +329,6 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
   const conditionLabel = product.condition === "seminuevo" ? "Seminuevo" : "Nuevo"
   const conditionBadgeClass =
     product.condition === "seminuevo" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
-
-  const installmentGroups = buildInstallmentGroups(priceInPesos, installmentPlans)
-  const hasInstallmentOptions = installmentGroups.some((group) => group.options.length > 0)
 
   // Productos relacionados
 
@@ -592,6 +612,51 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                       </div>
                     )}
 
+                    <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-50/90 p-5 sm:p-6">
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            Financiacion
+                          </p>
+                          <p className="text-xl font-semibold leading-tight text-slate-900 sm:text-2xl">
+                            {bestInstallmentCopy ?? "Consulta por opciones de pago para este producto"}
+                          </p>
+                        </div>
+
+                        {hasInstallmentOptions && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllFinancingOptions((current) => !current)}
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+                          >
+                            {showAllFinancingOptions ? "Ocultar opciones" : "Ver todas las opciones"}
+                            <ChevronDown className={`h-4 w-4 transition-transform ${showAllFinancingOptions ? "rotate-180" : ""}`} />
+                          </button>
+                        )}
+                      </div>
+
+                      {showAllFinancingOptions && hasInstallmentOptions && (
+                        <div className="mt-5 space-y-4 border-t border-slate-200 pt-5">
+                          {financingGroups.map((group) => (
+                            <div key={group.id} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+                              <p className="text-sm font-semibold text-slate-900 sm:text-base">{group.label}</p>
+                              <div className="mt-3 space-y-2.5">
+                                {group.options.map((option) => (
+                                  <div
+                                    key={option.id}
+                                    className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-3 py-2.5 text-sm text-slate-700 sm:text-[15px]"
+                                  >
+                                    <span>{option.paymentLabel} de {formatCurrency(option.monthlyAmount)}</span>
+                                    <span className="font-semibold text-slate-900">{option.months > 1 ? `${option.months} pagos` : "Pago unico"}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     {product.isOutlet && (
                       <div className="mt-4 rounded-2xl border border-orange-200/70 bg-orange-50/70 p-4 sm:p-5">
                         <div className="flex flex-wrap items-center gap-2">
@@ -624,154 +689,6 @@ export function ProductDetailClient({ productId, initialProduct, relatedProducts
                         )}
                       </div>
                     )}
-
-                    {hasPromotionOptions && (
-                      <div className="mt-5 rounded-2xl border border-purple-200/80 bg-purple-50/80 p-4 sm:p-5">
-                        <p className="text-sm font-semibold text-purple-800 sm:text-base">Promociones activas</p>
-                        <div className="mt-3 space-y-3">
-                          {promotionBreakdown.map((promotion) => {
-                            const monthlyPayment = Math.round(promotion.monthlyAmount).toLocaleString("es-AR")
-                            const installmentsLabel = `${promotion.months} ${
-                              promotion.months === 1 ? "cuota" : "cuotas"
-                            }`
-
-                            return (
-                              <div
-                                key={`${promotion.promotionId}-${promotion.termId}`}
-                                className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-4 py-3 shadow-sm"
-                              >
-                                <div>
-                                  <p className="text-sm font-semibold text-purple-900 sm:text-base">{promotion.name}</p>
-                                  <p className="text-xs text-purple-600 sm:text-sm">
-                                    {installmentsLabel} de ${monthlyPayment}
-                                    {promotion.interestRate === 0 ? " sin interes" : ""}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-base font-bold text-purple-900 sm:text-lg">${monthlyPayment}</p>
-                                  <p className="text-[11px] text-purple-600">por mes</p>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="mt-5 rounded-2xl border border-blue-200/70 bg-blue-50/70 p-4 sm:p-5">
-                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-sm font-semibold text-blue-700 sm:text-base">
-                          Opciones de financiacion disponibles
-                        </p>
-                        {hasInstallmentOptions && (
-                          <span className="text-xs font-semibold uppercase tracking-wide text-blue-600 sm:text-[0.7rem]">
-                            Elegi la mas conveniente
-                          </span>
-                        )}
-                      </div>
-
-                      {hasInstallmentOptions ? (
-                        <div className="mt-4 space-y-2.5 sm:space-y-3">
-                          {installmentGroups.map((group) => {
-                            const hasOptionsForGroup = group.options.length > 0
-                            const firstOption = hasOptionsForGroup ? group.options[0] : null
-                            const isOpen = openInstallmentCategory === group.category
-
-                            return (
-                              <div
-                                key={group.category}
-                                className={`rounded-xl shadow-sm transition ${
-                                  group.category === "naranja"
-                                    ? "border border-orange-300 bg-orange-50/90"
-                                    : "border border-blue-200/70 bg-white/90"
-                                }`}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => toggleInstallmentCategory(group.category)}
-                                  className={`flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors sm:px-5 sm:py-4 ${
-                                    group.category === "naranja"
-                                      ? "hover:bg-orange-100/80"
-                                      : "hover:bg-blue-50/60"
-                                  }`}
-                                >
-                                  <div>
-                                    <p
-                                      className={`text-[0.7rem] font-semibold uppercase tracking-wide ${
-                                        group.category === "naranja" ? "text-orange-600" : "text-blue-600"
-                                      }`}
-                                    >
-                                      {group.label}
-                                    </p>
-                                    <p
-                                      className={`mt-1 text-sm leading-tight ${
-                                        group.category === "naranja" ? "text-orange-900" : "text-blue-900"
-                                      }`}
-                                    >
-                                      {firstOption
-                                        ? `${firstOption.months} ${
-                                            firstOption.months === 1 ? "cuota" : "cuotas"
-                                          } desde $${firstOption.monthlyAmount.toLocaleString("es-AR", {
-                                            maximumFractionDigits: 0,
-                                          })}`
-                                        : "Consultanos para conocer nuevos planes"}
-                                    </p>
-                                  </div>
-                                  <ChevronDown
-                                    className={`h-5 w-5 text-blue-600 transition-transform ${
-                                      isOpen ? "rotate-180" : ""
-                                    } ${group.category === "naranja" ? "text-orange-600" : "text-blue-600"}`}
-                                  />
-                                </button>
-
-                                {isOpen && (
-                                  <div
-                                    className={`border-t px-5 pb-4 pt-3 text-sm ${
-                                      group.category === "naranja"
-                                        ? "border-orange-200 text-orange-700"
-                                        : "border-blue-100 text-blue-700"
-                                    }`}
-                                  >
-                                    {hasOptionsForGroup ? (
-                                      <div className="space-y-2">
-                                        {group.options.map((option) => (
-                                          <div
-                                            key={`${group.category}-${option.months}`}
-                                            className="flex items-baseline justify-between gap-2 text-sm sm:text-base"
-                                          >
-                                            <span>
-                                              {option.months} {option.months === 1 ? "cuota" : "cuotas"}
-                                            </span>
-                                            <span className="font-semibold">
-                                              $
-                                              {option.monthlyAmount.toLocaleString("es-AR", {
-                                                maximumFractionDigits: 0,
-                                              })}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <p
-                                        className={`text-xs ${
-                                          group.category === "naranja" ? "text-orange-600/70" : "text-blue-600/70"
-                                        }`}
-                                      >
-                                        No hay planes disponibles en este momento.
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
-                      ) : (
-                        <p className="mt-3 text-sm text-blue-700">
-                          Consulta por financiacion personalizada para este producto.
-                        </p>
-                      )}
-                    </div>
                   </div>
                 </div>
 

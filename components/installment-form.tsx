@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import type { InstallmentPlan } from "@/contexts/AdminContext"
+import { toNumericInputValue, toRequiredNumber, type NumericInputValue } from "@/lib/number-input"
 
 const CATEGORY_LABELS: Record<"visa-mastercard" | "naranja", string> = {
   "visa-mastercard": "Visa/Mastercard",
@@ -19,6 +20,16 @@ export interface InstallmentFormData {
   category: "visa-mastercard" | "naranja"
 }
 
+type InstallmentFormState = {
+  months: NumericInputValue
+  factor: NumericInputValue
+  isActive: boolean
+  category: "visa-mastercard" | "naranja"
+}
+
+const toFactorValue = (interestRate: number) => Number((1 + interestRate / 100).toFixed(2))
+const toInterestRate = (factorValue: NumericInputValue) => Number(((toRequiredNumber(factorValue, 1) - 1) * 100).toFixed(2))
+
 export function InstallmentForm({
   category,
   plan,
@@ -30,9 +41,9 @@ export function InstallmentForm({
   onSubmit: (data: InstallmentFormData) => void
   onCancel?: () => void
 }) {
-  const [data, setData] = useState<InstallmentFormData>(() => ({
+  const [data, setData] = useState<InstallmentFormState>(() => ({
     months: plan?.months ?? 3,
-    interestRate: plan?.interestRate ?? 0,
+    factor: plan ? toFactorValue(plan.interestRate) : 1,
     isActive: plan?.isActive ?? true,
     category: plan?.category ?? category,
   }))
@@ -41,7 +52,7 @@ export function InstallmentForm({
     if (plan) {
       setData({
         months: plan?.months,
-        interestRate: plan.interestRate,
+        factor: toFactorValue(plan.interestRate),
         isActive: plan.isActive,
         category: plan.category,
       })
@@ -61,41 +72,52 @@ export function InstallmentForm({
     <form
       onSubmit={(event) => {
         event.preventDefault()
-        onSubmit({ ...data, category: data.category })
+        onSubmit({
+          months: toRequiredNumber(data.months, 1),
+          interestRate: toInterestRate(data.factor),
+          isActive: data.isActive,
+          category: data.category,
+        })
       }}
-      className="space-y-4"
+      className="space-y-5"
     >
-      <div>
-        <Label>Categoria seleccionada</Label>
-        <p className="mt-1 text-sm font-medium text-gray-700">{CATEGORY_LABELS[data.category]}</p>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Medio de pago</p>
+        <p className="mt-1 text-sm font-semibold text-slate-900">{CATEGORY_LABELS[data.category]}</p>
+        <p className="mt-1 text-xs text-slate-600">Tipo de plan: cuotas fijas</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>Cuotas</Label>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Cantidad de pagos</Label>
           <Input
             type="number"
             min={1}
             value={data.months}
-            onChange={(event) => setData({ ...data, months: Number(event.target.value) })}
+            onChange={(event) => setData({ ...data, months: toNumericInputValue(event.target.value) })}
             required
           />
         </div>
-        <div>
-          <Label>Interes (%)</Label>
+        <div className="space-y-2">
+          <Label>Factor / multiplicador</Label>
           <Input
             type="number"
             step="0.1"
-            value={data.interestRate}
-            onChange={(event) => setData({ ...data, interestRate: Number(event.target.value) })}
+            min={1}
+            value={data.factor}
+            onChange={(event) => setData({ ...data, factor: toNumericInputValue(event.target.value) })}
             required
           />
+          <p className="text-xs text-slate-500">1.00 mantiene el precio. 1.15 agrega un 15% sobre el precio base.</p>
         </div>
       </div>
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 rounded-2xl border border-slate-200 px-4 py-3">
         <Switch id="isActive" checked={data.isActive} onCheckedChange={(value) => setData({ ...data, isActive: value })} />
-        <Label htmlFor="isActive">Plan activo</Label>
+        <div>
+          <Label htmlFor="isActive">Plan activo</Label>
+          <p className="text-xs text-slate-500">Puedes pausarlo sin eliminarlo.</p>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-4">

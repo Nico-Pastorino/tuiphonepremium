@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { MinimalNavbar } from "@/components/MinimalNavbar"
 import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
@@ -11,12 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Calculator, CreditCard, DollarSign, Percent, MessageCircle, CheckCircle, Info } from "lucide-react"
 import { useAdmin } from "@/contexts/AdminContext"
+import { toNumericInputValue } from "@/lib/number-input"
 
 export default function CuotasPage() {
   const { homeConfig } = useAdmin()
-  const [amount, setAmount] = useState<number>(500000)
+  const [amountInput, setAmountInput] = useState<string>("500000")
   const [installments, setInstallments] = useState<number>(12)
   const [paymentMethod, setPaymentMethod] = useState<string>("credit")
+  const amount = useMemo(() => {
+    const parsed = toNumericInputValue(amountInput)
+    return parsed === "" ? 0 : parsed
+  }, [amountInput])
 
   const whatsappNumber = homeConfig.whatsappNumber?.trim() || "5491112345678"
   const whatsappLink = `https://wa.me/${whatsappNumber}`
@@ -89,8 +94,8 @@ export default function CuotasPage() {
                       <Input
                         id="amount"
                         type="number"
-                        value={amount}
-                        onChange={(e) => setAmount(Number(e.target.value))}
+                        value={amountInput}
+                        onChange={(e) => setAmountInput(e.target.value)}
                         className="pl-10"
                         placeholder="500000"
                       />

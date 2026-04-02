@@ -24,6 +24,7 @@ export function ServiceWorkerManager() {
 
     navigator.serviceWorker
       .register(SERVICE_WORKER_PATH, { scope: "/" })
+      .then((registration) => registration.update())
       .catch((error) => {
         console.warn("No se pudo registrar el service worker:", error)
       })

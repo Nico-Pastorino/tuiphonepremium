@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { invalidateProductsCache } from "@/lib/product-cache"
 import { sanitizeImageList } from "@/lib/image-cdn"
+import { buildProductPricingResponse, toCatalogProductPricing } from "@/lib/pricing"
+import { getDollarConfigCached, getInstallmentConfigCached } from "@/lib/site-config-cache"
 import { ProductAdminService } from "@/lib/supabase-admin"
 import type { Json, ProductInsert } from "@/types/database"
 
@@ -63,19 +65,43 @@ export async function GET(request: NextRequest) {
 
     const limit = Number.isFinite(limitParam) ? limitParam : 24
     const offset = Number.isFinite(offsetParam) ? offsetParam : 0
-    const { data, error } = await ProductAdminService.getAdminProductsPage({
-      limit,
-      offset,
-      search: search && search.trim().length > 0 ? search.trim() : null,
-      condition: condition && condition.trim().length > 0 ? condition.trim() : null,
-    })
+    const [{ data, error }, installmentConfig, dollarConfig] = await Promise.all([
+      ProductAdminService.getAdminProductsPage({
+        limit,
+        offset,
+        search: search && search.trim().length > 0 ? search.trim() : null,
+        condition: condition && condition.trim().length > 0 ? condition.trim() : null,
+      }),
+      getInstallmentConfigCached(),
+      getDollarConfigCached(),
+    ])
 
     if (error || !data) {
       throw error ?? new Error("No se pudieron cargar los productos")
     }
 
+    const rowsWithPricing = data.rows.map((row) => {
+      const pricing = buildProductPricingResponse({
+        product: {
+          price: row.price,
+          priceUSD: row.price_usd ?? null,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at ?? null,
+        },
+        dollarConfig,
+        installmentPlans: installmentConfig.plans,
+        installmentPromotions: installmentConfig.promotions,
+        installmentConfigUpdatedAt: installmentConfig.updatedAt,
+      })
+
+      return {
+        ...row,
+        pricing: toCatalogProductPricing(pricing),
+      }
+    })
+
     const response = NextResponse.json({
-      data: data.rows,
+      data: rowsWithPricing,
       total: data.total,
       limit,
       offset,

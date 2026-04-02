@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "Explora nuestro catalogo completo de productos Apple nuevos y seminuevos disponibles en TuIphonepremium.",
 }
 
-export const revalidate = 3600
+export const revalidate = 300
 
 type PageProps = {
   searchParams?: Record<string, string | string[]>

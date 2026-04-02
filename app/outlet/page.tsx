@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: "Equipos Apple con detalles estéticos o funcionales a precio especial.",
 }
 
-export const revalidate = 3600
+export const revalidate = 300
 
 export default async function OutletPage() {
   if (process.env.NEXT_PUBLIC_OUTLET_ENABLED !== "true") {

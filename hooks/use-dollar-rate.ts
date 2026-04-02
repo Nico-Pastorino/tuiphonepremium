@@ -13,7 +13,7 @@ interface DollarRate {
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000
 
 const fetchDollarRate = async (): Promise<DollarRate> => {
-  const response = await fetch("/api/dollar", { cache: "force-cache" })
+  const response = await fetch("/api/dollar", { cache: "no-store" })
   if (!response.ok) {
     const message = await response.text()
     throw new Error(message || `Dollar API responded with status ${response.status}`)

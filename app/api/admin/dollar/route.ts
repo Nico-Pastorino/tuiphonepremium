@@ -4,6 +4,7 @@ import { SiteConfigService, SITE_CONFIG_TABLE_NOT_FOUND } from "@/lib/supabase-a
 import { DEFAULT_DOLLAR_CONFIG, mergeDollarConfig } from "@/lib/finance-config"
 import type { DollarConfig } from "@/types/finance"
 import type { Json } from "@/types/database"
+import { invalidatePricingConfigCaches } from "@/lib/site-config-cache"
 
 const DOLLAR_CONFIG_KEY = "dollar"
 
@@ -72,6 +73,8 @@ export async function POST(request: NextRequest) {
       }
       return buildErrorResponse("No se pudo guardar la configuracion del dolar")
     }
+
+    await invalidatePricingConfigCaches()
 
     return NextResponse.json({ data: mergedConfig })
   } catch (error) {

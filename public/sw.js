@@ -1,6 +1,14 @@
-const STATIC_CACHE = "tuiphone-static-v1"
-const API_CACHE = "tuiphone-api-v1"
-const CATALOG_ENDPOINT = /\/api\/catalog\/products/
+const STATIC_CACHE = "tuiphone-static-v2"
+const API_CACHE = "tuiphone-api-v2"
+const COMMERCIAL_API_BYPASS = [
+  /^\/api\/catalog\//,
+  /^\/api\/dollar$/,
+  /^\/api\/dollar-rate$/,
+  /^\/api\/config$/,
+  /^\/api\/admin\/bootstrap$/,
+  /^\/api\/admin\/dollar$/,
+  /^\/api\/admin\/installments$/,
+]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting())
@@ -58,8 +66,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url)
 
-  if (CATALOG_ENDPOINT.test(url.pathname)) {
-    event.respondWith(staleWhileRevalidate(request, API_CACHE))
+  if (COMMERCIAL_API_BYPASS.some((pattern) => pattern.test(url.pathname))) {
     return
   }
 

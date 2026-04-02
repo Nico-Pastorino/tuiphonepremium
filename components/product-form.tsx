@@ -141,7 +141,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
           params.set("search", librarySearch.trim())
         }
 
-        const response = await fetch(`/api/admin/image-library?${params.toString()}`, { cache: "force-cache" })
+        const response = await fetch(`/api/admin/image-library?${params.toString()}`, { cache: "default" })
         if (!response.ok) {
           const message = await response.text()
           throw new Error(message || "No se pudo cargar la biblioteca de imagenes")

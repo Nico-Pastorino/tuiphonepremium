@@ -39,8 +39,8 @@ const sortProducts = (items: ProductSummary[]): ProductSummary[] => {
       return normalizedPriorityA - normalizedPriorityB
     }
 
-    const priceA = a.price ?? 0
-    const priceB = b.price ?? 0
+    const priceA = a.pricing?.display_price ?? a.price ?? 0
+    const priceB = b.pricing?.display_price ?? b.price ?? 0
     if (priceA !== priceB) {
       return priceB - priceA
     }
@@ -73,7 +73,7 @@ interface ProductsPageClientProps {
 }
 
 const fetchCatalogProducts = async (requestUrl: string): Promise<CatalogProductsResponse> => {
-  const response = await fetch(requestUrl, { cache: "force-cache" })
+  const response = await fetch(requestUrl, { cache: "no-store" })
   if (!response.ok) {
     throw new Error(`Error ${response.status}`)
   }
