@@ -125,7 +125,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
 
   return (
     <form
-      className="space-y-5"
+      className="flex max-h-[calc(92vh-7rem)] min-h-0 flex-col gap-5 overflow-hidden"
       onSubmit={(event) => {
         event.preventDefault()
         onSubmit({
@@ -152,7 +152,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
         <p className="text-xs text-slate-500">Usa un nombre simple, por ejemplo: Visa Banco Nacion o Amex.</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="flex min-h-0 flex-col space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Label className="text-sm font-semibold text-gray-700">Opciones de pago</Label>
@@ -162,7 +162,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
             Agregar plan
           </Button>
         </div>
-        <div className="max-h-[45vh] space-y-3 overflow-y-auto pr-1">
+        <div className="min-h-0 max-h-[min(38vh,22rem)] space-y-3 overflow-y-auto pr-1">
           {terms.map((term, index) => (
             <div
               key={term.id ?? `term-${index}`}
@@ -260,7 +260,7 @@ export function InstallmentPromotionForm({ promotion, onSubmit, onCancel }: Inst
         />
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="mt-auto flex justify-end gap-2 border-t border-slate-200 bg-white pt-4">
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>
             Cancelar

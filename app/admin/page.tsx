@@ -1393,17 +1393,19 @@ function AdminDashboard() {
                         Nueva promocion
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-4xl">
-                      <DialogHeader>
+                    <DialogContent className="max-h-[92vh] overflow-hidden p-0 sm:max-w-4xl">
+                      <DialogHeader className="border-b border-slate-200 px-6 py-5">
                         <DialogTitle>Crear promocion</DialogTitle>
                       </DialogHeader>
-                      <InstallmentPromotionForm
-                        onSubmit={(data: InstallmentPromotionFormData) => {
-                          addInstallmentPromotion(data)
-                          setIsAddPromotionOpen(false)
-                        }}
-                        onCancel={() => setIsAddPromotionOpen(false)}
-                      />
+                      <div className="px-6 py-5">
+                        <InstallmentPromotionForm
+                          onSubmit={(data: InstallmentPromotionFormData) => {
+                            addInstallmentPromotion(data)
+                            setIsAddPromotionOpen(false)
+                          }}
+                          onCancel={() => setIsAddPromotionOpen(false)}
+                        />
+                      </div>
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -1496,25 +1498,27 @@ function AdminDashboard() {
                     }
                   }}
                 >
-                    <DialogContent className="sm:max-w-4xl">
-                    <DialogHeader>
+                    <DialogContent className="max-h-[92vh] overflow-hidden p-0 sm:max-w-4xl">
+                    <DialogHeader className="border-b border-slate-200 px-6 py-5">
                       <DialogTitle>Editar promocion</DialogTitle>
                     </DialogHeader>
-                    <InstallmentPromotionForm
-                      promotion={{
-                        name: editingPromotion.name,
-                        terms: editingPromotion.terms,
-                        startDate: editingPromotion.startDate,
-                        endDate: editingPromotion.endDate,
-                        isActive: editingPromotion.isActive,
-                      }}
-                      onSubmit={(data: InstallmentPromotionFormData) => {
-                        updateInstallmentPromotion(editingPromotion.id, data)
-                        setEditingPromotion(null)
-                      }}
-                      onCancel={() => setEditingPromotion(null)}
-                    />
-                  </DialogContent>
+                    <div className="px-6 py-5">
+                      <InstallmentPromotionForm
+                        promotion={{
+                          name: editingPromotion.name,
+                          terms: editingPromotion.terms,
+                          startDate: editingPromotion.startDate,
+                          endDate: editingPromotion.endDate,
+                          isActive: editingPromotion.isActive,
+                        }}
+                        onSubmit={(data: InstallmentPromotionFormData) => {
+                          updateInstallmentPromotion(editingPromotion.id, data)
+                          setEditingPromotion(null)
+                        }}
+                        onCancel={() => setEditingPromotion(null)}
+                      />
+                    </div>
+                    </DialogContent>
                 </Dialog>
               )}
             </TabsContent>
