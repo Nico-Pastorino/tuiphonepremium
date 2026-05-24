@@ -92,6 +92,7 @@ const DOLLAR_STORAGE_KEY = "admin-dollar-config"
 const AUTH_STORAGE_KEY = "admin-authenticated"
 const HOME_STORAGE_KEY = "admin-home-config"
 const TRADE_IN_STORAGE_KEY = "admin-trade-in-config"
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD?.trim() ?? ""
 
 type AdminProviderProps = {
   children: ReactNode
@@ -625,7 +626,12 @@ export function AdminProvider({
   }
 
   const login = (password: string) => {
-    if (password === "complejo.avesten") {
+    if (!ADMIN_PASSWORD) {
+      console.error("Missing NEXT_PUBLIC_ADMIN_PASSWORD for admin login")
+      return false
+    }
+
+    if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true)
       localStorage.setItem(AUTH_STORAGE_KEY, "true")
       return true
