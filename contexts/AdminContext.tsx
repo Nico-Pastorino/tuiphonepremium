@@ -632,6 +632,7 @@ export function AdminProvider({
     }
 
     if (password === ADMIN_PASSWORD) {
+    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setIsAuthenticated(true)
       localStorage.setItem(AUTH_STORAGE_KEY, "true")
       return true
