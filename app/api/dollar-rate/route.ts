@@ -1,136 +1,18 @@
 import { NextResponse } from "next/server"
 
+import { fetchLiveDollarRate } from "@/lib/dollar-rate"
+
 export const revalidate = 60
 const PUBLIC_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
 
-interface DollarRate {
-  blue: number
-  official: number
-  lastUpdate: string
-  source: string
-}
-
-interface DollarAPIResponse {
-  venta: number
-  compra: number
-  fecha: string
-}
-
-interface BluelyticsResponse {
-  blue: {
-    value_sell: number
-    value_buy: number
-  }
-  oficial: {
-    value_sell: number
-    value_buy: number
-  }
-  last_update: string
-}
-
-interface DolarSiItem {
-  casa: {
-    nombre: string
-    venta: string
-    compra: string
-  }
-}
-
-type DolarSiResponse = DolarSiItem[]
-
-async function fetchFromDolarAPI(): Promise<DollarRate> {
-  const [blueResponse, officialResponse] = await Promise.all([
-    fetch("https://dolarapi.com/v1/dolares/blue", {
-      headers: { Accept: "application/json" },
-      next: { revalidate: 300 },
-    }),
-    fetch("https://dolarapi.com/v1/dolares/oficial", {
-      headers: { Accept: "application/json" },
-      next: { revalidate: 300 },
-    }),
-  ])
-
-  if (!blueResponse.ok || !officialResponse.ok) {
-    throw new Error("DolarAPI request failed")
-  }
-
-  const blueData = (await blueResponse.json()) as DollarAPIResponse
-  const officialData = (await officialResponse.json()) as DollarAPIResponse
-
-  return {
-    blue: blueData.venta,
-    official: officialData.venta,
-    lastUpdate: blueData.fecha,
-    source: "DolarAPI",
-  }
-}
-
-async function fetchFromBluelytics(): Promise<DollarRate> {
-  const response = await fetch("https://api.bluelytics.com.ar/v2/latest", {
-    headers: { Accept: "application/json" },
-    next: { revalidate: 300 },
-  })
-
-  if (!response.ok) {
-    throw new Error("Bluelytics request failed")
-  }
-
-  const data = (await response.json()) as BluelyticsResponse
-
-  return {
-    blue: data.blue.value_sell,
-    official: data.oficial.value_sell,
-    lastUpdate: data.last_update,
-    source: "Bluelytics",
-  }
-}
-
-async function fetchFromDolarSi(): Promise<DollarRate> {
-  const response = await fetch("https://dolarsi.com/api/api.php?type=valoresprincipales", {
-    headers: { Accept: "application/json" },
-    next: { revalidate: 300 },
-  })
-
-  if (!response.ok) {
-    throw new Error("DolarSi request failed")
-  }
-
-  const data = (await response.json()) as DolarSiResponse
-
-  const blueData = data.find((item) => item.casa.nombre === "Dolar Blue")
-  const officialData = data.find((item) => item.casa.nombre === "Dolar Oficial")
-
-  if (!blueData || !officialData) {
-    throw new Error("DolarSi: Required data not found")
-  }
-
-  return {
-    blue: Number.parseFloat(blueData.casa.venta.replace(",", ".")),
-    official: Number.parseFloat(officialData.casa.venta.replace(",", ".")),
-    lastUpdate: new Date().toISOString(),
-    source: "DolarSi",
-  }
-}
-
 export async function GET() {
   try {
-    const apis = [fetchFromDolarAPI, fetchFromBluelytics, fetchFromDolarSi]
+    const rate = await fetchLiveDollarRate()
 
-    for (const fetchAPI of apis) {
-      try {
-        const rate = await Promise.race([
-          fetchAPI(),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000)),
-        ])
-
-        if (rate.blue > 0 && rate.official > 0) {
-          const response = NextResponse.json(rate)
-          response.headers.set("Cache-Control", PUBLIC_CACHE_CONTROL)
-          return response
-        }
-      } catch (error) {
-        console.warn(`Error with ${fetchAPI.name}:`, error)
-      }
+    if (rate) {
+      const response = NextResponse.json(rate)
+      response.headers.set("Cache-Control", PUBLIC_CACHE_CONTROL)
+      return response
     }
 
     return NextResponse.json({ error: "No se pudo obtener la cotizacion de ninguna fuente" }, { status: 503 })
