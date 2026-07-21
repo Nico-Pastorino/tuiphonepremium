@@ -1,0 +1,46 @@
+name: Actualizar cotizacion del dolar
+
+on:
+  schedule:
+    # Cada 5 minutos (horario UTC). GitHub puede demorar la ejecucion
+    # algunos minutos cuando esta con mucha carga; para una cotizacion es irrelevante.
+    - cron: "*/5 * * * *"
+  # Permite dispararlo a mano desde la pestana Actions para probar.
+  workflow_dispatch:
+
+# Evita que dos ejecuciones se pisen si alguna tarda de mas.
+concurrency:
+  group: update-dollar
+  cancel-in-progress: false
+
+jobs:
+  update-dollar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Llamar al endpoint de actualizacion
+        env:
+          CRON_ENDPOINT: ${{ secrets.CRON_ENDPOINT }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_ENDPOINT" ]; then
+            echo "::error::Falta el secreto CRON_ENDPOINT en el repositorio."
+            exit 1
+          fi
+
+          echo "Llamando al endpoint de actualizacion del dolar..."
+          http_code=$(curl -sS --max-time 60 -o response.json -w "%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$CRON_ENDPOINT")
+
+          echo "Respuesta HTTP: $http_code"
+          echo "Cuerpo de la respuesta:"
+          cat response.json || true
+          echo ""
+
+          if [ "$http_code" != "200" ]; then
+            echo "::error::El endpoint respondio $http_code (se esperaba 200)."
+            exit 1
+          fi
+
+          echo "Cotizacion actualizada correctamente."
