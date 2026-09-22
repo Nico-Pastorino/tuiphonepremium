@@ -134,7 +134,6 @@ export function AdminProvider({
   const dollarConfigHasLocalUpdates = useRef(false)
   const homeConfigHasLocalUpdates = useRef(false)
   const tradeInConfigHasLocalUpdates = useRef(false)
-  const tradeInConfigLoadedFromStorage = useRef(false)
   const addNotification = useAppState((state) => state.addNotification)
 
   useEffect(() => {
@@ -182,8 +181,9 @@ export function AdminProvider({
         }
       }
 
+      // La configuracion del servidor manda: la copia local solo se usa si el servidor no envio nada.
       const savedHomeConfig = localStorage.getItem(HOME_STORAGE_KEY)
-      if (savedHomeConfig) {
+      if (savedHomeConfig && !initialHomeConfig) {
         try {
           const parsed = JSON.parse(savedHomeConfig) as Partial<HomeConfig>
           setHomeConfig((prev) => mergeHomeConfig(prev, parsed))
@@ -193,11 +193,10 @@ export function AdminProvider({
       }
 
       const savedTradeInConfig = localStorage.getItem(TRADE_IN_STORAGE_KEY)
-      if (savedTradeInConfig) {
+      if (savedTradeInConfig && !initialTradeInConfig) {
         try {
           const parsed = JSON.parse(savedTradeInConfig) as Partial<TradeInConfig>
           setTradeInConfig((prev) => mergeTradeInConfig(prev, parsed))
-          tradeInConfigLoadedFromStorage.current = true
         } catch (error) {
           console.error("Failed to parse saved trade-in config", error)
         }
@@ -245,12 +244,7 @@ export function AdminProvider({
           setHomeConfig((prev) => mergeHomeConfig(prev, bootstrap.homeConfig))
         }
 
-        const shouldApplyTradeIn =
-          bootstrap.tradeInConfig &&
-          !tradeInConfigHasLocalUpdates.current &&
-          !tradeInConfigLoadedFromStorage.current
-
-        if (shouldApplyTradeIn) {
+        if (bootstrap.tradeInConfig && !tradeInConfigHasLocalUpdates.current) {
           setTradeInConfig((prev) => mergeTradeInConfig(prev, bootstrap.tradeInConfig))
         }
 
