@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import useSWRInfinite from "swr/infinite"
 import dynamic from "next/dynamic"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -11,6 +11,14 @@ import { AnimatedSection } from "@/components/AnimatedSection"
 import { Button } from "@/components/ui/button"
 import { Filter, RefreshCw, Search } from "lucide-react"
 import type { CatalogProductsResponse, ProductSummary } from "@/types/product"
+import {
+  clearSearch as clearSearchState,
+  commitDebouncedSearch,
+  createSearchState,
+  mirrorSearchInHistory,
+  setSearchInput as setLocalSearchInput,
+  syncSearchFromHref,
+} from "@/lib/search-sync"
 
 const ProductFilters = dynamic(() => import("@/components/ProductFilters").then((mod) => mod.ProductFilters))
 const MAX_CATALOG_PAGES = 5
@@ -95,22 +103,44 @@ export function ProductsPageClient({
   const [isMobile, setIsMobile] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
+  const [searchState, setSearchState] = useState(() => createSearchState(searchParams.get("search")))
+  const { input: searchInput, debouncedSearch } = searchState
+  const searchDebounceRef = useRef<number | null>(null)
+
   const activeFilters = useMemo<FiltersState>(() => {
     const categoryParam = searchParams.get("category")
     const conditionParam = searchParams.get("condition")
-    const searchParam = searchParams.get("search")
     return {
       category: categoryParam && categoryParam.trim().length > 0 ? categoryParam : null,
       condition: conditionParam && conditionParam.trim().length > 0 ? conditionParam : null,
-      search: searchParam && searchParam.trim().length > 0 ? searchParam : null,
+      search: debouncedSearch || null,
     }
-  }, [searchParams])
+  }, [debouncedSearch, searchParams])
 
-  const [searchInput, setSearchInput] = useState(activeFilters.search ?? "")
+  const updateSearchInput = useCallback((value: string) => {
+    setSearchState((current) => setLocalSearchInput(current, value))
+  }, [])
 
   useEffect(() => {
-    setSearchInput(activeFilters.search ?? "")
-  }, [activeFilters.search])
+    const handleExternalNavigation = () => {
+      if (searchDebounceRef.current !== null) {
+        window.clearTimeout(searchDebounceRef.current)
+        searchDebounceRef.current = null
+      }
+      setSearchState(syncSearchFromHref(window.location.href))
+    }
+
+    window.addEventListener("popstate", handleExternalNavigation)
+    return () => window.removeEventListener("popstate", handleExternalNavigation)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current !== null) {
+        window.clearTimeout(searchDebounceRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 768px)")
@@ -218,35 +248,43 @@ export function ProductsPageClient({
       : `Mostrando ${outletFilteredProducts.length} de ${total} productos`
 
   const handleFilterChange = useCallback(
-    (next: { category?: string | null; condition?: string | null; search?: string | null }) => {
+    (next: { category?: string | null; condition?: string | null }) => {
       const params = new URLSearchParams()
       const categoryValue = next.category !== undefined ? next.category : activeFilters.category
       const conditionValue = next.condition !== undefined ? next.condition : activeFilters.condition
-      const searchValue = next.search !== undefined ? next.search : activeFilters.search
       if (categoryValue) params.set("category", categoryValue)
       if (conditionValue) params.set("condition", conditionValue)
-      if (searchValue) params.set("search", searchValue)
+      if (debouncedSearch) params.set("search", debouncedSearch)
       const queryString = params.toString()
       router.replace(queryString ? `/productos?${queryString}` : "/productos", { scroll: false })
       setShowFilters(false)
     },
-    [router, activeFilters.category, activeFilters.condition, activeFilters.search],
+    [router, activeFilters.category, activeFilters.condition, debouncedSearch],
   )
 
+  const clearSearch = useCallback(() => {
+    if (searchDebounceRef.current !== null) {
+      window.clearTimeout(searchDebounceRef.current)
+      searchDebounceRef.current = null
+    }
+    setSearchState((current) => clearSearchState(current))
+    mirrorSearchInHistory(window.history, window.location.href, "")
+  }, [])
+
   useEffect(() => {
-    const handler = window.setTimeout(() => {
-      const normalizedInput = searchInput.trim()
-      const normalizedActive = (activeFilters.search ?? "").trim()
-      if (normalizedInput === normalizedActive) {
-        return
-      }
-      handleFilterChange({ search: normalizedInput.length > 0 ? normalizedInput : null })
+    searchDebounceRef.current = window.setTimeout(() => {
+      searchDebounceRef.current = null
+      setSearchState((current) => commitDebouncedSearch(current))
+      mirrorSearchInHistory(window.history, window.location.href, searchInput)
     }, 400)
 
     return () => {
-      window.clearTimeout(handler)
+      if (searchDebounceRef.current !== null) {
+        window.clearTimeout(searchDebounceRef.current)
+        searchDebounceRef.current = null
+      }
     }
-  }, [searchInput, activeFilters.search, handleFilterChange])
+  }, [searchInput])
 
   const handleLoadMore = useCallback(() => {
     if (loadingMore || outletFilteredProducts.length >= total || size >= MAX_CATALOG_PAGES) {
@@ -281,7 +319,7 @@ export function ProductsPageClient({
                     <input
                       type="search"
                       value={searchInput}
-                      onChange={(event) => setSearchInput(event.target.value)}
+                      onChange={(event) => updateSearchInput(event.target.value)}
                       placeholder="Buscar productos..."
                       aria-label="Buscar productos"
                       className="w-full rounded-full border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
@@ -375,10 +413,7 @@ export function ProductsPageClient({
                       {trimmedSearch.length > 0 && (
                         <Button
                           variant="outline"
-                          onClick={() => {
-                            setSearchInput("")
-                            handleFilterChange({ search: null })
-                          }}
+                          onClick={clearSearch}
                           className="rounded-xl border-gray-200 hover:border-gray-300 hover:bg-white"
                         >
                           Limpiar busqueda
