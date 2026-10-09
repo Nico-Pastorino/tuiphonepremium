@@ -82,6 +82,12 @@
   }
 
   @media (max-width: 640px) {
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: clip;
+    }
+
     html {
       font-size: 14px;
     }

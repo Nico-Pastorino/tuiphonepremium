@@ -33,18 +33,21 @@ export function MinimalNavbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [isHomePage])
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen)
-    if (!isMenuOpen) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = "unset"
+  useEffect(() => {
+    if (!isMenuOpen) return
+
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.removeProperty("overflow")
     }
+  }, [isMenuOpen])
+
+  const toggleMenu = () => {
+    setIsMenuOpen((isOpen) => !isOpen)
   }
 
   const closeMenu = () => {
     setIsMenuOpen(false)
-    document.body.style.overflow = "unset"
   }
 
   const handleLinkClick = () => {
@@ -95,7 +98,7 @@ export function MinimalNavbar() {
       {/* Spacer to keep content away from fixed navbar */}
       {!isHomePage && <div aria-hidden className="h-24 sm:h-28" />}
       {/* Slide-out menu - Responsive y profesional UX/UI */}
-      <div className={`fixed inset-0 z-50 transition-all duration-300 ${isMenuOpen ? "visible" : "invisible"}`}>
+      <div className={`fixed inset-0 w-screen z-50 transition-all duration-300 ${isMenuOpen ? "visible" : "invisible"}`}>
         {/* Backdrop */}
         <div
           className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${isMenuOpen ? "opacity-100" : "opacity-0"}`}
@@ -105,7 +108,7 @@ export function MinimalNavbar() {
         {/* Menu panel - Gradiente, logo alineado y botón cerrar */}
         <div
           className={
-            `absolute right-0 top-0 h-full w-full sm:w-80 md:w-96 bg-gradient-to-r from-blue-500 to-purple-600 shadow-2xl transform transition-transform duration-300 z-50 rounded-l-3xl flex flex-col` +
+            `absolute right-0 top-0 h-full w-screen sm:w-80 md:w-96 bg-gradient-to-r from-blue-500 to-purple-600 shadow-2xl transform transition-transform duration-300 z-50 rounded-l-3xl flex flex-col` +
             (isMenuOpen ? " translate-x-0" : " translate-x-full")
           }
         >
