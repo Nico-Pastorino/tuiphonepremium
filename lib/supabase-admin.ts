@@ -1,4 +1,5 @@
 import { createClient, type PostgrestError } from "@supabase/supabase-js"
+import { isRequestedRangeNotSatisfiable } from "@/lib/catalog-pagination.mjs"
 import type { Database, ProductInsert, ProductRow, ProductUpdate, SiteConfigInsert, SiteConfigRow, Json } from "@/types/database"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -401,6 +402,9 @@ export class ProductAdminService {
       const { data, error, count } = await query
 
       if (error) {
+        if (isRequestedRangeNotSatisfiable(error)) {
+          return { data: { rows: [], total: 0 }, error: null }
+        }
         if (OUTLET_SCHEMA_ENABLED && isMissingOutletColumnError(error)) {
           if (options.outletOnly) {
             return { data: { rows: [], total: 0 }, error: null }

@@ -1,20 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCatalogProducts } from "@/lib/product-cache"
+import { parseCatalogPagination } from "@/lib/catalog-pagination.mjs"
 
 export const revalidate = 300
 // Mantener ISR activo para reducir consultas repetidas al backend.
 const PUBLIC_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
-
-const DEFAULT_LIMIT = 12
-const MAX_LIMIT = 60
 const DEBUG_EGRESS_LOGS = process.env.DEBUG_EGRESS_LOGS === "true"
-
-const parseNumberParam = (value: string | null, fallback: number, max: number) => {
-  if (!value) return fallback
-  const parsed = Number.parseInt(value, 10)
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback
-  return Math.min(parsed, max)
-}
 
 const parseBooleanParam = (value: string | null): boolean | null => {
   if (!value) return null
@@ -28,8 +19,11 @@ export async function GET(request: NextRequest) {
   const startedAt = Date.now()
   try {
     const { searchParams } = request.nextUrl
-    const limit = parseNumberParam(searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT)
-    const offset = Math.max(0, Number.parseInt(searchParams.get("offset") ?? "0", 10) || 0)
+    const pagination = parseCatalogPagination(searchParams)
+    if (!pagination) {
+      return NextResponse.json({ error: "El offset solicitado excede el rango permitido" }, { status: 400 })
+    }
+    const { limit, offset } = pagination
     const force = searchParams.get("refresh") === "1"
     const category = searchParams.get("category")
     const condition = searchParams.get("condition")
