@@ -11,6 +11,7 @@ const DEFAULT_TTL_MS = 300_000
 const PRODUCTS_CACHE_TAG = "products-list"
 const ADMIN_PRODUCTS_LIMIT = 2000
 const MAX_LIMIT = 60
+const DEBUG_EGRESS_LOGS = process.env.DEBUG_EGRESS_LOGS === "true"
 
 const getCacheTtlMs = (): number => {
   const raw = process.env.PRODUCTS_CACHE_TTL_MS
@@ -145,7 +146,7 @@ export type CatalogQueryOptions = {
   outletOnly?: boolean
 }
 
-export const getCatalogProducts = async ({
+const getCatalogProductsInternal = async ({
   limit = 12,
   offset = 0,
   force = false,
@@ -206,5 +207,29 @@ export const getCatalogProducts = async ({
     total: data.total,
     supabaseConnected: true,
     timestamp: Date.now(),
+  }
+}
+
+export const getCatalogProducts = async (options: CatalogQueryOptions = {}): Promise<CatalogProductsResponse> => {
+  const startedAt = Date.now()
+  const operation = options.featured
+    ? "catalog_products_featured"
+    : options.outletOnly
+      ? "catalog_products_outlet"
+      : options.category || options.condition || options.search
+        ? "catalog_products_filtered"
+        : "catalog_products_page"
+
+  try {
+    const result = await getCatalogProductsInternal(options)
+    if (DEBUG_EGRESS_LOGS) {
+      console.info("[product-cache]", { operation, result: "success", durationMs: Date.now() - startedAt })
+    }
+    return result
+  } catch (error) {
+    if (DEBUG_EGRESS_LOGS) {
+      console.info("[product-cache]", { operation, result: "error", durationMs: Date.now() - startedAt })
+    }
+    throw error
   }
 }
