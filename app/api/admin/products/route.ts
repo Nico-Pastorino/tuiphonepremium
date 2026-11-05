@@ -109,16 +109,20 @@ export async function GET(request: NextRequest) {
     response.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120")
     if (DEBUG_EGRESS_LOGS) {
       console.info("[admin/products]", {
+        operation: "admin_products_page",
+        result: "success",
         durationMs: Date.now() - startedAt,
-        limit,
-        offset,
-        total: data.total,
-        condition: condition ?? null,
-        search: search ?? null,
       })
     }
     return response
   } catch (error) {
+    if (DEBUG_EGRESS_LOGS) {
+      console.info("[admin/products]", {
+        operation: "admin_products_page",
+        result: "error",
+        durationMs: Date.now() - startedAt,
+      })
+    }
     console.error("API GET error:", error)
     const message = error instanceof Error ? error.message : "Error interno del servidor"
     return NextResponse.json({ error: message }, { status: 500 })

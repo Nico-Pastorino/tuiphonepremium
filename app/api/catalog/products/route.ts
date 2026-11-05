@@ -45,19 +45,20 @@ export async function GET(request: NextRequest) {
     response.headers.set("Cache-Control", force ? "no-store" : PUBLIC_CACHE_CONTROL)
     if (DEBUG_EGRESS_LOGS) {
       console.info("[catalog/products]", {
+        operation: "catalog_products",
+        result: "success",
         durationMs: Date.now() - startedAt,
-        limit,
-        offset,
-        total: data.total,
-        featured,
-        outletOnly,
-        category: category ?? null,
-        condition: condition ?? null,
-        search: search ?? null,
       })
     }
     return response
   } catch (error) {
+    if (DEBUG_EGRESS_LOGS) {
+      console.info("[catalog/products]", {
+        operation: "catalog_products",
+        result: "error",
+        durationMs: Date.now() - startedAt,
+      })
+    }
     console.error("Catalog products API error:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudieron cargar los productos" },
