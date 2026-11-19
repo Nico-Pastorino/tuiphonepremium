@@ -13,6 +13,10 @@ type ProductDetailPageProps = {
 export const revalidate = 300
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(params.id)) {
+    notFound()
+  }
+
   const [{ data: productRow, error }, installmentConfig, dollarConfig] = await Promise.all([
     ProductAdminService.getProductById(params.id),
     getInstallmentConfigCached(),
